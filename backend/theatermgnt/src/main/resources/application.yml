@@ -1,0 +1,40 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /api/theater-mgnt
+
+spring:
+  application:
+    name: theater-mgnt
+  datasource:
+    url: jdbc:postgresql://db.zpjvpfkwbcnszfzdwynf.supabase.co:5432/postgres
+    username: postgres
+    password: 3kSE347@123
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
+
+outbound:
+  identity:
+    client-id: ${GOOGLE_CLIENT_ID}
+    client-secret: ${GOOGLE_CLIENT_SECRET}
+    redirect-uri: "http://localhost:3000/authenticate"
+
+jwt:
+  signerKey: "+PAV/uNVIsN2N1peTkAViUZSSc+t8/wOZQDw8M2+HxBD/2dFy9segSiMPHBr+q97"
+  refreshable-duration: 36000
+  valid-duration: 3600
+otp:
+  valid-duration: 10
+
+brevo:
+  apiKey: ${BREVO_API_KEY}
