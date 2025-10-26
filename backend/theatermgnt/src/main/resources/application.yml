@@ -7,9 +7,9 @@ spring:
   application:
     name: theater-mgnt
   datasource:
-    url: jdbc:postgresql://db.zpjvpfkwbcnszfzdwynf.supabase.co:5432/postgres
+    url: jdbc:postgresql://db.yzdfmfunqtrohvaspglg.supabase.co:5432/postgres
     username: postgres
-    password: 3kSE347@123
+    password: TTKtao@223
     driver-class-name: org.postgresql.Driver
 
   jpa:
