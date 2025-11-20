@@ -74,6 +74,21 @@ public enum ErrorCode {
     INVALID_POSTER_URL(2033, "Poster URL must be a valid URL", HttpStatus.BAD_REQUEST),
     INVALID_TRAILER_URL(2034, "Trailer URL must be a valid URL", HttpStatus.BAD_REQUEST),
     INVALID_MOVIE_GENRES(2035, "Movie must have between {min} and {max} genres", HttpStatus.BAD_REQUEST),
+
+    //Work Schedule
+    WORK_SCHEDULE_NOT_FOUND(2040, "Work schedule not found", HttpStatus.BAD_REQUEST),
+    SHIFT_NOT_FOUND(2041,"Shift not found", HttpStatus.BAD_REQUEST),
+    WORK_SCHEDULE_EXISTS(2042,"Work schedule already exists", HttpStatus.BAD_REQUEST),
+    STAFF_NOT_FOUND(2043,"Staff not found", HttpStatus.BAD_REQUEST),
+    UNAUTHORIZED_CINEMA_STAFF(2044,"Unauthorized cinema staff", HttpStatus.BAD_REQUEST),
+    SHIFT_TYPE_EXISTS(2045,"Shift type existed", HttpStatus.BAD_REQUEST),
+    SHIFT_TYPE_NOT_FOUND(2046,"Shift type  not found", HttpStatus.BAD_REQUEST),
+    INVALID_SHIFT_TIME_RANGE(2047,"Invalid shift time range", HttpStatus.BAD_REQUEST),
+    SHIFT_OVERLAP(2048,"Shift time overlap with existing shift", HttpStatus.BAD_REQUEST),
+    INVALID_WORK_DATE(2049,"Work date cannot be in the past", HttpStatus.BAD_REQUEST),
+    NOTHING_TO_UPDATE(2050,"Nothing to update", HttpStatus.BAD_REQUEST),
+    INVALID_WORK_SCHEDULE_REQUEST(2051,"Invalid work schedule request", HttpStatus.BAD_REQUEST),
+
     //-----
     CANNOT_SEND_EMAIL(3001, "Cannot send email", HttpStatus.BAD_REQUEST),
     ;

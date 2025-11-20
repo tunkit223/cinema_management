@@ -102,4 +102,12 @@ public class StaffService {
     public void deleteStaff(String staffId) {
         staffRepository.deleteById(staffId);
     }
+
+    /// GET STAFF BY CINEMA WITH ROLE STAFF
+    public List<StaffResponse> getStaffByCinemaAndStaffRole(String cinemaId) {
+        return staffRepository.findByCinemaIdAndRole(cinemaId, PredefinedRole.STAFF_ROLE)
+                .stream()
+                .map(staffMapper::toStaffResponse)
+                .toList();
+    }
 }

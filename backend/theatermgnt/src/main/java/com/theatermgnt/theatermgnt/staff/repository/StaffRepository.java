@@ -2,6 +2,8 @@ package com.theatermgnt.theatermgnt.staff.repository;
 
 import com.theatermgnt.theatermgnt.staff.entity.Staff;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -11,4 +13,15 @@ import java.util.Optional;
 public interface StaffRepository extends JpaRepository<Staff, String> {
     Optional<Staff> findByAccountId(String accountId);
     List<Staff> findAllByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(String firstName, String lastName);
+    @Query("""
+        SELECT DISTINCT s
+        FROM Staff s
+        JOIN s.roles r
+        WHERE s.cinemaId = :cinemaId
+          AND r.name = :roleName
+    """)
+    List<Staff> findByCinemaIdAndRole(
+            @Param("cinemaId") String cinemaId,
+            @Param("roleName") String roleName
+    );
 }

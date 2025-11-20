@@ -75,4 +75,12 @@ public class StaffController {
         staffService.deleteStaff(staffId);
         return ApiResponse.<Void>builder().build();
     }
+
+    @GetMapping("/cinema/{cinemaId}/staff-role")
+    public ApiResponse<List<StaffResponse>> getStaffByCinemaWithStaffRole(
+            @PathVariable String cinemaId
+    ) {
+        var staffs = staffService.getStaffByCinemaAndStaffRole(cinemaId);
+        return ApiResponse.<List<StaffResponse>>builder().result(staffs).build();
+    }
 }
