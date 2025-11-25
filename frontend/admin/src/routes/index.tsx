@@ -23,6 +23,8 @@ import { PERMISSIONS } from "@/constants/permissions";
 import { ROUTES } from "@/constants/routes";
 import { Navigate } from "react-router-dom";
 import { TicketBookingPage } from "@/pages/TicketBooking/TickKetBookingPage";
+import { WorkSchedulePage } from "@/pages/WorkSchedules/WorkSchedulePage";
+import { ShiftTypesPage } from "@/pages/WorkSchedules/ShiftTypesPage";
 
 export const routes = [
   {
@@ -193,6 +195,34 @@ export const routes = [
               {
                 index: true,
                 element: <StaffList />,
+              },
+            ],
+          },
+          {
+            path: `${ROUTES.WORK_SCHEDULES}`,
+            element: (
+              <ProtectedRoute
+                requiredPermissions={[PERMISSIONS.WORK_SCHEDULE_READ]}
+              />
+            ),
+            children: [
+              {
+                index: true,
+                element: <WorkSchedulePage />,
+              },
+            ],
+          },
+          {
+            path: `${ROUTES.SHIFT_TYPES}`,
+            element: (
+              <ProtectedRoute
+                requiredPermissions={[PERMISSIONS.WORK_SCHEDULE_READ]}
+              />
+            ),
+            children: [
+              {
+                index: true,
+                element: <ShiftTypesPage />,
               },
             ],
           },

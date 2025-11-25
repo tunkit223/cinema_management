@@ -12,6 +12,7 @@ import {
   Receipt,
   BarChart3,
   DoorOpen,
+  CalendarClock,
 } from "lucide-react";
 import { ROUTES } from "@/constants/routes";
 import { PERMISSIONS } from "@/constants/permissions";
@@ -22,7 +23,8 @@ export interface MenuItem {
   id: string;
   label: string;
   icon: LucideIcon;
-  path: string;
+  path?: string;
+  children?: MenuItem[];
   requiredPermissions?: PermissionType[];
 }
 
@@ -67,6 +69,27 @@ export const MENU_ITEMS: MenuItem[] = [
     icon: UserCog,
     path: ROUTES.STAFF,
     requiredPermissions: [PERMISSIONS.STAFF_READ],
+  },
+  {
+    id: "work",
+    label: "Work",
+    icon: CalendarClock,
+    children: [
+      {
+        id: "work-schedules",
+        label: "Work Schedules",
+        icon: CalendarClock,
+        path: ROUTES.WORK_SCHEDULES,
+        requiredPermissions: [PERMISSIONS.WORK_SCHEDULE_READ],
+      },
+      {
+        id: "shift-types",
+        label: "Shift Types",
+        icon: CalendarClock,
+        path: ROUTES.SHIFT_TYPES,
+        requiredPermissions: [PERMISSIONS.WORK_SCHEDULE_CREATE],
+      },
+    ],
   },
   {
     id: "showtimes",

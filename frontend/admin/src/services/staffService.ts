@@ -87,3 +87,11 @@ export const searchStaffs = async (keyword: string): Promise<StaffProfile[]> => 
     })
   );
 };
+
+export const getStaffsByCinemaWithRoleStaff = async (cinemaId: string) => {
+  return handleApiResponse<StaffProfile[]>(
+    httpClient.get<ApiResponse<StaffProfile[]>>(
+      `/staffs/cinema/${cinemaId}/staff-role`
+    )
+  );
+};
