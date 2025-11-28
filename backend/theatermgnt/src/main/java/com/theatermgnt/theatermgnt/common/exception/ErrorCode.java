@@ -89,6 +89,11 @@ public enum ErrorCode {
     NOTHING_TO_UPDATE(2050,"Nothing to update", HttpStatus.BAD_REQUEST),
     INVALID_WORK_SCHEDULE_REQUEST(2051,"Invalid work schedule request", HttpStatus.BAD_REQUEST),
 
+    //Equipment
+    EQUIPMENT_CATEGORY_EXISTED(2013, "Equipment category existed", HttpStatus.BAD_REQUEST),
+    EQUIPMENT_CATEGORY_NOT_EXISTED(2014, "Equipment category not existed", HttpStatus.BAD_REQUEST),
+    EQUIPMENT_EXISTED(2015, "Equipment existed", HttpStatus.BAD_REQUEST),
+    EQUIPMENT_NOT_EXISTED(2016, "Equipment not existed", HttpStatus.BAD_REQUEST),
     //-----
     CANNOT_SEND_EMAIL(3001, "Cannot send email", HttpStatus.BAD_REQUEST),
     ;

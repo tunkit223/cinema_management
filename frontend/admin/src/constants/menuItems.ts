@@ -13,6 +13,7 @@ import {
   BarChart3,
   DoorOpen,
   CalendarClock,
+  Wrench,
 } from "lucide-react";
 import { ROUTES } from "@/constants/routes";
 import { PERMISSIONS } from "@/constants/permissions";
@@ -90,6 +91,13 @@ export const MENU_ITEMS: MenuItem[] = [
         requiredPermissions: [PERMISSIONS.WORK_SCHEDULE_CREATE],
       },
     ],
+  },
+  {
+    id: "equipment",
+    label: "Equipment",
+    icon: Wrench,
+    path: ROUTES.EQUIPMENT,
+    requiredPermissions: [PERMISSIONS.EQUIPMENT_READ],
   },
   {
     id: "showtimes",

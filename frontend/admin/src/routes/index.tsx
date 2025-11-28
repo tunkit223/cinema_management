@@ -25,6 +25,7 @@ import { Navigate } from "react-router-dom";
 import { TicketBookingPage } from "@/pages/TicketBooking/TickKetBookingPage";
 import { WorkSchedulePage } from "@/pages/WorkSchedules/WorkSchedulePage";
 import { ShiftTypesPage } from "@/pages/WorkSchedules/ShiftTypesPage";
+import { EquipmentList } from "@/pages/Equipment/EquipmentList";
 
 export const routes = [
   {
@@ -143,6 +144,20 @@ export const routes = [
               {
                 index: true,
                 element: <TicketList />,
+              },
+            ],
+          },
+          {
+            path: `${ROUTES.EQUIPMENT}`,
+            element: (
+                <ProtectedRoute
+                    requiredPermissions={[PERMISSIONS.EQUIPMENT_READ]}
+                />
+            ),
+            children: [
+              {
+                index: true,
+                element: <EquipmentList />,
               },
             ],
           },

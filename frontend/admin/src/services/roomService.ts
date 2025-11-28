@@ -2,6 +2,8 @@ import httpClient from "@/configurations/httpClient";
 import type { CreateRoomRequest, Room, UpdateRoomRequest } from "@/types/RoomType/room";
 import {  handleApiResponse } from "@/utils/apiResponse";
 import type { ApiResponse } from "@/utils/apiResponse";
+import { CONFIG } from "@/configurations/configuration";
+
 
 
 // Get all rooms
@@ -31,3 +33,11 @@ export const updateRoom = async (id: string, roomData: UpdateRoomRequest): Promi
     httpClient.put<ApiResponse<Room>>(`/rooms/${id}`, roomData)
   );
 }
+
+export const getRoomsByCinema = async (cinemaId: string) => {
+  return await httpClient.get(`${CONFIG.API}/rooms/cinema/${cinemaId}`);
+};
+
+export const deleteRoom = async (roomId: string) => {
+  return await httpClient.delete(`${CONFIG.API}/rooms/${roomId}`);
+};
