@@ -105,15 +105,24 @@ public class PaymentServiceImpl implements PaymentService {
         try {
             // Verify signature
             String vnpSecureHash = params.get("vnp_SecureHash");
+            String vnpSecureHashType = params.get("vnp_SecureHashType");
+            
+            // Remove hash fields before verification
             params.remove("vnp_SecureHash");
             params.remove("vnp_SecureHashType");
             
-            String hashData = VNPayUtil.hashAllFields(params);
+            // Use callback hash (raw values, no encoding)
+            String hashData = VNPayUtil.hashAllFieldsForCallback(params);
             String calculatedHash = VNPayUtil.hmacSHA512(vnPayConfig.getHashSecret(), hashData);
             
-            if (!calculatedHash.equals(vnpSecureHash)) {
+            log.info("VNPay Callback Verification - Hash Data: {}, Calculated: {}, Received: {}", 
+                hashData, calculatedHash, vnpSecureHash);
+            
+            // Compare hashes (case-insensitive)
+            if (!calculatedHash.equalsIgnoreCase(vnpSecureHash)) {
                 response.put("code", "97");
                 response.put("message", "Invalid signature");
+                log.warn("VNPay callback signature mismatch");
                 return response;
             }
 
@@ -178,15 +187,24 @@ public class PaymentServiceImpl implements PaymentService {
         try {
             // Verify signature
             String vnpSecureHash = params.get("vnp_SecureHash");
+            String vnpSecureHashType = params.get("vnp_SecureHashType");
+            
+            // Remove hash fields before verification
             params.remove("vnp_SecureHash");
             params.remove("vnp_SecureHashType");
             
-            String hashData = VNPayUtil.hashAllFields(params);
+            // Use callback hash (raw values, no encoding)
+            String hashData = VNPayUtil.hashAllFieldsForCallback(params);
             String calculatedHash = VNPayUtil.hmacSHA512(vnPayConfig.getHashSecret(), hashData);
             
-            if (!calculatedHash.equals(vnpSecureHash)) {
+            log.info("VNPay IPN Verification - Hash Data: {}, Calculated: {}, Received: {}", 
+                hashData, calculatedHash, vnpSecureHash);
+            
+            // Compare hashes (case-insensitive)
+            if (!calculatedHash.equalsIgnoreCase(vnpSecureHash)) {
                 response.put("RspCode", "97");
                 response.put("Message", "Invalid signature");
+                log.warn("VNPay IPN signature mismatch");
                 return response;
             }
 

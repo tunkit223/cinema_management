@@ -83,6 +83,7 @@ public class VNPayUtil {
 
     /**
      * Build hash data from params (keys & values must be URL encoded, sorted asc)
+     * Used for creating payment request
      */
     public static String hashAllFields(Map<String, String> fields) {
         List<String> fieldNames = new ArrayList<>(fields.keySet());
@@ -99,6 +100,31 @@ public class VNPayUtil {
                 sb.append(encode(fieldName));
                 sb.append("=");
                 sb.append(encode(fieldValue));
+                first = false;
+            }
+        }
+        return sb.toString();
+    }
+
+    /**
+     * Build hash data from callback params (raw values, no encoding, sorted asc)
+     * Used for verifying VNPay callback/IPN
+     */
+    public static String hashAllFieldsForCallback(Map<String, String> fields) {
+        List<String> fieldNames = new ArrayList<>(fields.keySet());
+        Collections.sort(fieldNames);
+        StringBuilder sb = new StringBuilder();
+
+        boolean first = true;
+        for (String fieldName : fieldNames) {
+            String fieldValue = fields.get(fieldName);
+            if (fieldValue != null && !fieldValue.isEmpty()) {
+                if (!first) {
+                    sb.append("&");
+                }
+                sb.append(fieldName);
+                sb.append("=");
+                sb.append(fieldValue);
                 first = false;
             }
         }

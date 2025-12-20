@@ -3,7 +3,8 @@ import type { Cinema } from "@/types/CinemaType/cinemaType";
 import { handleApiResponse, type ApiResponse } from "@/utils/apiResponse";
 import { CONFIG } from "@/configurations/configuration";
 
-
+// Re-export Cinema type for convenience
+export type { Cinema };
 
 export interface CreateCinemaRequest {
   name: string;
