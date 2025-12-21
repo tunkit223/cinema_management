@@ -69,10 +69,10 @@ export function ShowtimeList() {
   const [rooms, setRooms] = useState<Room[]>([]);
 
   // Filters
-  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [cinemaFilter, setCinemaFilter] = useState<string>("all");
   const [roomFilter, setRoomFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<string>("startTime-desc");
 
   // Edit dialog
   const [editDialog, setEditDialog] = useState<{
@@ -159,14 +159,27 @@ export function ShowtimeList() {
     }
   };
 
-  const filteredShowtimes = showtimes.filter((showtime) => {
-    if (statusFilter !== "all" && showtime.status !== statusFilter) return false;
-    if (cinemaFilter !== "all" && showtime.cinemaId !== cinemaFilter) return false;
-    if (roomFilter !== "all" && showtime.roomId !== roomFilter) return false;
-    if (searchQuery && !showtime.movieName.toLowerCase().includes(searchQuery.toLowerCase()))
-      return false;
-    return true;
-  });
+  const filteredAndSortedShowtimes = showtimes
+    .filter((showtime) => {
+      if (cinemaFilter !== "all" && showtime.cinemaId !== cinemaFilter) return false;
+      if (roomFilter !== "all" && showtime.roomId !== roomFilter) return false;
+      if (searchQuery && !showtime.movieName.toLowerCase().includes(searchQuery.toLowerCase()))
+        return false;
+      return true;
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case "startTime-asc":
+          return new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
+        case "startTime-desc":
+          return new Date(b.startTime).getTime() - new Date(a.startTime).getTime();
+        case "created":
+          // Keep original order from database
+          return 0;
+        default:
+          return new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
+      }
+    });
 
   const stats = {
     total: showtimes.length,
@@ -276,16 +289,15 @@ export function ShowtimeList() {
           </div>
 
           <div className="space-y-2">
-            <Label>Status</Label>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Label>Sort By</Label>
+            <Select value={sortBy} onValueChange={setSortBy}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="SCHEDULED">Scheduled</SelectItem>
-                <SelectItem value="ONGOING">Ongoing</SelectItem>
-                <SelectItem value="COMPLETED">Completed</SelectItem>
+                <SelectItem value="startTime-asc">Showtime (Earliest)</SelectItem>
+                <SelectItem value="startTime-desc">Showtime (Latest)</SelectItem>
+                <SelectItem value="created">Created Order</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -350,14 +362,14 @@ export function ShowtimeList() {
                   Loading...
                 </TableCell>
               </TableRow>
-            ) : filteredShowtimes.length === 0 ? (
+            ) : filteredAndSortedShowtimes.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                   No showtimes found
                 </TableCell>
               </TableRow>
             ) : (
-              filteredShowtimes.map((showtime) => (
+              filteredAndSortedShowtimes.map((showtime) => (
                 <TableRow key={showtime.id}>
                   <TableCell>
                     <div className="flex items-center gap-2">
