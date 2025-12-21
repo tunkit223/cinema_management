@@ -3,11 +3,10 @@ package com.theatermgnt.theatermgnt.bookingCombo.service;
 import com.theatermgnt.theatermgnt.booking.dto.response.BookingPricingResponse;
 import com.theatermgnt.theatermgnt.bookingCombo.dto.request.UpdateBookingCombosRequest;
 
-import java.util.UUID;
 
 public interface BookingComboService {
     BookingPricingResponse updateCombos(
-            UUID bookingId,
+            String bookingId,
             UpdateBookingCombosRequest request
     );
 }

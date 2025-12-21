@@ -46,4 +46,14 @@ public interface ScreeningSeatRepository extends JpaRepository<ScreeningSeat,Str
     int lockSeats(List<String> ids, Instant lockUntil);
 
     List<ScreeningSeat> findByBooking(String bookingId);
+
+    @Modifying
+    @Query("""
+        UPDATE ScreeningSeat s
+        SET s.status = 'AVAILABLE',
+            s.lockUntil = null,
+            s.booking = null
+        WHERE s.booking = :bookingId
+    """)
+    void releaseSeatsByBooking(String bookingId);
 }

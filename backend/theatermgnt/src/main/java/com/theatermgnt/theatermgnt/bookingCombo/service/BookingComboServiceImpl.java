@@ -17,7 +17,6 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.UUID;
 
 @Service
 @Transactional
@@ -30,20 +29,20 @@ public class BookingComboServiceImpl implements BookingComboService {
 
     @Override
     public BookingPricingResponse updateCombos(
-            UUID bookingId,
+            String bookingId,
             UpdateBookingCombosRequest request
     ) {
         Booking booking = getValidPendingBooking(bookingId);
 
         // Xóa tất cả các BookingCombo hiện có cho bookingId
-        bookingComboRepository.deleteByBookingId(bookingId.toString());
+        bookingComboRepository.deleteByBookingId(bookingId);
         BigDecimal comboSubtotal = BigDecimal.ZERO;
 
         // Tạo mới các BookingCombo từ request
         for (ComboItemRequest item : request.getCombos()) {
 
             Combo combo = comboRepository.findById(item.getComboId())
-                    .orElseThrow();
+                    .orElseThrow(() -> new IllegalStateException("Combo not found"));
 
             BigDecimal unitPrice = combo.getPrice();
             BigDecimal subtotal =
@@ -74,8 +73,8 @@ public class BookingComboServiceImpl implements BookingComboService {
         return bookingPricingMapper.toPricingResponse(booking);
     }
 
-    private Booking getValidPendingBooking(UUID bookingId) {
-        Booking booking = bookingRepository.findById(bookingId.toString())
+    private Booking getValidPendingBooking(String bookingId) {
+        Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow();
 
         if (booking.getStatus() != BookingStatus.PENDING) {

@@ -10,12 +10,17 @@ import com.theatermgnt.theatermgnt.booking.mapper.BookingSummaryMapper;
 import com.theatermgnt.theatermgnt.booking.repository.BookingRepository;
 import com.theatermgnt.theatermgnt.bookingCombo.entity.BookingCombo;
 import com.theatermgnt.theatermgnt.bookingCombo.repository.BookingComboRepository;
+import com.theatermgnt.theatermgnt.common.enums.DayType;
+import com.theatermgnt.theatermgnt.common.enums.TimeSlot;
+import com.theatermgnt.theatermgnt.common.exception.AppException;
+import com.theatermgnt.theatermgnt.common.exception.ErrorCode;
 import com.theatermgnt.theatermgnt.customer.entity.Customer;
 import com.theatermgnt.theatermgnt.customer.repository.CustomerRepository;
+import com.theatermgnt.theatermgnt.priceConfig.entity.PriceConfig;
+import com.theatermgnt.theatermgnt.priceConfig.repository.PriceConfigRepository;
 import com.theatermgnt.theatermgnt.screening.entity.Screening;
 import com.theatermgnt.theatermgnt.screening.repository.ScreeningRepository;
 import com.theatermgnt.theatermgnt.screeningSeat.entity.ScreeningSeat;
-import com.theatermgnt.theatermgnt.screeningSeat.enums.ScreeningSeatStatus;
 import com.theatermgnt.theatermgnt.screeningSeat.repository.ScreeningSeatRepository;
 import com.theatermgnt.theatermgnt.seat.entity.Seat;
 import com.theatermgnt.theatermgnt.seat.mapper.SeatMapper;
@@ -38,6 +43,7 @@ public class BookingServiceImpl implements BookingService{
     private final ScreeningSeatRepository screeningSeatRepository;
     private final ScreeningRepository screeningRepository;
     private final CustomerRepository customerRepository;
+    private final PriceConfigRepository priceConfigRepository;
     private final BookingMapper bookingMapper;
     private final BookingSummaryMapper bookingSummaryMapper;
     private final SeatMapper seatMapper;
@@ -67,7 +73,7 @@ public class BookingServiceImpl implements BookingService{
         Customer customer = customerRepository.findById(request.getCustomerId())
                 .orElseThrow(() -> new IllegalArgumentException("Customer not found"));
         Screening screening = screeningRepository.findById(request.getScreeningId())
-                .orElseThrow(() -> new IllegalArgumentException("Screening not found"));
+                .orElseThrow(() -> new AppException(ErrorCode.SCREENING_NOT_EXISTED));
 
         // 3. Tạo booking
         Booking booking = new Booking();
@@ -93,7 +99,25 @@ public class BookingServiceImpl implements BookingService{
         BigDecimal subTotal = BigDecimal.ZERO;
         for( ScreeningSeat seat : seats) {
             Seat s = seat.getSeat();
-            //Chưa biết cách lấy giá
+            Screening screening = seat.getScreening();
+            TimeSlot timeSlot = TimeSlot.from(
+                    screening.getStartTime().toLocalTime()
+            );
+            DayType dayType = DayType.from(
+                    screening.getStartTime().toLocalDate()
+            );
+            PriceConfig priceConfig = priceConfigRepository.getPriceBySeatTypeIdAndDayTypeAndTimeSlot(
+                    s.getSeatType().getId(),
+                    dayType,
+                    timeSlot
+            );
+            if(priceConfig.getPrice() == null) {
+                throw new IllegalStateException("PriceConfig price is null for seatTypeId: "
+                        + s.getSeatType().getId()
+                        + ", dayType: " + dayType
+                        + ", timeSlot: " + timeSlot);
+            }
+            subTotal = subTotal.add(priceConfig.getPrice());
         }
         return subTotal;
     }
