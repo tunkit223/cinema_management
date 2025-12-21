@@ -35,6 +35,7 @@ public enum ErrorCode {
     // ----
     CINEMA_EXISTED(2001, "Cinema existed", HttpStatus.BAD_REQUEST),
     CINEMA_NOT_EXISTED(2002, "Cinema not existed", HttpStatus.BAD_REQUEST),
+    CINEMA_HAS_ROOMS(2052, "Cannot delete cinema. Please delete all rooms in this cinema first", HttpStatus.BAD_REQUEST),
     ROOM_EXISTED(2003, "Room existed", HttpStatus.BAD_REQUEST),
     ROOM_NOT_EXISTED(2004, "Room not existed", HttpStatus.BAD_REQUEST),
     SEATTYPE_EXISTED(2005, "Seat type existed", HttpStatus.BAD_REQUEST),

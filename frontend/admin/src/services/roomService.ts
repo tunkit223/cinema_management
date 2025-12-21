@@ -4,6 +4,9 @@ import {  handleApiResponse } from "@/utils/apiResponse";
 import type { ApiResponse } from "@/utils/apiResponse";
 import { CONFIG } from "@/configurations/configuration";
 
+// Re-export types for convenience
+export type { Room, CreateRoomRequest, UpdateRoomRequest };
+
 
 
 // Get all rooms

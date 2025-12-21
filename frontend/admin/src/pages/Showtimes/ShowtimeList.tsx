@@ -1,142 +1,491 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
-  ShowtimeCard,
-  ShowtimeFilters,
-  AddShowtimeButton,
-} from "@/components/showtimes";
-import type {
-  Showtime,
-  ShowtimeFilters as FiltersType,
-} from "@/types/showtime";
-
-// Mock data - replace with actual API call
-const mockShowtimes: Showtime[] = [
-  {
-    id: "1",
-    movieTitle: "Avatar: The Way of Water",
-    date: "2025-01-10",
-    time: "09:00",
-    room: "Phòng 1",
-    price: 80000,
-    availableSeats: 45,
-    totalSeats: 120,
-  },
-  {
-    id: "2",
-    movieTitle: "Avatar: The Way of Water",
-    date: "2025-01-10",
-    time: "12:30",
-    room: "Phòng 2",
-    price: 90000,
-    availableSeats: 78,
-    totalSeats: 150,
-  },
-  {
-    id: "3",
-    movieTitle: "Top Gun: Maverick",
-    date: "2025-01-10",
-    time: "14:00",
-    room: "Phòng 1",
-    price: 80000,
-    availableSeats: 32,
-    totalSeats: 120,
-  },
-  {
-    id: "4",
-    movieTitle: "The Batman",
-    date: "2025-01-10",
-    time: "16:30",
-    room: "Phòng 3",
-    price: 85000,
-    availableSeats: 95,
-    totalSeats: 100,
-  },
-];
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import {
+  Plus,
+  Search,
+  Film,
+  MapPin,
+  Calendar,
+  Clock,
+  Edit,
+  Trash2,
+} from "lucide-react";
+import { useAutoRefresh } from "@/hooks/useAutoRefresh";
+import { useShowtimeManager } from "@/hooks/useShowtimeManager";
+import { type ShowtimeResponse } from "@/services/showtimeService";
+import { getAllCinemas, type Cinema } from "@/services/cinemaService";
+import { getRoomsByCinema, type Room } from "@/services/roomService";
+import { useNotificationStore } from "@/stores";
+import { format, parse, addMinutes } from "date-fns";
+import { ROUTES } from "@/constants/routes";
 
 export function ShowtimeList() {
-  const [filters, setFilters] = useState<FiltersType>({});
+  const navigate = useNavigate();
+  const addNotification = useNotificationStore((state) => state.addNotification);
 
-  // Filter showtimes based on active filters
-  const filteredShowtimes = useMemo(() => {
-    return mockShowtimes.filter((showtime) => {
-      // Room filter
-      if (filters.room && showtime.room !== filters.room) {
-        return false;
+  const {
+    showtimes,
+    setShowtimes,
+    loading,
+    saving,
+    confirmDialog,
+    loadData: loadShowtimes,
+    refreshShowtimes,
+    handleUpdateShowtime,
+    handleDeleteShowtime,
+    closeConfirmDialog,
+  } = useShowtimeManager();
+
+  const [cinemas, setCinemas] = useState<Cinema[]>([]);
+  const [rooms, setRooms] = useState<Room[]>([]);
+
+  // Filters
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [cinemaFilter, setCinemaFilter] = useState<string>("all");
+  const [roomFilter, setRoomFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Edit dialog
+  const [editDialog, setEditDialog] = useState<{
+    open: boolean;
+    showtime: ShowtimeResponse | null;
+    startTime: string;
+    endTime: string;
+    movieDuration: number;
+  }>({
+    open: false,
+    showtime: null,
+    startTime: "",
+    endTime: "",
+    movieDuration: 0,
+  });
+
+  useEffect(() => {
+    loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (cinemaFilter && cinemaFilter !== "all") {
+      loadRooms(cinemaFilter);
+    } else {
+      setRooms([]);
+      setRoomFilter("all");
+    }
+  }, [cinemaFilter]);
+
+  // Auto-refresh every 1 minute at exact minute marks (only when tab is visible)
+  useAutoRefresh({
+    onRefresh: async () => {
+      try {
+        await refreshShowtimes();
+      } catch (error) {
+        console.error("Auto-refresh failed:", error);
       }
+    },
+    interval: 60000, // 1 minute
+    enabled: true,
+    syncToMinute: true,
+  });
 
-      // Date filter
-      if (filters.date && showtime.date !== filters.date) {
-        return false;
-      }
-
-      // Search filter
-      if (filters.searchQuery) {
-        const query = filters.searchQuery.toLowerCase();
-        if (!showtime.movieTitle.toLowerCase().includes(query)) {
-          return false;
+  // Auto-calculate end time when start time changes in edit dialog
+  useEffect(() => {
+    if (editDialog.open && editDialog.startTime && editDialog.movieDuration > 0) {
+      try {
+        const start = parse(editDialog.startTime, "yyyy-MM-dd'T'HH:mm", new Date());
+        const end = addMinutes(start, editDialog.movieDuration);
+        const endTimeStr = format(end, "yyyy-MM-dd'T'HH:mm");
+        
+        if (editDialog.endTime !== endTimeStr) {
+          setEditDialog(prev => ({ ...prev, endTime: endTimeStr }));
         }
+      } catch (error) {
+        console.error("Failed to auto-calculate end time:", error);
       }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editDialog.startTime, editDialog.movieDuration, editDialog.open]);
 
-      return true;
+  const loadData = async () => {
+    try {
+      await loadShowtimes();
+      const cinemasData = await getAllCinemas();
+      setCinemas(cinemasData);
+    } catch (error) {
+      console.error("Failed to load data:", error);
+      addNotification({
+        type: "error",
+        title: "Error",
+        message: "Failed to load cinemas",
+      });
+    }
+  };
+
+  const loadRooms = async (cinemaId: string) => {
+    try {
+      const response = await getRoomsByCinema(cinemaId);
+      setRooms(response.data.result || []);
+    } catch (error) {
+      console.error("Failed to load rooms:", error);
+    }
+  };
+
+  const filteredShowtimes = showtimes.filter((showtime) => {
+    if (statusFilter !== "all" && showtime.status !== statusFilter) return false;
+    if (cinemaFilter !== "all" && showtime.cinemaId !== cinemaFilter) return false;
+    if (roomFilter !== "all" && showtime.roomId !== roomFilter) return false;
+    if (searchQuery && !showtime.movieName.toLowerCase().includes(searchQuery.toLowerCase()))
+      return false;
+    return true;
+  });
+
+  const stats = {
+    total: showtimes.length,
+    scheduled: showtimes.filter((s) => s.status === "SCHEDULED").length,
+    ongoing: showtimes.filter((s) => s.status === "ONGOING").length,
+    completed: showtimes.filter((s) => s.status === "COMPLETED").length,
+  };
+
+  const handleEdit = async (showtime: ShowtimeResponse) => {
+    // Calculate movie duration from existing start/end times
+    const start = new Date(showtime.startTime);
+    const end = new Date(showtime.endTime);
+    const durationMinutes = Math.round((end.getTime() - start.getTime()) / (1000 * 60));
+    
+    setEditDialog({
+      open: true,
+      showtime,
+      startTime: format(start, "yyyy-MM-dd'T'HH:mm"),
+      endTime: format(end, "yyyy-MM-dd'T'HH:mm"),
+      movieDuration: durationMinutes,
     });
-  }, [filters]);
-
-  const handleEdit = (showtime: Showtime) => {
-    console.log("Edit showtime:", showtime);
-    // TODO: Implement edit functionality
   };
 
-  const handleViewDetails = (showtime: Showtime) => {
-    console.log("View details:", showtime);
-    // TODO: Implement view details functionality
+  const handleSaveEdit = async () => {
+    if (!editDialog.showtime) return;
+
+    // Format datetime without timezone conversion (same as CreateShowtime)
+    const formatForBackend = (dateTimeString: string) => {
+      return dateTimeString + ":00"; // Add seconds
+    };
+
+    const payload = {
+      roomId: editDialog.showtime.roomId,
+      movieId: editDialog.showtime.movieId,
+      startTime: formatForBackend(editDialog.startTime),
+      endTime: formatForBackend(editDialog.endTime),
+    };
+
+    console.log("Updating showtime:", editDialog.showtime.id);
+    console.log("Update payload:", payload);
+
+    const success = await handleUpdateShowtime(editDialog.showtime.id, payload);
+
+    if (success) {
+      setEditDialog({ open: false, showtime: null, startTime: "", endTime: "", movieDuration: 0 });
+    }
   };
 
-  const handleAddShowtime = () => {
-    console.log("Add new showtime");
-    // TODO: Implement add showtime functionality
+  const getStatusBadge = (status: string) => {
+    const config = {
+      SCHEDULED: { label: "Scheduled", variant: "default" as const },
+      ONGOING: { label: "Ongoing", variant: "secondary" as const },
+      COMPLETED: { label: "Completed", variant: "outline" as const },
+    };
+    const { label, variant } = config[status as keyof typeof config] || config.SCHEDULED;
+    return <Badge variant={variant}>{label}</Badge>;
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between border-b border-border pb-4">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Lịch chiếu</h1>
-          <p className="text-muted-foreground mt-1">
-            Quản lý lịch chiếu phim theo phòng và thời gian
-          </p>
+      <div className="flex items-center justify-between">
+        <PageHeader
+          title="Showtime Management"
+          description="Manage movie showtimes by room and schedule"
+        />
+        <Button onClick={() => navigate(`${ROUTES.SHOWTIMES}/create`)} className="gap-2">
+          <Plus className="w-4 h-4" />
+          Add Showtime
+        </Button>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid gap-4 md:grid-cols-4">
+        <div className="rounded-lg border border-border bg-card p-6">
+          <div className="text-sm font-medium text-muted-foreground">Total</div>
+          <div className="mt-2 text-3xl font-bold text-foreground">{stats.total}</div>
         </div>
-        <AddShowtimeButton onClick={handleAddShowtime} />
+        <div className="rounded-lg border border-border bg-card p-6">
+          <div className="text-sm font-medium text-muted-foreground">Scheduled</div>
+          <div className="mt-2 text-3xl font-bold text-blue-600">{stats.scheduled}</div>
+        </div>
+        <div className="rounded-lg border border-border bg-card p-6">
+          <div className="text-sm font-medium text-muted-foreground">Ongoing</div>
+          <div className="mt-2 text-3xl font-bold text-green-600">{stats.ongoing}</div>
+        </div>
+        <div className="rounded-lg border border-border bg-card p-6">
+          <div className="text-sm font-medium text-muted-foreground">Completed</div>
+          <div className="mt-2 text-3xl font-bold text-gray-600">{stats.completed}</div>
+        </div>
       </div>
 
       {/* Filters */}
-      <ShowtimeFilters
-        filters={filters}
-        onFiltersChange={setFilters}
-        rooms={["Phòng 1", "Phòng 2", "Phòng 3"]}
-      />
+      <div className="rounded-lg border border-border bg-card p-6 space-y-4">
+        <h3 className="text-lg font-semibold text-foreground">Filters</h3>
+        <div className="grid gap-4 md:grid-cols-4">
+          <div className="space-y-2">
+            <Label>Search Movie</Label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by movie title..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+          </div>
 
-      {/* Showtimes Grid */}
-      {filteredShowtimes.length > 0 ? (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filteredShowtimes.map((showtime) => (
-            <ShowtimeCard
-              key={showtime.id}
-              showtime={showtime}
-              onEdit={handleEdit}
-              onViewDetails={handleViewDetails}
-            />
-          ))}
+          <div className="space-y-2">
+            <Label>Status</Label>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="SCHEDULED">Scheduled</SelectItem>
+                <SelectItem value="ONGOING">Ongoing</SelectItem>
+                <SelectItem value="COMPLETED">Completed</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Cinema</Label>
+            <Select value={cinemaFilter} onValueChange={setCinemaFilter}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                {cinemas.map((cinema) => (
+                  <SelectItem key={cinema.id} value={cinema.id}>
+                    {cinema.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Room</Label>
+            <Select
+              value={roomFilter}
+              onValueChange={setRoomFilter}
+              disabled={cinemaFilter === "all"}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={cinemaFilter === "all" ? "Select cinema first" : "Select room"} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                {rooms.map((room) => (
+                  <SelectItem key={room.id} value={room.id}>
+                    {room.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 p-12 text-center">
-          <p className="text-lg font-medium text-gray-900">
-            Không tìm thấy lịch chiếu
-          </p>
-          <p className="mt-1 text-sm text-gray-500">
-            Thử thay đổi bộ lọc hoặc thêm lịch chiếu mới
-          </p>
-        </div>
-      )}
+      </div>
+
+      {/* Table */}
+      <div className="rounded-lg border border-border bg-card">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Movie</TableHead>
+              <TableHead>Cinema & Room</TableHead>
+              <TableHead>Start Time</TableHead>
+              <TableHead>End Time</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  Loading...
+                </TableCell>
+              </TableRow>
+            ) : filteredShowtimes.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  No showtimes found
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredShowtimes.map((showtime) => (
+                <TableRow key={showtime.id}>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Film className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium">{showtime.movieName}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 text-sm">
+                        <MapPin className="h-3 w-3 text-muted-foreground" />
+                        <span>{showtime.cinemaName}</span>
+                      </div>
+                      <div className="text-sm text-muted-foreground">{showtime.roomName}</div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <span>{format(new Date(showtime.startTime), "dd/MM/yyyy HH:mm")}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <span>{format(new Date(showtime.endTime), "dd/MM/yyyy HH:mm")}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>{getStatusBadge(showtime.status)}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleEdit(showtime)}
+                        disabled={showtime.status !== "SCHEDULED"}
+                        className="gap-2"
+                      >
+                        <Edit className="h-4 w-4" />
+                        Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleDeleteShowtime(showtime)}
+                        disabled={showtime.status !== "SCHEDULED"}
+                        className="gap-2 text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Delete
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Edit Dialog */}
+      <Dialog open={editDialog.open} onOpenChange={(open) => setEditDialog({ ...editDialog, open })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Showtime</DialogTitle>
+            <DialogDescription>
+              Adjust the start time. End time will be calculated automatically based on movie duration ({editDialog.movieDuration} minutes).
+            </DialogDescription>
+          </DialogHeader>
+
+          {editDialog.showtime && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Movie</Label>
+                <Input value={editDialog.showtime.movieName} disabled />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Duration</Label>
+                <Input value={`${editDialog.movieDuration} minutes`} disabled />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Start Time *</Label>
+                <Input
+                  type="datetime-local"
+                  value={editDialog.startTime}
+                  onChange={(e) => setEditDialog({ ...editDialog, startTime: e.target.value })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>End Time</Label>
+                <Input
+                  type="datetime-local"
+                  value={editDialog.endTime}
+                  disabled
+                />
+                <p className="text-xs text-muted-foreground">
+                  Auto-calculated based on movie duration
+                </p>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialog({ open: false, showtime: null, startTime: "", endTime: "", movieDuration: 0 })}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveEdit} disabled={saving}>
+              {saving ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirm Delete Dialog */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={closeConfirmDialog}
+        onConfirm={confirmDialog.onConfirm}
+        title={confirmDialog.title}
+        description={confirmDialog.description}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="destructive"
+        loading={saving}
+      />
     </div>
   );
 }

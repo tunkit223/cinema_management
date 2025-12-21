@@ -1,5 +1,6 @@
 package com.theatermgnt.theatermgnt.cinema.dto.response;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import lombok.*;
@@ -17,5 +18,7 @@ public class CinemaResponse {
     String city;
     String phoneNumber;
     String managerId;
+    String managerName;
+    LocalDate managerDob;
     LocalDateTime createdAt;
 }

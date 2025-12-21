@@ -110,4 +110,11 @@ public class StaffService {
                 .map(staffMapper::toStaffResponse)
                 .toList();
     }
+
+    public List<StaffResponse> getStaffRoleManagerDontManageAnyCinema() {
+        return staffRepository.findByRoleAndNotManagingAnyCinema(PredefinedRole.MANAGER_ROLE)
+                .stream()
+                .map(staffMapper::toStaffResponse)
+                .toList();
+    }
 }
