@@ -95,3 +95,9 @@ export const getStaffsByCinemaWithRoleStaff = async (cinemaId: string) => {
     )
   );
 };
+
+export const getAvailableManagers = async (): Promise<StaffProfile[]> => {
+  return handleApiResponse<StaffProfile[]>(
+    httpClient.get<ApiResponse<StaffProfile[]>>(`${BASE_URL}/available-managers`)
+  );
+};
