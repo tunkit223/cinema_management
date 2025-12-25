@@ -5,6 +5,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import jakarta.transaction.Transactional;
 
@@ -16,6 +17,7 @@ import com.theatermgnt.theatermgnt.account.entity.Account;
 import com.theatermgnt.theatermgnt.account.repository.AccountRepository;
 import com.theatermgnt.theatermgnt.authentication.enums.AccountType;
 import com.theatermgnt.theatermgnt.booking.dto.request.CreateBookingRequest;
+import com.theatermgnt.theatermgnt.booking.dto.request.DiscountPointRequest;
 import com.theatermgnt.theatermgnt.booking.dto.response.BookingSummaryResponse;
 import com.theatermgnt.theatermgnt.booking.dto.response.CreateBookingResponse;
 import com.theatermgnt.theatermgnt.booking.entity.Booking;
@@ -31,6 +33,9 @@ import com.theatermgnt.theatermgnt.common.exception.AppException;
 import com.theatermgnt.theatermgnt.common.exception.ErrorCode;
 import com.theatermgnt.theatermgnt.customer.entity.Customer;
 import com.theatermgnt.theatermgnt.customer.repository.CustomerRepository;
+import com.theatermgnt.theatermgnt.customer.service.CustomerService;
+import com.theatermgnt.theatermgnt.movie.dto.response.MovieResponse;
+import com.theatermgnt.theatermgnt.movie.service.MovieService;
 import com.theatermgnt.theatermgnt.priceConfig.entity.PriceConfig;
 import com.theatermgnt.theatermgnt.priceConfig.repository.PriceConfigRepository;
 import com.theatermgnt.theatermgnt.screening.entity.Screening;
@@ -57,6 +62,9 @@ public class BookingServiceImpl implements BookingService {
     private final BookingSummaryMapper bookingSummaryMapper;
     private final SeatMapper seatMapper;
     private final PasswordEncoder passwordEncoder;
+    private final MovieService movieService;
+    private final CustomerService customerService;
+    private final DiscountService discountService;
 
     private static final Duration HOLD_DURATION = Duration.ofMinutes(10);
 
@@ -150,30 +158,72 @@ public class BookingServiceImpl implements BookingService {
             DayType dayType = DayType.from(screening.getStartTime().toLocalDate());
             PriceConfig priceConfig = priceConfigRepository.getPriceBySeatTypeIdAndDayTypeAndTimeSlot(
                     s.getSeatType().getId(), dayType, timeSlot);
-            if (priceConfig.getPrice() == null) {
-                throw new IllegalStateException("PriceConfig price is null for seatTypeId: "
-                        + s.getSeatType().getId()
-                        + ", dayType: " + dayType
-                        + ", timeSlot: " + timeSlot);
+            BigDecimal price;
+            if (priceConfig == null || priceConfig.getPrice() == null) {
+                price = seat.getSeat().getSeatType().getBasePriceModifier();
+            } else {
+                price = priceConfig.getPrice();
             }
-            subTotal = subTotal.add(priceConfig.getPrice());
+            subTotal = subTotal.add(price);
         }
         return subTotal;
     }
 
     @Override
-    public BookingSummaryResponse getBookingSummary(String bookingId) {
+    public BookingSummaryResponse getBookingSummary(UUID bookingId) {
         Booking booking = bookingRepository
                 .findById(bookingId)
                 .orElseThrow(() -> new IllegalArgumentException("Booking not found"));
 
-        List<ScreeningSeat> screeningSeats = screeningSeatRepository.findByBooking(bookingId);
-        List<BookingCombo> combo = bookingComboRepository.findByBookingId(bookingId);
+        List<ScreeningSeat> screeningSeats = screeningSeatRepository.findByBooking(bookingId.toString());
+        List<BookingCombo> combo = bookingComboRepository.findByBookingId(bookingId.toString());
+        MovieResponse movieResponse =
+                movieService.getMovieById(booking.getScreening().getMovie().getId());
 
         return bookingSummaryMapper.toSummaryResponse(
                 booking,
                 combo,
                 (screeningSeats.stream().map(ScreeningSeat::getSeat).toList())
-                        .stream().map(seatMapper::toSeatResponse).toList());
+                        .stream().map(seatMapper::toSeatResponse).toList(),
+                movieResponse);
+    }
+
+    @Override
+    public BookingSummaryResponse redeemPoints(UUID bookingId, DiscountPointRequest pointsToRedeem) {
+        Booking booking = bookingRepository
+                .findById(bookingId)
+                .orElseThrow(() -> new IllegalArgumentException("Booking not found"));
+
+        if (booking.getStatus() != BookingStatus.PENDING) {
+            throw new IllegalStateException("Only pending bookings can redeem points");
+        }
+
+        BigDecimal maxDiscountByPercent = booking.getTotalAmount().multiply(new BigDecimal("0.5"));
+        if (BigDecimal.valueOf(pointsToRedeem.getPointsToRedeem()).compareTo(maxDiscountByPercent) > 0) {
+            throw new IllegalArgumentException("Cannot redeem more than 50% of total amount");
+        }
+
+        if (pointsToRedeem.getPointsToRedeem()
+                > customerService
+                        .getLoyaltyPoints(booking.getCustomer().getId())
+                        .getLoyaltyPoints()) {
+            throw new IllegalArgumentException("Not enough loyalty points to redeem");
+        }
+
+        booking = discountService.applyDiscounts(booking, pointsToRedeem.getPointsToRedeem());
+
+        bookingRepository.save(booking);
+
+        List<ScreeningSeat> screeningSeats = screeningSeatRepository.findByBooking(bookingId.toString());
+        List<BookingCombo> combo = bookingComboRepository.findByBookingId(bookingId.toString());
+        MovieResponse movieResponse =
+                movieService.getMovieById(booking.getScreening().getMovie().getId());
+
+        return bookingSummaryMapper.toSummaryResponse(
+                booking,
+                combo,
+                (screeningSeats.stream().map(ScreeningSeat::getSeat).toList())
+                        .stream().map(seatMapper::toSeatResponse).toList(),
+                movieResponse);
     }
 }

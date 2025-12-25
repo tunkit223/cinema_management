@@ -6,9 +6,10 @@ import { use } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { generateSeats } from "@/lib/mock-data"
 import { getMovieById, mapMovieForDisplay, getScreeningSeatsByScreeningId, mapScreeningSeatToSeat, getScreeningById, mapScreeningToShowtime, getCombos, mapComboForDisplay, getComboItemsByComboId, mapComboItemDetail } from "@/lib/api-movie"
-import { createBooking } from "@/services/bookingService"
+import { createBooking, getBookingSummary, updateBookingCombos, redeemBookingPoints } from "@/services/bookingService"
+import type { BookingSummaryResponse } from "@/services/bookingService"
 import { getUserInfo, getToken } from "@/services/localStorageService"
-import { getMyInfo } from "@/services/customerService"
+import { getMyInfo, getCustomerLoyaltyPoints } from "@/services/customerService"
 import type { Seat, ComboItem, Showtime } from "@/lib/types"
 import SeatSelectionStep from "@/components/booking/seat-selection-step"
 import ComboSelectionStep from "@/components/booking/combo-selection-step"
@@ -35,6 +36,10 @@ export default function BookingPage({
   const [selectedCombos, setSelectedCombos] = useState<ComboItem[]>([])
   const [combos, setCombos] = useState<ComboItem[]>([])
   const [combosLoading, setCombosLoading] = useState(true)
+  const [bookingSummary, setBookingSummary] = useState<BookingSummaryResponse | null>(null)
+  const [isUpdatingCombos, setIsUpdatingCombos] = useState(false)
+  const [isLoadingSummary, setIsLoadingSummary] = useState(false)
+  const [customerPoints, setCustomerPoints] = useState(0)
   const [pointsUsed, setPointsUsed] = useState(0)
   const [pointsDiscount, setPointsDiscount] = useState(0)
   const [paymentSuccess, setPaymentSuccess] = useState(false)
@@ -180,6 +185,43 @@ export default function BookingPage({
     }
   }, [showtimeId])
 
+  // Load booking summary only when entering confirmation step (step 3)
+  useEffect(() => {
+    if (currentStep === 3 && bookingId) {
+      if (bookingSummary?.bookingId === bookingId) {
+        return
+      }
+      fetchBookingSummary(bookingId)
+    }
+  }, [currentStep, bookingId])
+
+  // Fetch customer loyalty points when entering confirmation step
+  useEffect(() => {
+    const fetchCustomerPoints = async () => {
+      try {
+        const token = getToken()
+        if (!token) return
+
+        let userInfo = getUserInfo()
+        if (!userInfo || (!userInfo.id && !userInfo.customerId)) {
+          userInfo = await getMyInfo()
+        }
+
+        const customerId = userInfo?.id || userInfo?.customerId
+        if (customerId) {
+          const points = await getCustomerLoyaltyPoints(customerId)
+          setCustomerPoints(points)
+        }
+      } catch (error: any) {
+        console.error('Error fetching customer loyalty points:', error)
+      }
+    }
+
+    if (currentStep === 3) {
+      fetchCustomerPoints()
+    }
+  }, [currentStep])
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background dark:bg-slate-950 flex items-center justify-center">
@@ -206,19 +248,63 @@ export default function BookingPage({
   }
 
   const seatPrice = showtime.price
-  const seatsTotal = selectedSeats.reduce((sum, seat) => sum + (seat.price || seatPrice), 0)
-  const comboTotal = selectedCombos.reduce((sum, combo) => sum + (combo.price * (combo.quantity || 1)), 0)
-  const subtotal = seatsTotal + comboTotal
+  const seatsTotal = bookingSummary
+    ? Number(bookingSummary.seatSubtotal ?? 0)
+    : selectedSeats.reduce((sum, seat) => sum + (seat.price || seatPrice), 0)
+  const comboTotal = bookingSummary
+    ? Number(bookingSummary.comboSubtotal ?? 0)
+    : selectedCombos.reduce((sum, combo) => sum + (combo.price * (combo.quantity || 1)), 0)
+  const subtotal = bookingSummary ? Number(bookingSummary.subTotal ?? seatsTotal + comboTotal) : seatsTotal + comboTotal
+  // Calculate total: use subtotal and subtract current pointsDiscount for real-time updates
+  // Don't use bookingSummary.totalAmount as it reflects the old discount from server
   const total = Math.max(0, subtotal - pointsDiscount)
 
+  const nextButtonLabel = isCreatingBooking
+    ? 'Creating booking...'
+    : isUpdatingCombos
+      ? 'Saving combos...'
+      : isLoadingSummary
+        ? 'Loading summary...'
+        : 'Next'
+
+  const summarySeatCount = bookingSummary?.seats?.length ?? selectedSeats.length
+  const summaryComboCount = bookingSummary?.combos?.length ?? selectedCombos.length
+
+  const fetchBookingSummary = async (id: string) => {
+    setIsLoadingSummary(true)
+    try {
+      const summary = await getBookingSummary(id)
+      setBookingSummary(summary)
+    } catch (error: any) {
+      console.error('Error fetching booking summary:', error?.response?.data || error.message || error)
+    } finally {
+      setIsLoadingSummary(false)
+    }
+  }
+
+  const getMaxRedeemablePoints = () => {
+    // Always use subtotal (before any discounts), never totalAmount
+    const subtotalValue = Number(bookingSummary?.subTotal ?? subtotal)
+    const fiftyPercentCap = Math.floor(subtotalValue * 0.5)
+    // Cap in points: can't redeem more points than available, and discount (points * 1000) can't exceed subtotal or 50% cap
+    const maxPointsBySubtotal = Math.floor(subtotalValue / 1000)
+    const maxPointsByFiftyCap = Math.floor(fiftyPercentCap / 1000)
+    return Math.max(0, Math.min(customerPoints, maxPointsBySubtotal, maxPointsByFiftyCap))
+  }
+
   const handleApplyPoints = (points: number) => {
-    // 1000 points = 1000 VND
-    const discount = Math.min(points, subtotal)
-    setPointsUsed(points)
-    setPointsDiscount(discount)
+    const maxRedeem = getMaxRedeemablePoints()
+    const safePoints = Math.min(points, maxRedeem)
+    setPointsUsed(safePoints)
+    // 1 point = 1000 VND discount
+    setPointsDiscount(safePoints * 1000)
   }
 
   const handleNextStep = async () => {
+    if (currentStep === 1 && selectedSeats.length === 0) {
+      return
+    }
+
     // Nếu đang ở step 1 và chưa tạo booking, thì tạo booking trước
     if (currentStep === 1 && !bookingId && selectedSeats.length > 0) {
       try {
@@ -275,6 +361,7 @@ export default function BookingPage({
         
         setBookingId(response.id)
         setBookingExpiredAt(response.expiredAt)
+        setBookingSummary(null)
         
         // Chuyển sang step tiếp theo
         setCurrentStep(currentStep + 1)
@@ -285,17 +372,69 @@ export default function BookingPage({
       } finally {
         setIsCreatingBooking(false)
       }
+    } else if (currentStep === 2) {
+      if (!bookingId) {
+        alert('Please create a booking first by selecting seats.')
+        return
+      }
+
+      try {
+        setIsUpdatingCombos(true)
+
+        const combosPayload = selectedCombos.map((combo) => ({
+          comboId: combo.id,
+          quantity: combo.quantity && combo.quantity > 0 ? combo.quantity : 1,
+        }))
+
+        await updateBookingCombos(bookingId, { combos: combosPayload })
+
+        setCurrentStep(currentStep + 1)
+      } catch (error: any) {
+        console.error('Error updating combos:', error)
+        alert(`Unable to update combos: ${error?.response?.data?.message || error.message || 'Please try again.'}`)
+      } finally {
+        setIsUpdatingCombos(false)
+      }
+    } else if (currentStep === 3) {
+      if (!bookingId) {
+        alert('Booking not found. Please go back and create booking again.')
+        return
+      }
+
+      try {
+        const maxRedeem = getMaxRedeemablePoints()
+        const pointsToRedeem = Math.min(pointsUsed, maxRedeem)
+
+        if (pointsToRedeem > 0) {
+          setIsLoadingSummary(true)
+          const summary = await redeemBookingPoints(bookingId, { pointsToRedeem })
+          setBookingSummary(summary)
+          setPointsUsed(pointsToRedeem)
+          // 1 point = 1000 VND discount
+          setPointsDiscount(pointsToRedeem * 1000)
+        }
+
+        setCurrentStep(currentStep + 1)
+      } catch (error: any) {
+        console.error('Error redeeming points:', error)
+        alert(`Unable to redeem points: ${error?.response?.data?.message || error.message || 'Please try again.'}`)
+      } finally {
+        setIsLoadingSummary(false)
+      }
     } else {
-      // Các bước khác thì chỉ cần chuyển step
+      // Các bước khác thì chỉ cần chuyển step, summary sẽ được gọi khi vào bước 3
       setCurrentStep(currentStep + 1)
     }
   }
+
 
   const handleBookingExpired = () => {
     alert('Booking has expired. Please select seats again.')
     // Reset state
     setBookingId(null)
     setBookingExpiredAt(null)
+    setBookingSummary(null)
+    setSelectedCombos([])
     setSelectedSeats([])
     setCurrentStep(1)
   }
@@ -405,8 +544,10 @@ export default function BookingPage({
                 pointsUsed={pointsUsed}
                 pointsDiscount={pointsDiscount}
                 total={total}
-                customerPoints={5000}
+                customerPoints={customerPoints}
                 onApplyPoints={handleApplyPoints}
+                bookingSummary={bookingSummary}
+                isLoadingSummary={isLoadingSummary}
               />
             )}
             {currentStep === 4 && (
@@ -436,12 +577,12 @@ export default function BookingPage({
 
               <div className="space-y-4 mb-6 pb-6 border-b border-border dark:border-slate-800">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Seats ({selectedSeats.length})</span>
+                  <span className="text-muted-foreground">Seats ({summarySeatCount})</span>
                   <span className="font-semibold">{seatsTotal.toLocaleString()} VND</span>
                 </div>
-                {selectedCombos.length > 0 && (
+                {summaryComboCount > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Combos ({selectedCombos.length})</span>
+                    <span className="text-muted-foreground">Combos ({summaryComboCount})</span>
                     <span className="font-semibold">{comboTotal.toLocaleString()} VND</span>
                   </div>
                 )}
@@ -472,11 +613,18 @@ export default function BookingPage({
                 {currentStep < 4 && (
                   <button
                     onClick={handleNextStep}
-                    disabled={(currentStep === 1 && selectedSeats.length === 0) || (currentStep === 3 && total === 0) || isCreatingBooking}
+                    disabled={
+                      (currentStep === 1 && selectedSeats.length === 0) ||
+                      (currentStep === 2 && !bookingId) ||
+                      (currentStep === 3 && total === 0) ||
+                      isCreatingBooking ||
+                      isUpdatingCombos ||
+                      isLoadingSummary
+                    }
                     className="w-full px-4 py-3 rounded-lg gradient-primary text-white font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isCreatingBooking ? 'Creating booking...' : 'Next'}
-                    {!isCreatingBooking && <ChevronRight size={20} />}
+                    {nextButtonLabel}
+                    {!isCreatingBooking && !isUpdatingCombos && !isLoadingSummary && <ChevronRight size={20} />}
                   </button>
                 )}
               </div>

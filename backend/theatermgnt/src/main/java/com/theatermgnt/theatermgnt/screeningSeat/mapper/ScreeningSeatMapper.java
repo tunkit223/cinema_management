@@ -40,7 +40,8 @@ public interface ScreeningSeatMapper {
             return null;
         }
         String seatTypeId = screeningSeat.getSeat().getSeatType().getId();
-        return priceMap.getOrDefault(seatTypeId, BigDecimal.ZERO);
+        return priceMap.getOrDefault(
+                seatTypeId, screeningSeat.getSeat().getSeatType().getBasePriceModifier());
     }
 
     void updateScreeningSeat(@MappingTarget ScreeningSeat screeningSeat, ScreeningSeatUpdateRequest request);

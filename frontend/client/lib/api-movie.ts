@@ -254,6 +254,24 @@ export async function getBookingSummary(bookingId: string) {
   return response.data
 }
 
+export async function updateBookingCombos(
+  bookingId: string,
+  data: {
+    combos: Array<{ comboId: string; quantity: number }>
+  }
+) {
+  const response = await api.put(`/bookings/${bookingId}/combos`, data)
+  return response.data
+}
+
+export async function redeemBookingPoints(
+  bookingId: string,
+  data: { pointsToRedeem: number }
+) {
+  const response = await api.post(`/bookings/${bookingId}/redeem-points`, data)
+  return response.data
+}
+
 // ==================== MAPPER ====================
 
 export function mapComboForDisplay(combo: any) {

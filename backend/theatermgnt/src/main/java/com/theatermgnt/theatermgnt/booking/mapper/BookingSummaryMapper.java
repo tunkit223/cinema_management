@@ -9,18 +9,18 @@ import com.theatermgnt.theatermgnt.booking.dto.response.BookingSummaryResponse;
 import com.theatermgnt.theatermgnt.booking.entity.Booking;
 import com.theatermgnt.theatermgnt.bookingCombo.dto.response.ComboSummaryResponse;
 import com.theatermgnt.theatermgnt.bookingCombo.entity.BookingCombo;
+import com.theatermgnt.theatermgnt.movie.dto.response.MovieResponse;
 import com.theatermgnt.theatermgnt.seat.dto.response.SeatResponse;
 
 @Mapper(componentModel = "spring")
 public interface BookingSummaryMapper {
 
     default BookingSummaryResponse toSummaryResponse(
-            Booking booking, List<BookingCombo> combos, List<SeatResponse> seats) {
+            Booking booking, List<BookingCombo> combos, List<SeatResponse> seats, MovieResponse movie) {
         BookingSummaryResponse res = new BookingSummaryResponse();
 
         res.setBookingId(booking.getId().toString());
         res.setStatus(booking.getStatus());
-        res.setExpiredAt(booking.getExpiredAt());
 
         res.setCombos(mapCombos(combos));
         res.setSeats(seats);
@@ -29,8 +29,10 @@ public interface BookingSummaryMapper {
         res.setSubTotal(booking.getSubtotal());
         res.setSeatSubtotal(booking.getSubtotal().subtract(comboSubtotal));
         res.setComboSubtotal(comboSubtotal);
-        res.setDiscount(booking.getDiscount() != null ? booking.getDiscount() : BigDecimal.ZERO);
         res.setTotalAmount(booking.getTotalAmount());
+
+        res.setStartTime(booking.getScreening().getStartTime());
+        res.setMovie(movie);
 
         return res;
     }

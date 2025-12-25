@@ -1,5 +1,7 @@
 package com.theatermgnt.theatermgnt.bookingCombo.controller;
 
+import java.util.UUID;
+
 import jakarta.validation.Valid;
 
 import org.springframework.web.bind.annotation.*;
@@ -19,7 +21,7 @@ public class BookingComboController {
 
     @PutMapping("/{bookingId}/combos")
     public ApiResponse<BookingPricingResponse> updateCombos(
-            @PathVariable String bookingId, @RequestBody @Valid UpdateBookingCombosRequest request) {
+            @PathVariable UUID bookingId, @RequestBody @Valid UpdateBookingCombosRequest request) {
         return ApiResponse.<BookingPricingResponse>builder()
                 .result(bookingComboService.updateCombos(bookingId, request))
                 .build();

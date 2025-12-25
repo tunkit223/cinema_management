@@ -2,6 +2,7 @@ package com.theatermgnt.theatermgnt.bookingCombo.service;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.UUID;
 
 import jakarta.transaction.Transactional;
 
@@ -31,11 +32,14 @@ public class BookingComboServiceImpl implements BookingComboService {
     private final BookingPricingMapper bookingPricingMapper;
 
     @Override
-    public BookingPricingResponse updateCombos(String bookingId, UpdateBookingCombosRequest request) {
+    public BookingPricingResponse updateCombos(UUID bookingId, UpdateBookingCombosRequest request) {
         Booking booking = getValidPendingBooking(bookingId);
 
+        BigDecimal oldComboSubtotal = bookingComboRepository.sumSubtotalByBookingId(bookingId.toString());
+        booking.setSubtotal(booking.getSubtotal().subtract(oldComboSubtotal));
+
         // Xóa tất cả các BookingCombo hiện có cho bookingId
-        bookingComboRepository.deleteByBookingId(bookingId);
+        bookingComboRepository.deleteByBookingId(bookingId.toString());
         BigDecimal comboSubtotal = BigDecimal.ZERO;
 
         // Tạo mới các BookingCombo từ request
@@ -51,8 +55,8 @@ public class BookingComboServiceImpl implements BookingComboService {
             BookingCombo bc = new BookingCombo(
                     null,
                     bookingId.toString(),
-                    combo.getName(),
                     item.getComboId(),
+                    combo.getName(),
                     item.getQuantity(),
                     unitPrice,
                     subtotal);
@@ -68,7 +72,7 @@ public class BookingComboServiceImpl implements BookingComboService {
         return bookingPricingMapper.toPricingResponse(booking);
     }
 
-    private Booking getValidPendingBooking(String bookingId) {
+    private Booking getValidPendingBooking(UUID bookingId) {
         Booking booking = bookingRepository.findById(bookingId).orElseThrow();
 
         if (booking.getStatus() != BookingStatus.PENDING) {
