@@ -9,9 +9,11 @@ interface ConfirmationStepProps {
   selectedSeats: Seat[]
   selectedCombos: ComboItem[]
   subtotal: number
-  discountAmount: number
+  pointsUsed?: number
+  pointsDiscount?: number
   total: number
-  onApplyDiscount: (code: string) => void
+  customerPoints?: number
+  onApplyPoints?: (pointsToUse: number) => void
 }
 
 export default function ConfirmationStep({
@@ -20,11 +22,14 @@ export default function ConfirmationStep({
   selectedSeats,
   selectedCombos,
   subtotal,
-  discountAmount,
+  pointsUsed = 0,
+  pointsDiscount = 0,
   total,
-  onApplyDiscount,
+  customerPoints = 0,
+  onApplyPoints,
 }: ConfirmationStepProps) {
-  const [discountCode, setDiscountCode] = useState("")
+  const [pointsInput, setPointsInput] = useState(pointsUsed)
+  const maxPointsCanUse = Math.min(customerPoints, Math.floor(subtotal / 1000)) // 1000 points = 1000 VND
 
   return (
     <div className="bg-card dark:bg-slate-900 border border-border dark:border-slate-800 rounded-xl p-8">
@@ -76,9 +81,9 @@ export default function ConfirmationStep({
             {selectedCombos.map((combo) => (
               <div key={combo.id} className="flex justify-between text-sm">
                 <span>
-                  {combo.icon} {combo.name}
+                  {combo.icon} {combo.name} x{combo.quantity || 1}
                 </span>
-                <span className="font-semibold">{combo.price.toLocaleString()} VND</span>
+                <span className="font-semibold">{(combo.price * (combo.quantity || 1)).toLocaleString()} VND</span>
               </div>
             ))}
           </div>
@@ -87,23 +92,34 @@ export default function ConfirmationStep({
 
       {/* Discount Code */}
       <div className="mb-8 pb-8 border-b border-border dark:border-slate-800">
-        <h3 className="font-bold mb-4">Apply Discount Code</h3>
+        <h3 className="font-bold mb-4">Use Loyalty Points</h3>
+        <div className="bg-purple-500/10 dark:bg-purple-900/20 border border-purple-500/30 rounded-lg p-4 mb-4">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm font-semibold">Available Points</span>
+            <span className="text-2xl font-bold text-purple-600">{customerPoints.toLocaleString()}</span>
+          </div>
+          <p className="text-xs text-muted-foreground">1,000 points = 1,000 VND discount</p>
+        </div>
         <div className="flex gap-2">
           <input
-            type="text"
-            value={discountCode}
-            onChange={(e) => setDiscountCode(e.target.value)}
-            placeholder="Enter discount code (e.g., SAVE20)"
+            type="number"
+            value={pointsInput}
+            onChange={(e) => {
+              const value = Math.min(Math.max(0, parseInt(e.target.value) || 0), maxPointsCanUse)
+              setPointsInput(value)
+            }}
+            placeholder="Enter points to redeem"
+            max={maxPointsCanUse}
             className="flex-1 px-4 py-2 rounded-lg border border-border dark:border-slate-700 bg-background dark:bg-slate-800 focus:outline-none focus:border-purple-500 transition-colors"
           />
           <button
-            onClick={() => onApplyDiscount(discountCode)}
+            onClick={() => onApplyPoints?.(pointsInput)}
             className="px-4 py-2 rounded-lg bg-purple-600 text-white font-semibold hover:bg-purple-700 transition-colors"
           >
             Apply
           </button>
         </div>
-        <p className="text-xs text-muted-foreground mt-2">Try: SAVE20 (20% off) or SAVE10 (10% off)</p>
+        <p className="text-xs text-muted-foreground mt-2">Maximum points you can use: {maxPointsCanUse.toLocaleString()}</p>
       </div>
 
       {/* Price Summary */}
@@ -112,10 +128,10 @@ export default function ConfirmationStep({
           <span className="text-muted-foreground">Subtotal</span>
           <span className="font-semibold">{subtotal.toLocaleString()} VND</span>
         </div>
-        {discountAmount > 0 && (
+        {pointsDiscount > 0 && (
           <div className="flex justify-between text-sm text-green-600">
-            <span>Discount</span>
-            <span>-{discountAmount.toLocaleString()} VND</span>
+            <span>Points Discount ({pointsUsed.toLocaleString()} points)</span>
+            <span>-{pointsDiscount.toLocaleString()} VND</span>
           </div>
         )}
         <div className="flex justify-between items-center pt-3 border-t border-border dark:border-slate-800">

@@ -1,5 +1,12 @@
 package com.theatermgnt.theatermgnt.customer.service;
 
+import java.util.List;
+
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+
 import com.theatermgnt.theatermgnt.account.entity.Account;
 import com.theatermgnt.theatermgnt.common.exception.AppException;
 import com.theatermgnt.theatermgnt.common.exception.ErrorCode;
@@ -9,16 +16,11 @@ import com.theatermgnt.theatermgnt.customer.dto.response.CustomerResponse;
 import com.theatermgnt.theatermgnt.customer.entity.Customer;
 import com.theatermgnt.theatermgnt.customer.mapper.CustomerMapper;
 import com.theatermgnt.theatermgnt.customer.repository.CustomerRepository;
+
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor

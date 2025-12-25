@@ -1,12 +1,12 @@
 package com.theatermgnt.theatermgnt.booking.dto.response;
 
+import java.math.BigDecimal;
+import java.util.UUID;
+
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
-
-import java.math.BigDecimal;
-import java.util.UUID;
 
 @Data
 @NoArgsConstructor
@@ -14,6 +14,4 @@ import java.util.UUID;
 public class BookingPricingResponse {
     UUID bookingId;
     BigDecimal subTotal;
-    BigDecimal discount;
-    BigDecimal totalAmount;
 }

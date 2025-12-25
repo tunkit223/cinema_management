@@ -1,10 +1,10 @@
 package com.theatermgnt.theatermgnt.schedule.dto.response;
 
-import lombok.*;
-import lombok.experimental.FieldDefaults;
-
 import java.time.LocalDate;
 import java.time.LocalTime;
+
+import lombok.*;
+import lombok.experimental.FieldDefaults;
 
 @Data
 @Builder
@@ -21,5 +21,3 @@ public class WorkScheduleResponse {
     LocalTime shiftEnd;
     LocalDate workDate;
 }
-
-

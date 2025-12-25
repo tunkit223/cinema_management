@@ -1,9 +1,10 @@
 package com.theatermgnt.theatermgnt.seat.repository;
 
-import com.theatermgnt.theatermgnt.seat.entity.Seat;
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.List;
+import com.theatermgnt.theatermgnt.seat.entity.Seat;
 
 public interface SeatRepository extends JpaRepository<Seat, String> {
     List<Seat> findByRoomId(String roomId);

@@ -1,14 +1,16 @@
 package com.theatermgnt.theatermgnt.movie.entity;
 
-import com.theatermgnt.theatermgnt.common.entity.BaseEntity;
-import com.theatermgnt.theatermgnt.common.enums.MovieStatus;
-import jakarta.persistence.*;
-import lombok.*;
-import lombok.experimental.FieldDefaults;
-
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
+
+import jakarta.persistence.*;
+
+import com.theatermgnt.theatermgnt.common.entity.BaseEntity;
+import com.theatermgnt.theatermgnt.common.enums.MovieStatus;
+
+import lombok.*;
+import lombok.experimental.FieldDefaults;
 
 @Getter
 @Setter
@@ -23,8 +25,10 @@ public class Movie extends BaseEntity {
     String description;
     Integer durationMinutes;
     String director;
+
     @Column(name = "movie_cast")
     String castMembers;
+
     String posterUrl;
     String trailerUrl;
     LocalDate releaseDate;

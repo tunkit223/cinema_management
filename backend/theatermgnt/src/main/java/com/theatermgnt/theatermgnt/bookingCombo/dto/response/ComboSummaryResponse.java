@@ -1,11 +1,11 @@
 package com.theatermgnt.theatermgnt.bookingCombo.dto.response;
 
+import java.math.BigDecimal;
+
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
-
-import java.math.BigDecimal;
 
 @Data
 @NoArgsConstructor

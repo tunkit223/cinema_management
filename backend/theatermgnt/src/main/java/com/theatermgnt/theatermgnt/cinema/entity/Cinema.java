@@ -1,12 +1,12 @@
 package com.theatermgnt.theatermgnt.cinema.entity;
 
-import com.theatermgnt.theatermgnt.staff.entity.Staff;
 import jakarta.persistence.*;
 
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
 import com.theatermgnt.theatermgnt.common.entity.BaseEntity;
+import com.theatermgnt.theatermgnt.staff.entity.Staff;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;

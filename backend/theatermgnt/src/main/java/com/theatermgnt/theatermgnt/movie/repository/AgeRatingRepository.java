@@ -1,9 +1,10 @@
 package com.theatermgnt.theatermgnt.movie.repository;
 
-import com.theatermgnt.theatermgnt.movie.entity.AgeRating;
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.Optional;
+import com.theatermgnt.theatermgnt.movie.entity.AgeRating;
 
 public interface AgeRatingRepository extends JpaRepository<AgeRating, String> {
     Optional<AgeRating> findByCode(String code);

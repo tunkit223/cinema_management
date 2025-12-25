@@ -1,19 +1,22 @@
 package com.theatermgnt.theatermgnt.equipment.controller;
 
-import com.theatermgnt.theatermgnt.equipment.dto.request.EquipmentCategoryCreationRequest;
-import com.theatermgnt.theatermgnt.equipment.dto.request.EquipmentCategoryUpdateRequest;
-import com.theatermgnt.theatermgnt.equipment.dto.response.EquipmentCategoryResponse;
-import com.theatermgnt.theatermgnt.equipment.service.EquipmentCategoryService;
+import java.util.List;
+
 import jakarta.validation.Valid;
-import lombok.AccessLevel;
-import lombok.RequiredArgsConstructor;
-import lombok.experimental.FieldDefaults;
-import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import com.theatermgnt.theatermgnt.equipment.dto.request.EquipmentCategoryCreationRequest;
+import com.theatermgnt.theatermgnt.equipment.dto.request.EquipmentCategoryUpdateRequest;
+import com.theatermgnt.theatermgnt.equipment.dto.response.EquipmentCategoryResponse;
+import com.theatermgnt.theatermgnt.equipment.service.EquipmentCategoryService;
+
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RestController
@@ -28,8 +31,7 @@ public class EquipmentCategoryController {
     public ResponseEntity<EquipmentCategoryResponse> createCategory(
             @Valid @RequestBody EquipmentCategoryCreationRequest request) {
         log.info("Creating new equipment category: {}", request.getName());
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(equipmentCategoryService.createCategory(request));
+        return ResponseEntity.status(HttpStatus.CREATED).body(equipmentCategoryService.createCategory(request));
     }
 
     @GetMapping
@@ -46,8 +48,7 @@ public class EquipmentCategoryController {
 
     @PutMapping("/{categoryId}")
     public ResponseEntity<EquipmentCategoryResponse> updateCategory(
-            @PathVariable String categoryId,
-            @Valid @RequestBody EquipmentCategoryUpdateRequest request) {
+            @PathVariable String categoryId, @Valid @RequestBody EquipmentCategoryUpdateRequest request) {
         log.info("Updating equipment category: {}", categoryId);
         return ResponseEntity.ok(equipmentCategoryService.updateCategory(categoryId, request));
     }

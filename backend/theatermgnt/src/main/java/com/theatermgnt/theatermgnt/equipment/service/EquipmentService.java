@@ -1,5 +1,10 @@
 package com.theatermgnt.theatermgnt.equipment.service;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+
 import com.theatermgnt.theatermgnt.common.exception.AppException;
 import com.theatermgnt.theatermgnt.common.exception.ErrorCode;
 import com.theatermgnt.theatermgnt.equipment.dto.request.EquipmentCreationRequest;
@@ -8,14 +13,11 @@ import com.theatermgnt.theatermgnt.equipment.dto.response.EquipmentResponse;
 import com.theatermgnt.theatermgnt.equipment.entity.Equipment;
 import com.theatermgnt.theatermgnt.equipment.mapper.EquipmentMapper;
 import com.theatermgnt.theatermgnt.equipment.repository.EquipmentRepository;
+
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Slf4j
 @Service
@@ -69,13 +71,14 @@ public class EquipmentService {
     }
 
     public EquipmentResponse getEquipment(String equipmentId) {
-        return equipmentMapper.toEquipmentResponse(
-                equipmentRepository.findById(equipmentId)
-                        .orElseThrow(() -> new AppException(ErrorCode.EQUIPMENT_NOT_EXISTED)));
+        return equipmentMapper.toEquipmentResponse(equipmentRepository
+                .findById(equipmentId)
+                .orElseThrow(() -> new AppException(ErrorCode.EQUIPMENT_NOT_EXISTED)));
     }
 
     public EquipmentResponse updateEquipment(String equipmentId, EquipmentUpdateRequest request) {
-        Equipment equipment = equipmentRepository.findById(equipmentId)
+        Equipment equipment = equipmentRepository
+                .findById(equipmentId)
                 .orElseThrow(() -> new AppException(ErrorCode.EQUIPMENT_NOT_EXISTED));
 
         equipmentMapper.updateEquipment(equipment, request);

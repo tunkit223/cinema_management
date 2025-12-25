@@ -1,5 +1,9 @@
 package com.theatermgnt.theatermgnt.movie.service;
 
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+
 import com.theatermgnt.theatermgnt.common.exception.AppException;
 import com.theatermgnt.theatermgnt.common.exception.ErrorCode;
 import com.theatermgnt.theatermgnt.movie.dto.request.CreateAgeRatingRequest;
@@ -7,13 +11,11 @@ import com.theatermgnt.theatermgnt.movie.dto.response.AgeRatingResponse;
 import com.theatermgnt.theatermgnt.movie.entity.AgeRating;
 import com.theatermgnt.theatermgnt.movie.mapper.AgeRatingMapper;
 import com.theatermgnt.theatermgnt.movie.repository.AgeRatingRepository;
+
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Slf4j
 @Service
@@ -49,9 +51,8 @@ public class AgeRatingService {
     }
 
     public AgeRatingResponse getAgeRatingById(String id) {
-        AgeRating ageRating = ageRatingRepository
-                .findById(id)
-                .orElseThrow(() -> new AppException(ErrorCode.AGERATING_NOT_EXISTED));
+        AgeRating ageRating =
+                ageRatingRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.AGERATING_NOT_EXISTED));
         return ageRatingMapper.toAgeRatingResponse(ageRating);
     }
 

@@ -3,8 +3,6 @@ package com.theatermgnt.theatermgnt.cinema.service;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import com.theatermgnt.theatermgnt.room.entity.Room;
-import com.theatermgnt.theatermgnt.room.repository.RoomRepository;
 import org.springframework.stereotype.Service;
 
 import com.theatermgnt.theatermgnt.cinema.dto.request.CinemaCreationRequest;
@@ -15,6 +13,8 @@ import com.theatermgnt.theatermgnt.cinema.mapper.CinemaMapper;
 import com.theatermgnt.theatermgnt.cinema.repository.CinemaRepository;
 import com.theatermgnt.theatermgnt.common.exception.AppException;
 import com.theatermgnt.theatermgnt.common.exception.ErrorCode;
+import com.theatermgnt.theatermgnt.room.entity.Room;
+import com.theatermgnt.theatermgnt.room.repository.RoomRepository;
 import com.theatermgnt.theatermgnt.staff.entity.Staff;
 import com.theatermgnt.theatermgnt.staff.repository.StaffRepository;
 
@@ -41,7 +41,8 @@ public class CinemaService {
         Cinema cinema = cinemaMapper.toCinemas(request);
         cinema.setCreatedAt(LocalDateTime.now());
         if (request.getManagerId() != null && !request.getManagerId().isEmpty()) {
-            Staff manager = staffRepository.findById(request.getManagerId())
+            Staff manager = staffRepository
+                    .findById(request.getManagerId())
                     .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
             cinema.setManager(manager);
         }
@@ -82,7 +83,8 @@ public class CinemaService {
             if (managerId.isEmpty()) {
                 cinema.setManager(null);
             } else {
-                Staff manager = staffRepository.findById(managerId)
+                Staff manager = staffRepository
+                        .findById(managerId)
                         .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
                 cinema.setManager(manager);
             }

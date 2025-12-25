@@ -6,5 +6,6 @@ import com.theatermgnt.theatermgnt.booking.dto.response.CreateBookingResponse;
 
 public interface BookingService {
     CreateBookingResponse createBooking(CreateBookingRequest request);
+
     BookingSummaryResponse getBookingSummary(String bookingId);
 }

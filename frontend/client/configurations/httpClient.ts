@@ -13,7 +13,13 @@ const httpClient = axios.create({
 // Request interceptor
 httpClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // Add any request interceptors here (e.g., adding auth token)
+    // Add auth token from localStorage
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("customer_token");
+      if (token && config.headers) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    }
     return config;
   },
   (error: AxiosError) => {

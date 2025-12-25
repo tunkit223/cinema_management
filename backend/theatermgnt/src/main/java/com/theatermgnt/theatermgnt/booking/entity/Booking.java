@@ -1,16 +1,17 @@
 package com.theatermgnt.theatermgnt.booking.entity;
 
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.UUID;
+
+import jakarta.persistence.*;
+
 import com.theatermgnt.theatermgnt.booking.enums.BookingStatus;
 import com.theatermgnt.theatermgnt.customer.entity.Customer;
 import com.theatermgnt.theatermgnt.screening.entity.Screening;
-import jakarta.persistence.*;
+
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-
-import java.math.BigDecimal;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.UUID;
 
 @Entity
 @FieldDefaults(level = AccessLevel.PRIVATE)
@@ -43,9 +44,6 @@ public class Booking {
     Instant expiredAt;
 
     public void recalculateTotal(BigDecimal comboSubtotal) {
-        this.totalAmount =
-                this.subtotal
-                        .add(comboSubtotal)
-                        .subtract(discount != null ? discount : BigDecimal.ZERO);
+        this.totalAmount = this.subtotal.add(comboSubtotal).subtract(discount != null ? discount : BigDecimal.ZERO);
     }
 }

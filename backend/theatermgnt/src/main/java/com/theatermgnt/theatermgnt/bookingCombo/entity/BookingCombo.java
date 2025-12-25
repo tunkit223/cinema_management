@@ -1,10 +1,11 @@
 package com.theatermgnt.theatermgnt.bookingCombo.entity;
 
+import java.math.BigDecimal;
+
 import jakarta.persistence.*;
+
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-
-import java.math.BigDecimal;
 
 @Entity
 @FieldDefaults(level = AccessLevel.PRIVATE)
@@ -14,7 +15,8 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @Table(name = "booking_combos")
 public class BookingCombo {
-    @Id @GeneratedValue(strategy = GenerationType.UUID)
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     String id;
 
     @Column(nullable = false)

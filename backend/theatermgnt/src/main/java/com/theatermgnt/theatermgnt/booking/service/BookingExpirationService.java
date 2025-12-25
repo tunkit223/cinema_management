@@ -1,16 +1,19 @@
 package com.theatermgnt.theatermgnt.booking.service;
 
+import java.time.Instant;
+import java.util.List;
+
+import jakarta.transaction.Transactional;
+
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+
 import com.theatermgnt.theatermgnt.booking.entity.Booking;
 import com.theatermgnt.theatermgnt.booking.enums.BookingStatus;
 import com.theatermgnt.theatermgnt.booking.repository.BookingRepository;
 import com.theatermgnt.theatermgnt.screeningSeat.repository.ScreeningSeatRepository;
-import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
 
-import java.time.Instant;
-import java.util.List;
+import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
@@ -24,8 +27,7 @@ public class BookingExpirationService {
 
         Instant now = Instant.now();
 
-        List<Booking> expiredBookings =
-                bookingRepository.findExpiredPendingBookings(now);
+        List<Booking> expiredBookings = bookingRepository.findExpiredPendingBookings(now);
 
         for (Booking booking : expiredBookings) {
 
@@ -33,8 +35,7 @@ public class BookingExpirationService {
             booking.setStatus(BookingStatus.EXPIRED);
 
             // 2. Release seat
-            screeningSeatRepository
-                    .releaseSeatsByBooking(booking.getId().toString());
+            screeningSeatRepository.releaseSeatsByBooking(booking.getId().toString());
         }
 
         bookingRepository.saveAll(expiredBookings);

@@ -1,22 +1,25 @@
 package com.theatermgnt.theatermgnt.bookingCombo.service;
 
+import java.math.BigDecimal;
+import java.time.Instant;
+
+import jakarta.transaction.Transactional;
+
+import org.springframework.stereotype.Service;
+
+import com.theatermgnt.theatermgnt.booking.dto.response.BookingPricingResponse;
 import com.theatermgnt.theatermgnt.booking.entity.Booking;
 import com.theatermgnt.theatermgnt.booking.enums.BookingStatus;
 import com.theatermgnt.theatermgnt.booking.mapper.BookingPricingMapper;
 import com.theatermgnt.theatermgnt.booking.repository.BookingRepository;
-import com.theatermgnt.theatermgnt.bookingCombo.entity.BookingCombo;
-import com.theatermgnt.theatermgnt.booking.dto.response.BookingPricingResponse;
 import com.theatermgnt.theatermgnt.bookingCombo.dto.request.ComboItemRequest;
 import com.theatermgnt.theatermgnt.bookingCombo.dto.request.UpdateBookingCombosRequest;
+import com.theatermgnt.theatermgnt.bookingCombo.entity.BookingCombo;
 import com.theatermgnt.theatermgnt.bookingCombo.repository.BookingComboRepository;
 import com.theatermgnt.theatermgnt.combo.entity.Combo;
 import com.theatermgnt.theatermgnt.combo.repository.ComboRepository;
-import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
-import java.time.Instant;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @Transactional
@@ -28,10 +31,7 @@ public class BookingComboServiceImpl implements BookingComboService {
     private final BookingPricingMapper bookingPricingMapper;
 
     @Override
-    public BookingPricingResponse updateCombos(
-            String bookingId,
-            UpdateBookingCombosRequest request
-    ) {
+    public BookingPricingResponse updateCombos(String bookingId, UpdateBookingCombosRequest request) {
         Booking booking = getValidPendingBooking(bookingId);
 
         // Xóa tất cả các BookingCombo hiện có cho bookingId
@@ -41,12 +41,12 @@ public class BookingComboServiceImpl implements BookingComboService {
         // Tạo mới các BookingCombo từ request
         for (ComboItemRequest item : request.getCombos()) {
 
-            Combo combo = comboRepository.findById(item.getComboId())
+            Combo combo = comboRepository
+                    .findById(item.getComboId())
                     .orElseThrow(() -> new IllegalStateException("Combo not found"));
 
             BigDecimal unitPrice = combo.getPrice();
-            BigDecimal subtotal =
-                    unitPrice.multiply(BigDecimal.valueOf(item.getQuantity()));
+            BigDecimal subtotal = unitPrice.multiply(BigDecimal.valueOf(item.getQuantity()));
 
             BookingCombo bc = new BookingCombo(
                     null,
@@ -55,27 +55,21 @@ public class BookingComboServiceImpl implements BookingComboService {
                     item.getComboId(),
                     item.getQuantity(),
                     unitPrice,
-                    subtotal
-            );
+                    subtotal);
 
             bookingComboRepository.save(bc);
             comboSubtotal = comboSubtotal.add(subtotal);
         }
 
-        //Update booking pricing
-        booking.setSubtotal(
-                booking.getSubtotal().add(comboSubtotal)
-        );
-        booking.setTotalAmount(
-                booking.getSubtotal().subtract(booking.getDiscount())
-        );
+        // Update booking pricing
+        booking.setSubtotal(booking.getSubtotal().add(comboSubtotal));
+        booking.setTotalAmount(booking.getSubtotal().subtract(booking.getDiscount()));
 
         return bookingPricingMapper.toPricingResponse(booking);
     }
 
     private Booking getValidPendingBooking(String bookingId) {
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow();
+        Booking booking = bookingRepository.findById(bookingId).orElseThrow();
 
         if (booking.getStatus() != BookingStatus.PENDING) {
             throw new IllegalStateException("Booking is not editable");

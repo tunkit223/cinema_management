@@ -1,5 +1,9 @@
 package com.theatermgnt.theatermgnt.movie.service;
 
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+
 import com.theatermgnt.theatermgnt.common.exception.AppException;
 import com.theatermgnt.theatermgnt.common.exception.ErrorCode;
 import com.theatermgnt.theatermgnt.movie.dto.request.CreateGenreRequest;
@@ -7,13 +11,11 @@ import com.theatermgnt.theatermgnt.movie.dto.response.GenreResponse;
 import com.theatermgnt.theatermgnt.movie.entity.Genre;
 import com.theatermgnt.theatermgnt.movie.mapper.GenreMapper;
 import com.theatermgnt.theatermgnt.movie.repository.GenreRepository;
+
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Slf4j
 @Service
@@ -50,14 +52,12 @@ public class GenreService {
     }
 
     public GenreResponse getGenreById(String id) {
-        Genre genre = genreRepository.findById(id)
-                .orElseThrow(() -> new AppException(ErrorCode.GENRE_NOT_EXISTED));
+        Genre genre = genreRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.GENRE_NOT_EXISTED));
         return genreMapper.toGenreResponse(genre);
     }
 
     public GenreResponse getGenreByName(String name) {
-        Genre genre = genreRepository.findByName(name)
-                .orElseThrow(() -> new AppException(ErrorCode.GENRE_NOT_EXISTED));
+        Genre genre = genreRepository.findByName(name).orElseThrow(() -> new AppException(ErrorCode.GENRE_NOT_EXISTED));
         return genreMapper.toGenreResponse(genre);
     }
 }

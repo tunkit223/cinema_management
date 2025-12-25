@@ -1,8 +1,10 @@
 package com.theatermgnt.theatermgnt.movie.entity;
 
-import com.theatermgnt.theatermgnt.common.entity.BaseEntity;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
+
+import com.theatermgnt.theatermgnt.common.entity.BaseEntity;
+
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 

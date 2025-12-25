@@ -1,5 +1,7 @@
 package com.theatermgnt.theatermgnt.movie.mapper;
 
+import org.mapstruct.*;
+
 import com.theatermgnt.theatermgnt.movie.dto.request.CreateMovieRequest;
 import com.theatermgnt.theatermgnt.movie.dto.request.UpdateMovieRequest;
 import com.theatermgnt.theatermgnt.movie.dto.response.MovieResponse;
@@ -7,7 +9,6 @@ import com.theatermgnt.theatermgnt.movie.dto.response.MovieSimpleResponse;
 import com.theatermgnt.theatermgnt.movie.entity.AgeRating;
 import com.theatermgnt.theatermgnt.movie.entity.Genre;
 import com.theatermgnt.theatermgnt.movie.entity.Movie;
-import org.mapstruct.*;
 
 @Mapper(
         componentModel = "spring",

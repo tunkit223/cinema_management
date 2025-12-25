@@ -1,11 +1,12 @@
 package com.theatermgnt.theatermgnt.movie.dto.response;
 
+import java.time.LocalDate;
+
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.theatermgnt.theatermgnt.common.enums.MovieStatus;
+
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-
-import java.time.LocalDate;
 
 /**
  * Response đơn giản cho danh sách phim

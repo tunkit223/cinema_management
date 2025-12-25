@@ -1,16 +1,18 @@
 package com.theatermgnt.theatermgnt.customer.controller;
 
+import java.util.List;
+
+import org.springframework.web.bind.annotation.*;
+
 import com.theatermgnt.theatermgnt.common.dto.response.ApiResponse;
 import com.theatermgnt.theatermgnt.customer.dto.request.CustomerProfileUpdateRequest;
 import com.theatermgnt.theatermgnt.customer.dto.response.CustomerResponse;
 import com.theatermgnt.theatermgnt.customer.service.CustomerService;
+
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RequestMapping("/customers")
 @RestController
