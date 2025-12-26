@@ -1,21 +1,19 @@
 package com.theatermgnt.theatermgnt.screening.service;
 
-import java.time.LocalDateTime;
-import java.util.List;
-
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.theatermgnt.theatermgnt.screening.entity.Screening;
 import com.theatermgnt.theatermgnt.screening.enums.ScreeningStatus;
 import com.theatermgnt.theatermgnt.screening.repository.ScreeningRepository;
 import com.theatermgnt.theatermgnt.screeningSeat.repository.ScreeningSeatRepository;
-
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -34,8 +32,8 @@ public class ScreeningStatusSchedulerService {
     public void updateScreeningStatus() {
         LocalDateTime now = LocalDateTime.now();
 
-        List<Screening> toOngoing =
-                screeningRepository.findByStatusAndStartTimeLessThanEqual(ScreeningStatus.SCHEDULED, now);
+        List<Screening> toOngoing = screeningRepository
+                .findByStatusAndStartTimeLessThanEqual(ScreeningStatus.SCHEDULED, now);
 
         if (!toOngoing.isEmpty()) {
             toOngoing.forEach(screening -> {
@@ -48,8 +46,8 @@ public class ScreeningStatusSchedulerService {
             screeningRepository.saveAll(toOngoing);
         }
 
-        List<Screening> toCompleted =
-                screeningRepository.findByStatusAndEndTimeLessThanEqual(ScreeningStatus.ONGOING, now);
+        List<Screening> toCompleted = screeningRepository
+                .findByStatusAndEndTimeLessThanEqual(ScreeningStatus.ONGOING, now);
 
         if (!toCompleted.isEmpty()) {
             toCompleted.forEach(screening -> {
@@ -59,6 +57,7 @@ public class ScreeningStatusSchedulerService {
             screeningRepository.saveAll(toCompleted);
         }
 
-        log.debug("Status update completed: {} to ONGOING, {} to COMPLETED", toOngoing.size(), toCompleted.size());
+        log.debug("Status update completed: {} to ONGOING, {} to COMPLETED",
+                toOngoing.size(), toCompleted.size());
     }
 }

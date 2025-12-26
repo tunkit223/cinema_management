@@ -1,7 +1,6 @@
 package com.theatermgnt.theatermgnt.equipment.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
-
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -13,6 +12,6 @@ import lombok.experimental.FieldDefaults;
 public class EquipmentCategoryCreationRequest {
     @NotBlank(message = "Category name is required")
     String name;
-
+    
     String description;
 }

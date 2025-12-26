@@ -1,9 +1,9 @@
 package com.theatermgnt.theatermgnt.screening.dto.response;
 
-import java.time.LocalDateTime;
-
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+
+import java.time.LocalDateTime;
 
 @Data
 @Builder
@@ -11,14 +11,14 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ScreeningResponse {
-    String id;
-    String movieId;
-    String movieName;
-    String roomId;
-    String roomName;
-    String cinemaId;
-    String cinemaName;
-    LocalDateTime startTime;
-    LocalDateTime endTime;
-    String status;
+     String id;
+     String movieId;
+     String movieName;
+     String roomId;
+     String roomName;
+     String cinemaId;
+     String cinemaName;
+     LocalDateTime startTime;
+     LocalDateTime endTime;
+     String status;
 }

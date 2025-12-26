@@ -1,5 +1,6 @@
 package com.theatermgnt.theatermgnt.cinema.entity;
 
+import com.theatermgnt.theatermgnt.staff.entity.Staff;
 import jakarta.persistence.*;
 
 import org.hibernate.annotations.SQLDelete;

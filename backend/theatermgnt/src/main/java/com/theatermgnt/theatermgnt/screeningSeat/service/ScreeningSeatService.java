@@ -46,12 +46,10 @@ public class ScreeningSeatService {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public ScreeningSeatResponse createScreeningSeat(ScreeningSeatCreationRequest request) {
-        Screening screening = screeningRepository
-                .findById(request.getScreeningId())
+        Screening screening = screeningRepository.findById(request.getScreeningId())
                 .orElseThrow(() -> new AppException(ErrorCode.SCREENING_NOT_EXISTED));
 
-        Seat seat = seatRepository
-                .findById(request.getSeatId())
+        Seat seat = seatRepository.findById(request.getSeatId())
                 .orElseThrow(() -> new AppException(ErrorCode.SEAT_NOT_EXISTED));
 
         if (screeningSeatRepository.existsByScreeningIdAndSeatId(request.getScreeningId(), request.getSeatId()))

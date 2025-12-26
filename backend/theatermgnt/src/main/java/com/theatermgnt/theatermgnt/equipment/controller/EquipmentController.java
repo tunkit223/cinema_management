@@ -1,22 +1,19 @@
 package com.theatermgnt.theatermgnt.equipment.controller;
 
-import java.util.List;
-
-import jakarta.validation.Valid;
-
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
 import com.theatermgnt.theatermgnt.equipment.dto.request.EquipmentCreationRequest;
 import com.theatermgnt.theatermgnt.equipment.dto.request.EquipmentUpdateRequest;
 import com.theatermgnt.theatermgnt.equipment.dto.response.EquipmentResponse;
 import com.theatermgnt.theatermgnt.equipment.service.EquipmentService;
-
+import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @Slf4j
 @RestController
@@ -28,9 +25,11 @@ public class EquipmentController {
     EquipmentService equipmentService;
 
     @PostMapping
-    public ResponseEntity<EquipmentResponse> createEquipment(@Valid @RequestBody EquipmentCreationRequest request) {
+    public ResponseEntity<EquipmentResponse> createEquipment(
+            @Valid @RequestBody EquipmentCreationRequest request) {
         log.info("Creating new equipment: {}", request.getName());
-        return ResponseEntity.status(HttpStatus.CREATED).body(equipmentService.createEquipment(request));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(equipmentService.createEquipment(request));
     }
 
     @GetMapping
@@ -65,14 +64,16 @@ public class EquipmentController {
 
     @GetMapping("/room/{roomId}/status/{status}")
     public ResponseEntity<List<EquipmentResponse>> getEquipmentByRoomAndStatus(
-            @PathVariable String roomId, @PathVariable String status) {
+            @PathVariable String roomId,
+            @PathVariable String status) {
         log.info("Fetching equipment for room: {} with status: {}", roomId, status);
         return ResponseEntity.ok(equipmentService.getEquipmentByRoomAndStatus(roomId, status));
     }
 
     @PutMapping("/{equipmentId}")
     public ResponseEntity<EquipmentResponse> updateEquipment(
-            @PathVariable String equipmentId, @Valid @RequestBody EquipmentUpdateRequest request) {
+            @PathVariable String equipmentId,
+            @Valid @RequestBody EquipmentUpdateRequest request) {
         log.info("Updating equipment: {}", equipmentId);
         return ResponseEntity.ok(equipmentService.updateEquipment(equipmentId, request));
     }

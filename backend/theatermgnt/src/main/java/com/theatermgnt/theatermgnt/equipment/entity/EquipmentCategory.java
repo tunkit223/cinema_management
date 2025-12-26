@@ -1,16 +1,13 @@
 package com.theatermgnt.theatermgnt.equipment.entity;
 
+import com.theatermgnt.theatermgnt.common.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
-
-import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.Where;
-
-import com.theatermgnt.theatermgnt.common.entity.BaseEntity;
-
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Where;
 
 @Setter
 @Getter
@@ -25,6 +22,6 @@ import lombok.experimental.FieldDefaults;
 public class EquipmentCategory extends BaseEntity {
     @Column(nullable = false, unique = true)
     String name;
-
+    
     String description;
 }

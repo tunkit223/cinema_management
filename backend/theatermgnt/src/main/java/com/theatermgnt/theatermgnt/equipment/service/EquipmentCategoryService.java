@@ -1,10 +1,5 @@
 package com.theatermgnt.theatermgnt.equipment.service;
 
-import java.time.LocalDateTime;
-import java.util.List;
-
-import org.springframework.stereotype.Service;
-
 import com.theatermgnt.theatermgnt.common.exception.AppException;
 import com.theatermgnt.theatermgnt.common.exception.ErrorCode;
 import com.theatermgnt.theatermgnt.equipment.dto.request.EquipmentCategoryCreationRequest;
@@ -13,11 +8,14 @@ import com.theatermgnt.theatermgnt.equipment.dto.response.EquipmentCategoryRespo
 import com.theatermgnt.theatermgnt.equipment.entity.EquipmentCategory;
 import com.theatermgnt.theatermgnt.equipment.mapper.EquipmentCategoryMapper;
 import com.theatermgnt.theatermgnt.equipment.repository.EquipmentCategoryRepository;
-
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -37,7 +35,8 @@ public class EquipmentCategoryService {
         category.setCreatedAt(LocalDateTime.now());
         category.setUpdatedAt(LocalDateTime.now());
 
-        return equipmentCategoryMapper.toEquipmentCategoryResponse(equipmentCategoryRepository.save(category));
+        return equipmentCategoryMapper.toEquipmentCategoryResponse(
+                equipmentCategoryRepository.save(category));
     }
 
     public List<EquipmentCategoryResponse> getCategories() {
@@ -47,20 +46,21 @@ public class EquipmentCategoryService {
     }
 
     public EquipmentCategoryResponse getCategory(String categoryId) {
-        return equipmentCategoryMapper.toEquipmentCategoryResponse(equipmentCategoryRepository
-                .findById(categoryId)
-                .orElseThrow(() -> new AppException(ErrorCode.EQUIPMENT_CATEGORY_NOT_EXISTED)));
+        return equipmentCategoryMapper.toEquipmentCategoryResponse(
+                equipmentCategoryRepository.findById(categoryId)
+                        .orElseThrow(() -> new AppException(ErrorCode.EQUIPMENT_CATEGORY_NOT_EXISTED)));
     }
 
-    public EquipmentCategoryResponse updateCategory(String categoryId, EquipmentCategoryUpdateRequest request) {
-        EquipmentCategory category = equipmentCategoryRepository
-                .findById(categoryId)
+    public EquipmentCategoryResponse updateCategory(String categoryId,
+            EquipmentCategoryUpdateRequest request) {
+        EquipmentCategory category = equipmentCategoryRepository.findById(categoryId)
                 .orElseThrow(() -> new AppException(ErrorCode.EQUIPMENT_CATEGORY_NOT_EXISTED));
 
         equipmentCategoryMapper.updateEquipmentCategory(category, request);
         category.setUpdatedAt(LocalDateTime.now());
 
-        return equipmentCategoryMapper.toEquipmentCategoryResponse(equipmentCategoryRepository.save(category));
+        return equipmentCategoryMapper.toEquipmentCategoryResponse(
+                equipmentCategoryRepository.save(category));
     }
 
     public void deleteCategory(String categoryId) {
