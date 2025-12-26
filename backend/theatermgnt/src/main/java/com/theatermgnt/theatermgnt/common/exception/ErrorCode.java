@@ -35,7 +35,8 @@ public enum ErrorCode {
     // ----
     CINEMA_EXISTED(2001, "Cinema existed", HttpStatus.BAD_REQUEST),
     CINEMA_NOT_EXISTED(2002, "Cinema not existed", HttpStatus.BAD_REQUEST),
-    CINEMA_HAS_ROOMS(2052, "Cannot delete cinema. Please delete all rooms in this cinema first", HttpStatus.BAD_REQUEST),
+    CINEMA_HAS_ROOMS(
+            2052, "Cannot delete cinema. Please delete all rooms in this cinema first", HttpStatus.BAD_REQUEST),
     ROOM_EXISTED(2003, "Room existed", HttpStatus.BAD_REQUEST),
     ROOM_NOT_EXISTED(2004, "Room not existed", HttpStatus.BAD_REQUEST),
     SEATTYPE_EXISTED(2005, "Seat type existed", HttpStatus.BAD_REQUEST),
@@ -57,13 +58,15 @@ public enum ErrorCode {
     SCREENING_TIME_OVERLAP(4005, "Already has the same screening's time", HttpStatus.BAD_REQUEST),
     SEAT_NOT_IN_ROOM(4006, "This seat is not in our rooms", HttpStatus.BAD_REQUEST),
     SCREENING_SEAT_INVALID_STATUS_CHANGE(4007, "Cannot change screening seat's status (SOLD)", HttpStatus.BAD_REQUEST),
-    SCREENING_SEAT_CANNOT_DELETE(4008, "Only screening seats with AVAILABLE status can be deleted", HttpStatus.BAD_REQUEST),
-    //AgeRating
+    SCREENING_SEAT_CANNOT_DELETE(
+            4008, "Only screening seats with AVAILABLE status can be deleted", HttpStatus.BAD_REQUEST),
+    // AgeRating
     AGERATING_EXISTED(2015, "Age rating existed", HttpStatus.BAD_REQUEST),
     AGERATING_NOT_EXISTED(2016, "Age rating not existed", HttpStatus.NOT_FOUND),
     INVALID_AGERATING_ID(2017, "Age rating ID must not exceed {max} characters", HttpStatus.BAD_REQUEST),
     INVALID_AGERATING_CODE(2018, "Age rating code must be between {min} and {max} characters", HttpStatus.BAD_REQUEST),
-    INVALID_AGERATING_DESCRIPTION(2019, "Age rating description must not exceed {max} characters", HttpStatus.BAD_REQUEST),
+    INVALID_AGERATING_DESCRIPTION(
+            2019, "Age rating description must not exceed {max} characters", HttpStatus.BAD_REQUEST),
     AGERATING_CODE_EXISTED(2036, "Age rating code existed", HttpStatus.BAD_REQUEST),
     // Genre
     GENRE_EXISTED(2020, "Genre existed", HttpStatus.BAD_REQUEST),
@@ -73,7 +76,7 @@ public enum ErrorCode {
     GENRE_NAME_REQUIRED(2024, "Genre name is required", HttpStatus.BAD_REQUEST),
     INVALID_GENRE_NAME(2025, "Genre name must not exceed {max} characters", HttpStatus.BAD_REQUEST),
     GENRE_NAME_EXISTED(2037, "Genre name existed", HttpStatus.BAD_REQUEST),
-    //Movie
+    // Movie
     MOVIE_EXISTED(2026, "Movie existed", HttpStatus.BAD_REQUEST),
     MOVIE_NOT_EXISTED(2027, "Movie not existed", HttpStatus.NOT_FOUND),
     INVALID_MOVIE_TITLE(2028, "Movie title must not exceed {max} characters", HttpStatus.BAD_REQUEST),
@@ -85,19 +88,19 @@ public enum ErrorCode {
     INVALID_TRAILER_URL(2034, "Trailer URL must be a valid URL", HttpStatus.BAD_REQUEST),
     INVALID_MOVIE_GENRES(2035, "Movie must have between {min} and {max} genres", HttpStatus.BAD_REQUEST),
 
-    //Work Schedule
+    // Work Schedule
     WORK_SCHEDULE_NOT_FOUND(2040, "Work schedule not found", HttpStatus.BAD_REQUEST),
-    SHIFT_NOT_FOUND(2041,"Shift not found", HttpStatus.BAD_REQUEST),
-    WORK_SCHEDULE_EXISTS(2042,"Work schedule already exists", HttpStatus.BAD_REQUEST),
-    STAFF_NOT_FOUND(2043,"Staff not found", HttpStatus.BAD_REQUEST),
-    UNAUTHORIZED_CINEMA_STAFF(2044,"Unauthorized cinema staff", HttpStatus.BAD_REQUEST),
-    SHIFT_TYPE_EXISTS(2045,"Shift type existed", HttpStatus.BAD_REQUEST),
-    SHIFT_TYPE_NOT_FOUND(2046,"Shift type  not found", HttpStatus.BAD_REQUEST),
-    INVALID_SHIFT_TIME_RANGE(2047,"Invalid shift time range", HttpStatus.BAD_REQUEST),
-    SHIFT_OVERLAP(2048,"Shift time overlap with existing shift", HttpStatus.BAD_REQUEST),
-    INVALID_WORK_DATE(2049,"Work date cannot be in the past", HttpStatus.BAD_REQUEST),
-    NOTHING_TO_UPDATE(2050,"Nothing to update", HttpStatus.BAD_REQUEST),
-    INVALID_WORK_SCHEDULE_REQUEST(2051,"Invalid work schedule request", HttpStatus.BAD_REQUEST),
+    SHIFT_NOT_FOUND(2041, "Shift not found", HttpStatus.BAD_REQUEST),
+    WORK_SCHEDULE_EXISTS(2042, "Work schedule already exists", HttpStatus.BAD_REQUEST),
+    STAFF_NOT_FOUND(2043, "Staff not found", HttpStatus.BAD_REQUEST),
+    UNAUTHORIZED_CINEMA_STAFF(2044, "Unauthorized cinema staff", HttpStatus.BAD_REQUEST),
+    SHIFT_TYPE_EXISTS(2045, "Shift type existed", HttpStatus.BAD_REQUEST),
+    SHIFT_TYPE_NOT_FOUND(2046, "Shift type  not found", HttpStatus.BAD_REQUEST),
+    INVALID_SHIFT_TIME_RANGE(2047, "Invalid shift time range", HttpStatus.BAD_REQUEST),
+    SHIFT_OVERLAP(2048, "Shift time overlap with existing shift", HttpStatus.BAD_REQUEST),
+    INVALID_WORK_DATE(2049, "Work date cannot be in the past", HttpStatus.BAD_REQUEST),
+    NOTHING_TO_UPDATE(2050, "Nothing to update", HttpStatus.BAD_REQUEST),
+    INVALID_WORK_SCHEDULE_REQUEST(2051, "Invalid work schedule request", HttpStatus.BAD_REQUEST),
 
     // Equipment
     EQUIPMENT_CATEGORY_EXISTED(2013, "Equipment category existed", HttpStatus.BAD_REQUEST),

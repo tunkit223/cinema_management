@@ -1,5 +1,10 @@
 package com.theatermgnt.theatermgnt.combo.service;
 
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.theatermgnt.theatermgnt.combo.dto.request.ComboCreationRequest;
 import com.theatermgnt.theatermgnt.combo.dto.request.ComboUpdateRequest;
 import com.theatermgnt.theatermgnt.combo.dto.response.ComboResponse;
@@ -9,14 +14,11 @@ import com.theatermgnt.theatermgnt.combo.repository.ComboItemRepository;
 import com.theatermgnt.theatermgnt.combo.repository.ComboRepository;
 import com.theatermgnt.theatermgnt.common.exception.AppException;
 import com.theatermgnt.theatermgnt.common.exception.ErrorCode;
+
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Slf4j
 @Service

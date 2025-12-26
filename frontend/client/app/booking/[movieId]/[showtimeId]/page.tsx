@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { use } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
@@ -50,6 +50,7 @@ export default function BookingPage({
   const [bookingId, setBookingId] = useState<string | null>(null)
   const [bookingExpiredAt, setBookingExpiredAt] = useState<string | null>(null)
   const [isCreatingBooking, setIsCreatingBooking] = useState(false)
+  const hasRunStep1Reset = useRef(false)
 
   // Save booking state to sessionStorage
   const saveBookingState = (state: any) => {
@@ -329,6 +330,12 @@ export default function BookingPage({
       setPointsDiscount(0)
       console.log('Booking summary reset for step 2')
     } else if (currentStep === 1 && showtimeId) {
+      // Skip the initial mount to avoid a duplicate seat fetch (causing timeout)
+      if (!hasRunStep1Reset.current) {
+        hasRunStep1Reset.current = true
+        return
+      }
+
       // Reset booking-related state without reloading seats to avoid timeout
       setBookingId(null)
       setBookingExpiredAt(null)
@@ -411,6 +418,22 @@ export default function BookingPage({
     }
   }, [currentStep])
 
+  // Update booking summary when combos change (step 2 onwards, if booking exists)
+  useEffect(() => {
+    const updateSummaryOnComboChange = async () => {
+      if (currentStep >= 2 && bookingId && selectedCombos.length >= 0) {
+        try {
+          console.log('Fetching updated booking summary due to combo change')
+          fetchBookingSummary(bookingId)
+        } catch (error: any) {
+          console.error('Error updating booking summary on combo change:', error)
+        }
+      }
+    }
+
+    updateSummaryOnComboChange()
+  }, [selectedCombos, bookingId, currentStep])
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background dark:bg-slate-950 flex items-center justify-center">
@@ -446,11 +469,12 @@ export default function BookingPage({
     ? Number(bookingSummary.comboSubtotal ?? 0)
     : selectedCombos.reduce((sum, combo) => sum + (combo.price * (combo.quantity || 1)), 0)
   const subtotal = useBookingSummary ? Number(bookingSummary.subTotal ?? seatsTotal + comboTotal) : seatsTotal + comboTotal
-  // Calculate total: use subtotal and subtract current pointsDiscount for real-time updates
-  // If bookingSummary has discountAmount, use it; otherwise use local pointsDiscount
-  const discount = useBookingSummary && bookingSummary.discountAmount !== undefined 
-    ? Number(bookingSummary.discountAmount)
-    : pointsDiscount
+  // Calculate total: prefer live pointsDiscount for immediate UI update; otherwise fallback to server discountAmount
+  const discount = pointsDiscount > 0
+    ? pointsDiscount
+    : (useBookingSummary && bookingSummary?.discountAmount !== undefined
+        ? Number(bookingSummary.discountAmount)
+        : 0)
   const total = Math.max(0, subtotal - discount)
 
   const nextButtonLabel = isCreatingBooking
