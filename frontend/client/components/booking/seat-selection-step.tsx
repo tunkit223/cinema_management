@@ -104,46 +104,23 @@ export default function SeatSelectionStep({ seats, selectedSeats, onSelectSeats,
                   const isSelected = selectedSeats.some((s) => s.id === seat.id)
                   const colorClass = getSeatColor(seat, isSelected)
                   const isCouple = seat.type === "couple"
-                  const prevSeat = rowSeats[index - 1]
-                  const nextSeat = rowSeats[index + 1]
-
-                  // Skip rendering if this is a right seat of a couple pair (it's part of previous button)
-                  if (isCouple && prevSeat && prevSeat.type === "couple" && prevSeat.number === seat.number - 1) {
-                    return null
-                  }
-
-                  const isCoupleStart = isCouple && nextSeat && nextSeat.type === "couple" && nextSeat.number === seat.number + 1
                   const seatLabel = getSeatLabel(seat)
-                  const nextSeatLabel = nextSeat ? getSeatLabel(nextSeat) : ""
 
                   return (
                     <button
                       key={seat.id}
                       onClick={() => {
                         handleSeatClick(seat)
-                        // If couple seat and clicking left seat, also select the right seat
-                        if (isCoupleStart && nextSeat) {
-                          const rightSeatSelected = selectedSeats.some((s) => s.id === nextSeat.id)
-                          const leftSeatSelected = selectedSeats.some((s) => s.id === seat.id)
-                          
-                          if (!leftSeatSelected && !rightSeatSelected) {
-                            // Select both
-                            onSelectSeats([...selectedSeats, seat, nextSeat])
-                          } else if (leftSeatSelected && rightSeatSelected) {
-                            // Deselect both
-                            onSelectSeats(selectedSeats.filter((s) => s.id !== seat.id && s.id !== nextSeat.id))
-                          }
-                        }
                       }}
-                      disabled={!seat.isAvailable || (isCoupleStart && !nextSeat?.isAvailable)}
+                      disabled={!seat.isAvailable}
                       className={`rounded transition-all font-semibold text-xs ${
-                        isCoupleStart 
-                          ? "w-16 h-8 flex items-center justify-center border-2 border-purple-200 dark:border-purple-300" 
+                        isCouple
+                          ? "w-18 h-8 flex items-center justify-center border-2 border-purple-200 dark:border-purple-300"
                           : "w-10 h-8"
                       } ${colorClass}`}
-                      title={`Seat ${seatLabel}${isCoupleStart ? ` & ${nextSeatLabel}` : ""} - ${getSeatTypeLabel(seat.type)}`}
+                      title={`Seat ${seatLabel} - ${getSeatTypeLabel(seat.type)}`}
                     >
-                      {isCoupleStart ? `${seatLabel}-${nextSeatLabel}` : seatLabel}
+                      {seatLabel}
                     </button>
                   )
                 })}
