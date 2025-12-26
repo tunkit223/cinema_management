@@ -1,24 +1,27 @@
 package com.theatermgnt.theatermgnt.customer.service;
 
-import com.theatermgnt.theatermgnt.account.entity.Account;
-import com.theatermgnt.theatermgnt.common.exception.AppException;
-import com.theatermgnt.theatermgnt.common.exception.ErrorCode;
-import com.theatermgnt.theatermgnt.customer.dto.request.CustomerAccountCreationRequest;
-import com.theatermgnt.theatermgnt.customer.dto.request.CustomerProfileUpdateRequest;
-import com.theatermgnt.theatermgnt.customer.dto.response.CustomerResponse;
-import com.theatermgnt.theatermgnt.customer.entity.Customer;
-import com.theatermgnt.theatermgnt.customer.mapper.CustomerMapper;
-import com.theatermgnt.theatermgnt.customer.repository.CustomerRepository;
-import lombok.AccessLevel;
-import lombok.RequiredArgsConstructor;
-import lombok.experimental.FieldDefaults;
-import lombok.extern.slf4j.Slf4j;
+import java.util.List;
+
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.util.List;
+import com.theatermgnt.theatermgnt.account.entity.Account;
+import com.theatermgnt.theatermgnt.common.exception.AppException;
+import com.theatermgnt.theatermgnt.common.exception.ErrorCode;
+import com.theatermgnt.theatermgnt.customer.dto.request.CustomerAccountCreationRequest;
+import com.theatermgnt.theatermgnt.customer.dto.request.CustomerProfileUpdateRequest;
+import com.theatermgnt.theatermgnt.customer.dto.response.CustomerLoyaltyPointsResponse;
+import com.theatermgnt.theatermgnt.customer.dto.response.CustomerResponse;
+import com.theatermgnt.theatermgnt.customer.entity.Customer;
+import com.theatermgnt.theatermgnt.customer.mapper.CustomerMapper;
+import com.theatermgnt.theatermgnt.customer.repository.CustomerRepository;
+
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
@@ -72,5 +75,14 @@ public class CustomerService {
                 customerRepository.findById(customerId).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
         customerMapper.updateCustomerProfile(customerToUpdate, request);
         return customerMapper.toCustomerResponse(customerRepository.save(customerToUpdate));
+    }
+
+    public CustomerLoyaltyPointsResponse getLoyaltyPoints(String customerId) {
+        Customer customer =
+                customerRepository.findById(customerId).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        return CustomerLoyaltyPointsResponse.builder()
+                .loyaltyPoints(customer.getLoyaltyPoints() != null ? customer.getLoyaltyPoints() : 0)
+                .build();
     }
 }

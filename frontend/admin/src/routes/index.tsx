@@ -7,7 +7,7 @@ import { Profile } from "@/pages/Profile/StaffProfile";
 import { PermissionList } from "@/pages/Permissions";
 import { RoleList } from "@/pages/Roles";
 import { MovieList } from "@/pages/Movies";
-import { ShowtimeList } from "@/pages/Showtimes";
+import { ShowtimeList, CreateShowtime } from "@/pages/Showtimes";
 import { TheaterList } from "@/pages/Cinemas";
 import { RoomList, CreateRoom, EditRoom } from "@/pages/Rooms";
 import { TicketList } from "@/pages/Tickets";
@@ -23,6 +23,9 @@ import { PERMISSIONS } from "@/constants/permissions";
 import { ROUTES } from "@/constants/routes";
 import { Navigate } from "react-router-dom";
 import { TicketBookingPage } from "@/pages/TicketBooking/TickKetBookingPage";
+import { WorkSchedulePage } from "@/pages/WorkSchedules/WorkSchedulePage";
+import { ShiftTypesPage } from "@/pages/WorkSchedules/ShiftTypesPage";
+import { EquipmentList } from "@/pages/Equipment/EquipmentList";
 
 export const routes = [
   {
@@ -75,6 +78,20 @@ export const routes = [
               {
                 index: true,
                 element: <ShowtimeList />,
+              },
+              {
+                path: "create",
+                element: (
+                  <ProtectedRoute
+                    requiredPermissions={[PERMISSIONS.SHOWTIME_CREATE]}
+                  />
+                ),
+                children: [
+                  {
+                    index: true,
+                    element: <CreateShowtime />,
+                  },
+                ],
               },
             ],
           },
@@ -145,6 +162,20 @@ export const routes = [
             ],
           },
           {
+            path: `${ROUTES.EQUIPMENT}`,
+            element: (
+                <ProtectedRoute
+                    requiredPermissions={[PERMISSIONS.EQUIPMENT_READ]}
+                />
+            ),
+            children: [
+              {
+                index: true,
+                element: <EquipmentList />,
+              },
+            ],
+          },
+          {
             path: `${ROUTES.ROLES}`,
             element: (
               <ProtectedRoute requiredPermissions={[PERMISSIONS.ROLE_READ]} />
@@ -193,6 +224,34 @@ export const routes = [
               {
                 index: true,
                 element: <StaffList />,
+              },
+            ],
+          },
+          {
+            path: `${ROUTES.WORK_SCHEDULES}`,
+            element: (
+              <ProtectedRoute
+                requiredPermissions={[PERMISSIONS.WORK_SCHEDULE_READ]}
+              />
+            ),
+            children: [
+              {
+                index: true,
+                element: <WorkSchedulePage />,
+              },
+            ],
+          },
+          {
+            path: `${ROUTES.SHIFT_TYPES}`,
+            element: (
+              <ProtectedRoute
+                requiredPermissions={[PERMISSIONS.WORK_SCHEDULE_READ]}
+              />
+            ),
+            children: [
+              {
+                index: true,
+                element: <ShiftTypesPage />,
               },
             ],
           },

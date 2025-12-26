@@ -86,7 +86,7 @@ export default function SuccessStep({ movie, showtime, selectedSeats, selectedCo
             <div className="flex justify-between text-sm">
               <span>Combos ({selectedCombos.length})</span>
               <span className="font-semibold">
-                {selectedCombos.reduce((sum, c) => sum + c.price, 0).toLocaleString()} VND
+                {selectedCombos.reduce((sum, c) => sum + c.price * (c.quantity || 1), 0).toLocaleString()} VND
               </span>
             </div>
           )}

@@ -13,6 +13,10 @@ import com.theatermgnt.theatermgnt.cinema.mapper.CinemaMapper;
 import com.theatermgnt.theatermgnt.cinema.repository.CinemaRepository;
 import com.theatermgnt.theatermgnt.common.exception.AppException;
 import com.theatermgnt.theatermgnt.common.exception.ErrorCode;
+import com.theatermgnt.theatermgnt.room.entity.Room;
+import com.theatermgnt.theatermgnt.room.repository.RoomRepository;
+import com.theatermgnt.theatermgnt.staff.entity.Staff;
+import com.theatermgnt.theatermgnt.staff.repository.StaffRepository;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -26,8 +30,9 @@ import lombok.extern.slf4j.Slf4j;
 public class CinemaService {
 
     CinemaRepository cinemaRepository;
-
+    StaffRepository staffRepository;
     CinemaMapper cinemaMapper;
+    RoomRepository roomRepository;
 
     public CinemaResponse createCinema(CinemaCreationRequest request) {
 
@@ -35,6 +40,12 @@ public class CinemaService {
 
         Cinema cinema = cinemaMapper.toCinemas(request);
         cinema.setCreatedAt(LocalDateTime.now());
+        if (request.getManagerId() != null && !request.getManagerId().isEmpty()) {
+            Staff manager = staffRepository
+                    .findById(request.getManagerId())
+                    .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+            cinema.setManager(manager);
+        }
 
         return cinemaMapper.toCinemaResponse(cinemaRepository.save(cinema));
     }
@@ -51,6 +62,13 @@ public class CinemaService {
     }
 
     public void deleteCinema(String cinemaId) {
+        if (!cinemaRepository.existsById(cinemaId)) {
+            throw new AppException(ErrorCode.CINEMA_NOT_EXISTED);
+        }
+        List<Room> rooms = roomRepository.findByCinemaId(cinemaId);
+        if (!rooms.isEmpty()) {
+            throw new AppException(ErrorCode.CINEMA_HAS_ROOMS);
+        }
         cinemaRepository.deleteById(cinemaId);
     }
 
@@ -60,6 +78,17 @@ public class CinemaService {
 
         cinemaMapper.updateCinema(cinema, request);
 
+        String managerId = request.getManagerId();
+        if (managerId != null) {
+            if (managerId.isEmpty()) {
+                cinema.setManager(null);
+            } else {
+                Staff manager = staffRepository
+                        .findById(managerId)
+                        .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                cinema.setManager(manager);
+            }
+        }
         return cinemaMapper.toCinemaResponse(cinemaRepository.save(cinema));
     }
 }

@@ -1,15 +1,17 @@
 package com.theatermgnt.theatermgnt.movie.dto.request;
 
-import com.theatermgnt.theatermgnt.common.enums.MovieStatus;
+import java.time.LocalDate;
+import java.util.Set;
+
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+
+import com.theatermgnt.theatermgnt.common.enums.MovieStatus;
+
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-
-import java.time.LocalDate;
-import java.util.Set;
 
 @Data
 @Builder

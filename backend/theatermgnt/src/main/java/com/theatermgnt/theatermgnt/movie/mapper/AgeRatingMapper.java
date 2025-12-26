@@ -1,12 +1,13 @@
 package com.theatermgnt.theatermgnt.movie.mapper;
 
-import com.theatermgnt.theatermgnt.movie.dto.request.CreateAgeRatingRequest;
-import com.theatermgnt.theatermgnt.movie.dto.response.AgeRatingResponse;
-import com.theatermgnt.theatermgnt.movie.entity.AgeRating;
+import java.util.List;
+
 import org.mapstruct.Mapper;
 import org.mapstruct.ReportingPolicy;
 
-import java.util.List;
+import com.theatermgnt.theatermgnt.movie.dto.request.CreateAgeRatingRequest;
+import com.theatermgnt.theatermgnt.movie.dto.response.AgeRatingResponse;
+import com.theatermgnt.theatermgnt.movie.entity.AgeRating;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface AgeRatingMapper {
