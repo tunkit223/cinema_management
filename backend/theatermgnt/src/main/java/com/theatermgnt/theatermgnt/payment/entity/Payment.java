@@ -4,8 +4,7 @@ import com.theatermgnt.theatermgnt.payment.enums.PaymentStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
-
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -21,35 +20,31 @@ public class Payment {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
     
-    @Column(nullable = false, unique = true)
-    private String txnRef; // Transaction reference (order ID)
+    @Column(nullable = false)
+    private String invoiceId; // Foreign key to Invoice
     
     @Column(nullable = false)
-    private Long amount; // VND amount (in cents, VNPay requires * 100)
+    private String paymentMethodId; // Foreign key to PaymentMethod
     
-    private String orderInfo;
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal amount; // VND amount
+    
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private PaymentType paymentType; // booking, refund
+    
+    @Column(unique = true)
+    private String transactionCode; // VNPay txnRef or bank transaction ID
     
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private PaymentStatus status;
     
-    private String bankCode;
-    private String bankTranNo;
-    private String cardType;
-    private String paymentDate;
-    private String vnpayTransactionNo;
-    private String responseCode;
-    private String transactionStatus;
+    private String description;
     
-    private String customerId;
-    
-    @Column(columnDefinition = "TEXT")
-    private String rawCallbackData;
+    private LocalDateTime paymentDate;
     
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
-    
-    @UpdateTimestamp
-    private LocalDateTime updatedAt;
 }

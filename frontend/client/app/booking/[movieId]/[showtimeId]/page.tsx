@@ -737,6 +737,7 @@ export default function BookingPage({
             )}
             {currentStep === 4 && (
               <PaymentStep
+                bookingId={bookingId!}
                 total={total}
                 onPaymentSuccess={() => {
                   setPaymentSuccess(true)

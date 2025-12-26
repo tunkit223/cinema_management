@@ -36,6 +36,9 @@ import com.theatermgnt.theatermgnt.customer.repository.CustomerRepository;
 import com.theatermgnt.theatermgnt.customer.service.CustomerService;
 import com.theatermgnt.theatermgnt.movie.dto.response.MovieResponse;
 import com.theatermgnt.theatermgnt.movie.service.MovieService;
+import com.theatermgnt.theatermgnt.payment.dto.request.CreateInvoiceRequest;
+import com.theatermgnt.theatermgnt.payment.dto.response.InvoiceResponse;
+import com.theatermgnt.theatermgnt.payment.service.InvoiceService;
 import com.theatermgnt.theatermgnt.priceConfig.entity.PriceConfig;
 import com.theatermgnt.theatermgnt.priceConfig.repository.PriceConfigRepository;
 import com.theatermgnt.theatermgnt.screening.entity.Screening;
@@ -46,10 +49,12 @@ import com.theatermgnt.theatermgnt.seat.entity.Seat;
 import com.theatermgnt.theatermgnt.seat.mapper.SeatMapper;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class BookingServiceImpl implements BookingService {
     private final BookingRepository bookingRepository;
     private final AccountRepository accountRepository;
@@ -65,6 +70,7 @@ public class BookingServiceImpl implements BookingService {
     private final MovieService movieService;
     private final CustomerService customerService;
     private final DiscountService discountService;
+    private final InvoiceService invoiceService;
 
     private static final Duration HOLD_DURATION = Duration.ofMinutes(10);
 
@@ -225,5 +231,35 @@ public class BookingServiceImpl implements BookingService {
                 (screeningSeats.stream().map(ScreeningSeat::getSeat).toList())
                         .stream().map(seatMapper::toSeatResponse).toList(),
                 movieResponse);
+    }
+    
+    @Override
+    public InvoiceResponse createInvoiceForBooking(UUID bookingId) {
+        log.info("Creating invoice for booking: {}", bookingId);
+        
+        Booking booking = bookingRepository
+                .findById(bookingId)
+                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_EXISTED));
+        
+        CreateInvoiceRequest invoiceRequest = CreateInvoiceRequest.builder()
+                .bookingId(bookingId.toString())
+                .build();
+        
+        return invoiceService.createInvoice(invoiceRequest);
+    }
+    
+    @Override
+    public void confirmBookingPayment(String bookingId) {
+        log.info("Confirming booking payment for: {}", bookingId);
+        
+        Booking booking = bookingRepository
+                .findById(UUID.fromString(bookingId))
+                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_EXISTED));
+        
+        // Update booking status to CONFIRMED
+        booking.setStatus(BookingStatus.CONFIRM);
+        bookingRepository.save(booking);
+        
+        log.info("Booking {} confirmed", bookingId);
     }
 }

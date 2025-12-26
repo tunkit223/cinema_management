@@ -1,10 +1,8 @@
 package com.theatermgnt.theatermgnt.payment.controller;
 
-import com.theatermgnt.theatermgnt.payment.dto.request.PaymentRequest;
-import com.theatermgnt.theatermgnt.payment.dto.response.PaymentResponse;
+import com.theatermgnt.theatermgnt.payment.dto.response.PaymentDetailsResponse;
 import com.theatermgnt.theatermgnt.payment.service.PaymentService;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -22,15 +20,15 @@ public class PaymentController {
     private final PaymentService paymentService;
 
     /**
-     * Create VNPay payment URL
-     * POST /api/theater-mgnt/payment/create
+     * Create VNPay payment URL for invoice
+     * POST /api/theater-mgnt/payment/vnpay/{invoiceId}
      */
-    @PostMapping("/create")
-    public ResponseEntity<PaymentResponse> createPayment(
-            @Valid @RequestBody PaymentRequest request,
+    @PostMapping("/vnpay/{invoiceId}")
+    public ResponseEntity<PaymentDetailsResponse> createVNPayPayment(
+            @PathVariable String invoiceId,
             HttpServletRequest httpRequest) {
-        log.info("Creating payment for order: {}", request.getOrderId());
-        PaymentResponse response = paymentService.createPayment(request, httpRequest);
+        log.info("Creating VNPay payment for invoice: {}", invoiceId);
+        PaymentDetailsResponse response = paymentService.createVNPayPayment(invoiceId, httpRequest);
         return ResponseEntity.ok(response);
     }
 
@@ -40,7 +38,7 @@ public class PaymentController {
      */
     @GetMapping("/vnpay-return")
     public ResponseEntity<Map<String, Object>> vnpayReturn(@RequestParam Map<String, String> params) {
-        log.info("VNPay return callback: {}", params);
+        log.info("VNPay return callback");
         Map<String, Object> response = paymentService.handleVNPayCallback(params);
         return ResponseEntity.ok(response);
     }
@@ -51,7 +49,7 @@ public class PaymentController {
      */
     @GetMapping("/vnpay-ipn")
     public ResponseEntity<Map<String, Object>> vnpayIPN(@RequestParam Map<String, String> params) {
-        log.info("VNPay IPN callback: {}", params);
+        log.info("VNPay IPN callback");
         Map<String, Object> response = paymentService.handleVNPayIPN(params);
         return ResponseEntity.ok(response);
     }
