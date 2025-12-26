@@ -15,6 +15,8 @@ import com.theatermgnt.theatermgnt.seat.entity.Seat;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.time.Instant;
+
 @Setter
 @Getter
 @NoArgsConstructor
