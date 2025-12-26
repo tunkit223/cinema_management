@@ -21,6 +21,7 @@ public interface BookingSummaryMapper {
 
         res.setBookingId(booking.getId().toString());
         res.setStatus(booking.getStatus());
+        res.setExpiredAt(booking.getExpiredAt());
 
         res.setCombos(mapCombos(combos));
         res.setSeats(seats);
@@ -29,6 +30,7 @@ public interface BookingSummaryMapper {
         res.setSubTotal(booking.getSubtotal());
         res.setSeatSubtotal(booking.getSubtotal().subtract(comboSubtotal));
         res.setComboSubtotal(comboSubtotal);
+        res.setDiscountAmount(booking.getDiscount());
         res.setTotalAmount(booking.getTotalAmount());
 
         res.setStartTime(booking.getScreening().getStartTime());

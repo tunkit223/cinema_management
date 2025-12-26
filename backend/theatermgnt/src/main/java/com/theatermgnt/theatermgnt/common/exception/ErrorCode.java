@@ -107,6 +107,12 @@ public enum ErrorCode {
     EQUIPMENT_CATEGORY_NOT_EXISTED(2014, "Equipment category not existed", HttpStatus.BAD_REQUEST),
     EQUIPMENT_EXISTED(2015, "Equipment existed", HttpStatus.BAD_REQUEST),
     EQUIPMENT_NOT_EXISTED(2016, "Equipment not existed", HttpStatus.BAD_REQUEST),
+
+    // booking
+    BOOKING_NOT_EXISTED(2060, "Booking not existed", HttpStatus.NOT_FOUND),
+    INSUFFICIENT_LOYALTY_POINTS(2061, "Insufficient loyalty points", HttpStatus.BAD_REQUEST),
+    SCREENING_SEATS_NOT_AVAILABLE(2062, "One or more selected seats are not available", HttpStatus.BAD_REQUEST),
+
     // -----
     CANNOT_SEND_EMAIL(3001, "Cannot send email", HttpStatus.BAD_REQUEST),
     ;

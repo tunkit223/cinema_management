@@ -80,7 +80,7 @@ public class BookingServiceImpl implements BookingService {
         int lockedCount = screeningSeatRepository.lockSeats(request.getScreeningSeatIds(), expiredAt);
 
         if (lockedCount != request.getScreeningSeatIds().size()) {
-            throw new IllegalStateException("Some seats are not available");
+            throw new AppException(ErrorCode.SCREENING_NOT_EXISTED);
         }
 
         List<ScreeningSeat> seats = screeningSeatRepository.findAllById(request.getScreeningSeatIds());
@@ -113,7 +113,7 @@ public class BookingServiceImpl implements BookingService {
         if (request.getCustomerId() != null) {
             return customerRepository
                     .findById(request.getCustomerId())
-                    .orElseThrow(() -> new IllegalArgumentException("Customer not found"));
+                    .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
         }
 
         // Kiểm tra Account tồn tại
@@ -192,7 +192,7 @@ public class BookingServiceImpl implements BookingService {
     public BookingSummaryResponse redeemPoints(UUID bookingId, DiscountPointRequest pointsToRedeem) {
         Booking booking = bookingRepository
                 .findById(bookingId)
-                .orElseThrow(() -> new IllegalArgumentException("Booking not found"));
+                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_EXISTED));
 
         if (booking.getStatus() != BookingStatus.PENDING) {
             throw new IllegalStateException("Only pending bookings can redeem points");
@@ -207,7 +207,7 @@ public class BookingServiceImpl implements BookingService {
                 > customerService
                         .getLoyaltyPoints(booking.getCustomer().getId())
                         .getLoyaltyPoints()) {
-            throw new IllegalArgumentException("Not enough loyalty points to redeem");
+            throw new AppException(ErrorCode.INSUFFICIENT_LOYALTY_POINTS);
         }
 
         booking = discountService.applyDiscounts(booking, pointsToRedeem.getPointsToRedeem());

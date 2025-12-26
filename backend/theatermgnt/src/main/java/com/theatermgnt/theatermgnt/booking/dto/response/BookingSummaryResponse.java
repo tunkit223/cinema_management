@@ -1,6 +1,7 @@
 package com.theatermgnt.theatermgnt.booking.dto.response;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -20,6 +21,7 @@ import lombok.experimental.FieldDefaults;
 public class BookingSummaryResponse {
     String bookingId;
     BookingStatus status;
+    Instant expiredAt;
 
     List<SeatResponse> seats;
     List<ComboSummaryResponse> combos;
@@ -28,6 +30,7 @@ public class BookingSummaryResponse {
     BigDecimal seatSubtotal;
     BigDecimal comboSubtotal;
     BigDecimal subTotal;
+    BigDecimal discountAmount;
     BigDecimal totalAmount;
 
     MovieResponse movie;

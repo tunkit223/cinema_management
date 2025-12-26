@@ -25,6 +25,8 @@ export default function BookingPage({
 }) {
   const { movieId, showtimeId } = use(params)
   
+  const BOOKING_STORAGE_KEY = `booking_${movieId}_${showtimeId}`
+  
   const [movie, setMovie] = useState<any>(null)
   const [showtime, setShowtime] = useState<Showtime | null>(null)
   const [loading, setLoading] = useState(true)
@@ -48,6 +50,120 @@ export default function BookingPage({
   const [bookingId, setBookingId] = useState<string | null>(null)
   const [bookingExpiredAt, setBookingExpiredAt] = useState<string | null>(null)
   const [isCreatingBooking, setIsCreatingBooking] = useState(false)
+
+  // Save booking state to sessionStorage
+  const saveBookingState = (state: any) => {
+    try {
+      sessionStorage.setItem(BOOKING_STORAGE_KEY, JSON.stringify(state))
+    } catch (error) {
+      console.error('Error saving booking state:', error)
+    }
+  }
+
+  // Clear booking state from sessionStorage
+  const clearBookingState = () => {
+    try {
+      sessionStorage.removeItem(BOOKING_STORAGE_KEY)
+    } catch (error) {
+      console.error('Error clearing booking state:', error)
+    }
+  }
+
+  // Helper functions
+  const fetchBookingSummary = async (id: string) => {
+    setIsLoadingSummary(true)
+    try {
+      const summary = await getBookingSummary(id)
+      setBookingSummary(summary)
+      // Update expiredAt from summary if available
+      if (summary.expiredAt && !bookingExpiredAt) {
+        setBookingExpiredAt(summary.expiredAt)
+      }
+      // Convert discountAmount to points (1 point = 1000 VND)
+      if (summary.discountAmount !== undefined && summary.discountAmount > 0) {
+        const points = Math.floor(summary.discountAmount / 1000)
+        setPointsUsed(points)
+        setPointsDiscount(summary.discountAmount)
+      }
+    } catch (error: any) {
+      console.error('Error fetching booking summary:', error?.response?.data || error.message || error)
+    } finally {
+      setIsLoadingSummary(false)
+    }
+  }
+
+  const getMaxRedeemablePoints = () => {
+    // Always use subtotal (before any discounts), never totalAmount
+    const subtotalValue = Number(bookingSummary?.subTotal ?? subtotal)
+    const fiftyPercentCap = Math.floor(subtotalValue * 0.5)
+    // Cap in points: can't redeem more points than available, and discount (points * 1000) can't exceed subtotal or 50% cap
+    const maxPointsBySubtotal = Math.floor(subtotalValue / 1000)
+    const maxPointsByFiftyCap = Math.floor(fiftyPercentCap / 1000)
+    return Math.max(0, Math.min(customerPoints, maxPointsBySubtotal, maxPointsByFiftyCap))
+  }
+
+  const handleApplyPoints = (points: number) => {
+    const maxRedeem = getMaxRedeemablePoints()
+    const safePoints = Math.min(points, maxRedeem)
+    setPointsUsed(safePoints)
+    // 1 point = 1000 VND discount
+    setPointsDiscount(safePoints * 1000)
+  }
+
+  const handleBookingExpired = () => {
+    alert('Booking has expired. Please select seats again.')
+    // Clear saved state
+    clearBookingState()
+    // Reset state
+    setBookingId(null)
+    setBookingExpiredAt(null)
+    setBookingSummary(null)
+    setSelectedCombos([])
+    setSelectedSeats([])
+    setCurrentStep(1)
+    setPointsUsed(0)
+    setPointsDiscount(0)
+  }
+
+  // Restore booking state from sessionStorage on mount
+  useEffect(() => {
+    try {
+      const savedState = sessionStorage.getItem(BOOKING_STORAGE_KEY)
+      if (savedState) {
+        const state = JSON.parse(savedState)
+        
+        // Only restore if step >= 2 (from combo selection onwards)
+        if (state.currentStep && state.currentStep >= 2) {
+          // Check if booking is not expired
+          if (state.bookingExpiredAt) {
+            const expiredAt = new Date(state.bookingExpiredAt)
+            const now = new Date()
+            
+            if (now < expiredAt) {
+              // Restore state
+              if (state.bookingId) setBookingId(state.bookingId)
+              if (state.bookingExpiredAt) setBookingExpiredAt(state.bookingExpiredAt)
+              if (state.currentStep) setCurrentStep(state.currentStep)
+              if (state.selectedSeats) setSelectedSeats(state.selectedSeats)
+              if (state.selectedCombos) setSelectedCombos(state.selectedCombos)
+              if (state.pointsUsed) setPointsUsed(state.pointsUsed)
+              if (state.pointsDiscount) setPointsDiscount(state.pointsDiscount)
+              console.log('Booking state restored from sessionStorage')
+            } else {
+              // Booking expired, clear storage
+              clearBookingState()
+              console.log('Saved booking has expired, cleared from storage')
+            }
+          }
+        } else {
+          // Step 1, clear any saved state
+          clearBookingState()
+        }
+      }
+    } catch (error) {
+      console.error('Error restoring booking state:', error)
+    }
+  }, [])
 
   // Fetch movie from API
   useEffect(() => {
@@ -185,15 +301,88 @@ export default function BookingPage({
     }
   }, [showtimeId])
 
+  // Save booking state whenever key states change (only from step 2 onwards)
+  useEffect(() => {
+    if (bookingId && currentStep >= 2 && currentStep < 5) {
+      saveBookingState({
+        bookingId,
+        bookingExpiredAt,
+        currentStep,
+        selectedSeats,
+        selectedCombos,
+        pointsUsed,
+        pointsDiscount,
+      })
+    } else if (currentStep === 1) {
+      // Clear state when going back to step 1
+      clearBookingState()
+    }
+  }, [bookingId, bookingExpiredAt, currentStep, selectedSeats, selectedCombos, pointsUsed, pointsDiscount])
+
+  // Reset booking summary when going back to step 2 or step 1
+  useEffect(() => {
+    if (currentStep === 2) {
+      // Reset booking summary when returning to combo selection
+      // This allows real-time combo updates
+      setBookingSummary(null)
+      setPointsUsed(0)
+      setPointsDiscount(0)
+      console.log('Booking summary reset for step 2')
+    } else if (currentStep === 1 && showtimeId) {
+      // Reset booking-related state without reloading seats to avoid timeout
+      setBookingId(null)
+      setBookingExpiredAt(null)
+      setBookingSummary(null)
+      setSelectedSeats([])
+      setSelectedCombos([])
+      setPointsUsed(0)
+      setPointsDiscount(0)
+      console.log('Booking state reset for step 1')
+      
+      // Reload seats to show updated availability
+      const reloadSeats = async () => {
+        try {
+          setSeatsLoading(true)
+          const seatData = await getScreeningSeatsByScreeningId(showtimeId)
+          
+          if (seatData && Array.isArray(seatData)) {
+            const mappedSeats = seatData
+              .map((seat, idx) => mapScreeningSeatToSeat(seat, idx))
+              .filter((seat): seat is Seat => seat !== null)
+              .sort((a, b) => {
+                if (a.row === b.row) {
+                  return a.number - b.number
+                }
+                return a.row.localeCompare(b.row, undefined, { numeric: true, sensitivity: "base" })
+              })
+            setSeats(mappedSeats)
+            console.log('Seats reloaded for step 1')
+          } else {
+            console.warn('No seat data from backend')
+            setSeats(generateSeats())
+          }
+        } catch (error) {
+          console.error('Error reloading seats for step 1:', error)
+          // Keep existing seats if reload fails
+        } finally {
+          setSeatsLoading(false)
+        }
+      }
+      
+      reloadSeats()
+    }
+  }, [currentStep, showtimeId])
+
   // Load booking summary only when entering confirmation step (step 3)
   useEffect(() => {
     if (currentStep === 3 && bookingId) {
-      if (bookingSummary?.bookingId === bookingId) {
-        return
+      // Always fetch summary when entering step 3, or if we don't have summary yet
+      if (!bookingSummary || bookingSummary.bookingId !== bookingId) {
+        console.log('Fetching booking summary for confirmation step')
+        fetchBookingSummary(bookingId)
       }
-      fetchBookingSummary(bookingId)
     }
-  }, [currentStep, bookingId])
+  }, [currentStep, bookingId, bookingSummary])
 
   // Fetch customer loyalty points when entering confirmation step
   useEffect(() => {
@@ -248,16 +437,21 @@ export default function BookingPage({
   }
 
   const seatPrice = showtime.price
-  const seatsTotal = bookingSummary
+  // Only use bookingSummary from step 3 onwards (confirmation step)
+  const useBookingSummary = bookingSummary && currentStep >= 3
+  const seatsTotal = useBookingSummary
     ? Number(bookingSummary.seatSubtotal ?? 0)
     : selectedSeats.reduce((sum, seat) => sum + (seat.price || seatPrice), 0)
-  const comboTotal = bookingSummary
+  const comboTotal = useBookingSummary
     ? Number(bookingSummary.comboSubtotal ?? 0)
     : selectedCombos.reduce((sum, combo) => sum + (combo.price * (combo.quantity || 1)), 0)
-  const subtotal = bookingSummary ? Number(bookingSummary.subTotal ?? seatsTotal + comboTotal) : seatsTotal + comboTotal
+  const subtotal = useBookingSummary ? Number(bookingSummary.subTotal ?? seatsTotal + comboTotal) : seatsTotal + comboTotal
   // Calculate total: use subtotal and subtract current pointsDiscount for real-time updates
-  // Don't use bookingSummary.totalAmount as it reflects the old discount from server
-  const total = Math.max(0, subtotal - pointsDiscount)
+  // If bookingSummary has discountAmount, use it; otherwise use local pointsDiscount
+  const discount = useBookingSummary && bookingSummary.discountAmount !== undefined 
+    ? Number(bookingSummary.discountAmount)
+    : pointsDiscount
+  const total = Math.max(0, subtotal - discount)
 
   const nextButtonLabel = isCreatingBooking
     ? 'Creating booking...'
@@ -269,36 +463,6 @@ export default function BookingPage({
 
   const summarySeatCount = bookingSummary?.seats?.length ?? selectedSeats.length
   const summaryComboCount = bookingSummary?.combos?.length ?? selectedCombos.length
-
-  const fetchBookingSummary = async (id: string) => {
-    setIsLoadingSummary(true)
-    try {
-      const summary = await getBookingSummary(id)
-      setBookingSummary(summary)
-    } catch (error: any) {
-      console.error('Error fetching booking summary:', error?.response?.data || error.message || error)
-    } finally {
-      setIsLoadingSummary(false)
-    }
-  }
-
-  const getMaxRedeemablePoints = () => {
-    // Always use subtotal (before any discounts), never totalAmount
-    const subtotalValue = Number(bookingSummary?.subTotal ?? subtotal)
-    const fiftyPercentCap = Math.floor(subtotalValue * 0.5)
-    // Cap in points: can't redeem more points than available, and discount (points * 1000) can't exceed subtotal or 50% cap
-    const maxPointsBySubtotal = Math.floor(subtotalValue / 1000)
-    const maxPointsByFiftyCap = Math.floor(fiftyPercentCap / 1000)
-    return Math.max(0, Math.min(customerPoints, maxPointsBySubtotal, maxPointsByFiftyCap))
-  }
-
-  const handleApplyPoints = (points: number) => {
-    const maxRedeem = getMaxRedeemablePoints()
-    const safePoints = Math.min(points, maxRedeem)
-    setPointsUsed(safePoints)
-    // 1 point = 1000 VND discount
-    setPointsDiscount(safePoints * 1000)
-  }
 
   const handleNextStep = async () => {
     if (currentStep === 1 && selectedSeats.length === 0) {
@@ -368,7 +532,41 @@ export default function BookingPage({
       } catch (error: any) {
         console.error('Error creating booking:', error)
         console.error('Error details:', error?.response?.data)
-        alert(`Unable to create booking: ${error?.response?.data?.message || error.message || 'Please try again.'}`)
+        
+        const errorMessage = error?.response?.data?.message || error.message || 'Please try again.'
+        
+        // Handle specific error: seats not available
+        if (errorMessage.includes('not available') || errorMessage.includes('seats')) {
+          alert(`⚠️ Booking Error: ${errorMessage}\n\nSome seats may have been booked by other users. Please select seats again.`)
+          
+          // Reload seats from API
+          try {
+            setSeatsLoading(true)
+            const seatData = await getScreeningSeatsByScreeningId(showtimeId)
+            
+            if (seatData && Array.isArray(seatData)) {
+              const mappedSeats = seatData
+                .map((seat, idx) => mapScreeningSeatToSeat(seat, idx))
+                .filter((seat): seat is Seat => seat !== null)
+                .sort((a, b) => {
+                  if (a.row === b.row) {
+                    return a.number - b.number
+                  }
+                  return a.row.localeCompare(b.row, undefined, { numeric: true, sensitivity: "base" })
+                })
+              setSeats(mappedSeats)
+            }
+          } catch (reloadError) {
+            console.error('Error reloading seats:', reloadError)
+          } finally {
+            setSeatsLoading(false)
+          }
+          
+          // Clear selected seats
+          setSelectedSeats([])
+        } else {
+          alert(`Unable to create booking: ${errorMessage}`)
+        }
       } finally {
         setIsCreatingBooking(false)
       }
@@ -427,18 +625,6 @@ export default function BookingPage({
     }
   }
 
-
-  const handleBookingExpired = () => {
-    alert('Booking has expired. Please select seats again.')
-    // Reset state
-    setBookingId(null)
-    setBookingExpiredAt(null)
-    setBookingSummary(null)
-    setSelectedCombos([])
-    setSelectedSeats([])
-    setCurrentStep(1)
-  }
-
   const steps = [
     { number: 1, title: "Select Seats" },
     { number: 2, title: "Choose Combos" },
@@ -454,22 +640,21 @@ export default function BookingPage({
           <BookingTimer expiredAt={bookingExpiredAt} onExpired={handleBookingExpired} />
         </div>
       )}
-      <div className="container-max px-4 md:px-8">
-        {/* Header */}
-        <div className="mb-8">
-          <Link
-            href={`/movies/${movieId}`}
-            className="flex items-center gap-2 text-purple-600 hover:text-purple-700 font-semibold mb-6"
-          >
-            <ChevronLeft size={20} />
-            Back to Movie
-          </Link>
 
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h1 className="text-3xl font-bold mb-2">{movie.title}</h1>
-              <p className="text-muted-foreground">
-                {showtime.time} • {showtime.format} • {showtime.price.toLocaleString()} VND
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Movie Info */}
+        <div className="mb-8">
+          <div className="flex gap-6">
+            <div className="w-24 h-36 rounded-lg overflow-hidden flex-shrink-0">
+              {movie?.posterUrl && (
+                <img src={movie.posterUrl} alt={movie.title} className="w-full h-full object-cover" />
+              )}
+            </div>
+            <div className="flex-1">
+              <h1 className="text-3xl font-bold mb-2">{movie?.title}</h1>
+              <p className="text-muted-foreground mb-2">{movie?.genre}</p>
+              <p className="text-sm text-muted-foreground">
+                {showtime?.time} • {showtime?.format} • {showtime?.price.toLocaleString()} VND
               </p>
             </div>
           </div>
@@ -534,7 +719,7 @@ export default function BookingPage({
                 <ComboSelectionStep combos={combos} selectedCombos={selectedCombos} onSelectCombos={setSelectedCombos} />
               )
             )}
-            {currentStep === 3 && (
+            {currentStep === 3 && showtime && (
               <ConfirmationStep
                 movie={movie}
                 showtime={showtime}
@@ -556,10 +741,12 @@ export default function BookingPage({
                 onPaymentSuccess={() => {
                   setPaymentSuccess(true)
                   setCurrentStep(5)
+                  // Clear booking state on success
+                  clearBookingState()
                 }}
               />
             )}
-            {currentStep === 5 && (
+            {currentStep === 5 && showtime && (
               <SuccessStep
                 movie={movie}
                 showtime={showtime}
@@ -586,10 +773,10 @@ export default function BookingPage({
                     <span className="font-semibold">{comboTotal.toLocaleString()} VND</span>
                   </div>
                 )}
-                {pointsDiscount > 0 && (
+                {discount > 0 && (
                   <div className="flex justify-between text-sm text-green-600">
                     <span>Points Discount</span>
-                    <span>-{pointsDiscount.toLocaleString()} VND</span>
+                    <span>-{discount.toLocaleString()} VND</span>
                   </div>
                 )}
               </div>
