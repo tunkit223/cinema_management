@@ -1,17 +1,20 @@
 package com.theatermgnt.theatermgnt.movie.controller;
 
+import java.util.List;
+
+import jakarta.validation.Valid;
+
+import org.springframework.web.bind.annotation.*;
+
 import com.theatermgnt.theatermgnt.common.dto.response.ApiResponse;
 import com.theatermgnt.theatermgnt.movie.dto.request.CreateGenreRequest;
 import com.theatermgnt.theatermgnt.movie.dto.response.GenreResponse;
 import com.theatermgnt.theatermgnt.movie.service.GenreService;
-import jakarta.validation.Valid;
+
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/genres")

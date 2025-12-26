@@ -1,11 +1,12 @@
 package com.theatermgnt.theatermgnt.authorization.mapper;
 
-import com.theatermgnt.theatermgnt.authorization.dto.request.RoleRequest;
-import com.theatermgnt.theatermgnt.authorization.dto.response.RoleResponse;
-import com.theatermgnt.theatermgnt.authorization.entity.Role;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
+
+import com.theatermgnt.theatermgnt.authorization.dto.request.RoleRequest;
+import com.theatermgnt.theatermgnt.authorization.dto.response.RoleResponse;
+import com.theatermgnt.theatermgnt.authorization.entity.Role;
 
 @Mapper(componentModel = "spring")
 public interface RoleMapper {

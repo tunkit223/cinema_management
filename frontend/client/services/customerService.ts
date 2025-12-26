@@ -58,3 +58,21 @@ export const updateMyInfo = async (
     throw error;
   }
 };
+
+// Get customer loyalty points
+export const getCustomerLoyaltyPoints = async (customerId: string): Promise<number> => {
+  try {
+    const url = API.CUSTOMER_LOYALTY_POINTS.replace("${customerId}", customerId);
+    const response = await httpClient.get<{ result: { loyaltyPoints: number } }>(url, {
+      headers: {
+        Authorization: `Bearer ${getToken()}`,
+      },
+    });
+    
+    return response.data.result.loyaltyPoints;
+  } catch (error) {
+    console.error("Failed to get customer loyalty points:", error);
+    throw error;
+  }
+};
+

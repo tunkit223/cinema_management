@@ -12,6 +12,7 @@ export const API = {
   
   // Customer endpoints
   UPDATE_CUSTOMER: "/customers/${customerId}",
+  CUSTOMER_LOYALTY_POINTS: "/customers/${customerId}/loyalty-points",
 };
 
 export const OAuthConfig = {

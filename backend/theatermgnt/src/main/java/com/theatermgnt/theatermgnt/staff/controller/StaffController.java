@@ -83,4 +83,11 @@ public class StaffController {
         var staffs = staffService.getStaffByCinemaAndStaffRole(cinemaId);
         return ApiResponse.<List<StaffResponse>>builder().result(staffs).build();
     }
+
+    @GetMapping("/available-managers")
+    public ApiResponse<List<StaffResponse>> getAvailableManagers() {
+        return ApiResponse.<List<StaffResponse>>builder()
+                .result(staffService.getStaffRoleManagerDontManageAnyCinema())
+                .build();
+    }
 }

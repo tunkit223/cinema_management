@@ -24,4 +24,17 @@ public interface StaffRepository extends JpaRepository<Staff, String> {
             @Param("cinemaId") String cinemaId,
             @Param("roleName") String roleName
     );
+
+    @Query("""
+        SELECT DISTINCT s
+        FROM Staff s
+        JOIN s.roles r
+        WHERE r.name = :roleName
+          AND s.id NOT IN (
+            SELECT c.manager.id
+            FROM Cinema c
+            WHERE c.manager IS NOT NULL
+          )
+    """)
+    List<Staff> findByRoleAndNotManagingAnyCinema(@Param("roleName") String roleName);
 }

@@ -1,9 +1,10 @@
 package com.theatermgnt.theatermgnt.movie.repository;
 
-import com.theatermgnt.theatermgnt.movie.entity.Genre;
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.Optional;
+import com.theatermgnt.theatermgnt.movie.entity.Genre;
 
 public interface GenreRepository extends JpaRepository<Genre, String> {
     Optional<Genre> findByName(String name);

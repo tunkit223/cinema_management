@@ -35,6 +35,7 @@ public enum ErrorCode {
     // ----
     CINEMA_EXISTED(2001, "Cinema existed", HttpStatus.BAD_REQUEST),
     CINEMA_NOT_EXISTED(2002, "Cinema not existed", HttpStatus.BAD_REQUEST),
+    CINEMA_HAS_ROOMS(2052, "Cannot delete cinema. Please delete all rooms in this cinema first", HttpStatus.BAD_REQUEST),
     ROOM_EXISTED(2003, "Room existed", HttpStatus.BAD_REQUEST),
     ROOM_NOT_EXISTED(2004, "Room not existed", HttpStatus.BAD_REQUEST),
     SEATTYPE_EXISTED(2005, "Seat type existed", HttpStatus.BAD_REQUEST),
@@ -98,12 +99,18 @@ public enum ErrorCode {
     NOTHING_TO_UPDATE(2050,"Nothing to update", HttpStatus.BAD_REQUEST),
     INVALID_WORK_SCHEDULE_REQUEST(2051,"Invalid work schedule request", HttpStatus.BAD_REQUEST),
 
-    //Equipment
+    // Equipment
     EQUIPMENT_CATEGORY_EXISTED(2013, "Equipment category existed", HttpStatus.BAD_REQUEST),
     EQUIPMENT_CATEGORY_NOT_EXISTED(2014, "Equipment category not existed", HttpStatus.BAD_REQUEST),
     EQUIPMENT_EXISTED(2015, "Equipment existed", HttpStatus.BAD_REQUEST),
     EQUIPMENT_NOT_EXISTED(2016, "Equipment not existed", HttpStatus.BAD_REQUEST),
-    //-----
+
+    // booking
+    BOOKING_NOT_EXISTED(2060, "Booking not existed", HttpStatus.NOT_FOUND),
+    INSUFFICIENT_LOYALTY_POINTS(2061, "Insufficient loyalty points", HttpStatus.BAD_REQUEST),
+    SCREENING_SEATS_NOT_AVAILABLE(2062, "One or more selected seats are not available", HttpStatus.BAD_REQUEST),
+
+    // -----
     CANNOT_SEND_EMAIL(3001, "Cannot send email", HttpStatus.BAD_REQUEST),
     ;
     private int code;

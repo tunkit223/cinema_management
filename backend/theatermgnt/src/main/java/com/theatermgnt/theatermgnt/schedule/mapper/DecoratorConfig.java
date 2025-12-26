@@ -9,8 +9,7 @@ public class DecoratorConfig {
 
     @Bean
     @Primary
-    public WorkScheduleMapper workScheduleMapper(WorkScheduleMapper delegate,
-                                                 WorkScheduleMapperDecorator decorator) {
+    public WorkScheduleMapper workScheduleMapper(WorkScheduleMapper delegate, WorkScheduleMapperDecorator decorator) {
         return decorator;
     }
 
@@ -19,4 +18,3 @@ public class DecoratorConfig {
         return new WorkScheduleMapperImpl();
     }
 }
-

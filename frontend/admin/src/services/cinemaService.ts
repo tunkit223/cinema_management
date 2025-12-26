@@ -1,42 +1,44 @@
 import httpClient from "@/configurations/httpClient";
-import type { Cinema } from "@/types/CinemaType/cinemaType";
+import type { Cinema, CreateCinemaRequest, UpdateCinemaRequest } from "@/types/CinemaType/cinemaType";
 import { handleApiResponse, type ApiResponse } from "@/utils/apiResponse";
-import { CONFIG } from "@/configurations/configuration";
 
-// Re-export Cinema type for convenience
-export type { Cinema };
+const BASE_URL = "/cinemas";
 
-export interface CreateCinemaRequest {
-  name: string;
-  address?: string;
-  phone?: string;
-}
+// Re-export types for convenience
+export type { Cinema, CreateCinemaRequest, UpdateCinemaRequest };
 
-export interface UpdateCinemaRequest {
-  name?: string;
-  address?: string;
-  phone?: string;
-}
-
-// Get all cinemas for selection
+// Get all cinemas
 export const getAllCinemas = async (): Promise<Cinema[]> => {
   return handleApiResponse<Cinema[]>(
-    httpClient.get<ApiResponse<Cinema[]>>("/cinemas")
+    httpClient.get<ApiResponse<Cinema[]>>(BASE_URL)
   );
 };
 
-export const getCinemaById = async (cinemaId: string) => {
-  return await httpClient.get(`${CONFIG.API}/cinemas/${cinemaId}`);
+// Get cinema by ID
+export const getCinemaById = async (cinemaId: string): Promise<Cinema> => {
+  return handleApiResponse<Cinema>(
+    httpClient.get<ApiResponse<Cinema>>(`${BASE_URL}/${cinemaId}`)
+  );
 };
 
-export const createCinema = async (data: CreateCinemaRequest) => {
-  return await httpClient.post(`${CONFIG.API}/cinemas`, data);
+// Create a new cinema
+export const createCinema = async (data: CreateCinemaRequest): Promise<Cinema> => {
+  return handleApiResponse<Cinema>(
+    httpClient.post<ApiResponse<Cinema>>(BASE_URL, data)
+  );
 };
 
-export const updateCinema = async (cinemaId: string, data: UpdateCinemaRequest) => {
-  return await httpClient.put(`${CONFIG.API}/cinemas/${cinemaId}`, data);
+// Update cinema by ID
+export const updateCinema = async (
+  cinemaId: string,
+  data: UpdateCinemaRequest
+): Promise<Cinema> => {
+  return handleApiResponse<Cinema>(
+    httpClient.put<ApiResponse<Cinema>>(`${BASE_URL}/${cinemaId}`, data)
+  );
 };
 
-export const deleteCinema = async (cinemaId: string) => {
-  return await httpClient.delete(`${CONFIG.API}/cinemas/${cinemaId}`);
+// Delete cinema by ID
+export const deleteCinema = async (cinemaId: string): Promise<void> => {
+  await httpClient.delete(`${BASE_URL}/${cinemaId}`);
 };

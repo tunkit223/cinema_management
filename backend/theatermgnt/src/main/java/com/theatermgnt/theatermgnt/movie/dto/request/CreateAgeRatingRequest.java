@@ -1,6 +1,7 @@
 package com.theatermgnt.theatermgnt.movie.dto.request;
 
 import jakarta.validation.constraints.Size;
+
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 

@@ -7,7 +7,7 @@ import { Profile } from "@/pages/Profile/StaffProfile";
 import { PermissionList } from "@/pages/Permissions";
 import { RoleList } from "@/pages/Roles";
 import { MovieList } from "@/pages/Movies";
-import { ShowtimeList } from "@/pages/Showtimes";
+import { ShowtimeList, CreateShowtime } from "@/pages/Showtimes";
 import { TheaterList } from "@/pages/Cinemas";
 import { RoomList, CreateRoom, EditRoom } from "@/pages/Rooms";
 import { TicketList } from "@/pages/Tickets";
@@ -78,6 +78,20 @@ export const routes = [
               {
                 index: true,
                 element: <ShowtimeList />,
+              },
+              {
+                path: "create",
+                element: (
+                  <ProtectedRoute
+                    requiredPermissions={[PERMISSIONS.SHOWTIME_CREATE]}
+                  />
+                ),
+                children: [
+                  {
+                    index: true,
+                    element: <CreateShowtime />,
+                  },
+                ],
               },
             ],
           },

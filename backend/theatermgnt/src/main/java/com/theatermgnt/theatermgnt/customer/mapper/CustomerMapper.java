@@ -1,10 +1,11 @@
 package com.theatermgnt.theatermgnt.customer.mapper;
 
+import org.mapstruct.*;
+
 import com.theatermgnt.theatermgnt.customer.dto.request.CustomerAccountCreationRequest;
 import com.theatermgnt.theatermgnt.customer.dto.request.CustomerProfileUpdateRequest;
 import com.theatermgnt.theatermgnt.customer.dto.response.CustomerResponse;
 import com.theatermgnt.theatermgnt.customer.entity.Customer;
-import org.mapstruct.*;
 
 @Mapper(componentModel = "spring")
 public interface CustomerMapper {

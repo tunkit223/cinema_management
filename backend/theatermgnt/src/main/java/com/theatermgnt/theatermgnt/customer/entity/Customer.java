@@ -1,12 +1,14 @@
 package com.theatermgnt.theatermgnt.customer.entity;
 
+import java.time.LocalDate;
+
+import jakarta.persistence.*;
+
 import com.theatermgnt.theatermgnt.account.entity.Account;
 import com.theatermgnt.theatermgnt.common.enums.Gender;
-import jakarta.persistence.*;
+
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-
-import java.time.LocalDate;
 
 @Setter
 @Getter
@@ -29,6 +31,10 @@ public class Customer {
     String lastName;
     String address;
     String avatarUrl;
+
+    @Builder.Default
+    @Column(name = "loyalty_points", nullable = false)
+    Integer loyaltyPoints = 0;
 
     @Enumerated(EnumType.STRING)
     Gender gender;

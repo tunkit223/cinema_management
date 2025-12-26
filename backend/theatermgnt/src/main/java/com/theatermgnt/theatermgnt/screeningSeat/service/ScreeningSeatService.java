@@ -1,7 +1,21 @@
 package com.theatermgnt.theatermgnt.screeningSeat.service;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.theatermgnt.theatermgnt.common.enums.DayType;
+import com.theatermgnt.theatermgnt.common.enums.TimeSlot;
 import com.theatermgnt.theatermgnt.common.exception.AppException;
 import com.theatermgnt.theatermgnt.common.exception.ErrorCode;
+import com.theatermgnt.theatermgnt.priceConfig.entity.PriceConfig;
+import com.theatermgnt.theatermgnt.priceConfig.repository.PriceConfigRepository;
 import com.theatermgnt.theatermgnt.screening.entity.Screening;
 import com.theatermgnt.theatermgnt.screening.repository.ScreeningRepository;
 import com.theatermgnt.theatermgnt.screeningSeat.dto.request.ScreeningSeatCreationRequest;
@@ -13,15 +27,11 @@ import com.theatermgnt.theatermgnt.screeningSeat.mapper.ScreeningSeatMapper;
 import com.theatermgnt.theatermgnt.screeningSeat.repository.ScreeningSeatRepository;
 import com.theatermgnt.theatermgnt.seat.entity.Seat;
 import com.theatermgnt.theatermgnt.seat.repository.SeatRepository;
+
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Slf4j
 @Service
@@ -32,6 +42,7 @@ public class ScreeningSeatService {
     ScreeningRepository screeningRepository;
     ScreeningSeatRepository screeningSeatRepository;
     ScreeningSeatMapper screeningSeatMapper;
+    PriceConfigRepository priceConfigRepository;
 
     @Transactional(propagation = Propagation.REQUIRED)
     public ScreeningSeatResponse createScreeningSeat(ScreeningSeatCreationRequest request) {
@@ -52,51 +63,91 @@ public class ScreeningSeatService {
         screeningSeat.setScreening(screening);
         screeningSeat.setStatus(ScreeningSeatStatus.AVAILABLE);
 
-        return screeningSeatMapper.toScreeningSeatResponse(screeningSeatRepository.save(screeningSeat));
+        return mapSeatToResponse(screeningSeatRepository.save(screeningSeat));
     }
 
     public List<ScreeningSeatResponse> getScreeningSeatsByScreeningId(String screeningId) {
-        return screeningSeatRepository.findByScreeningId(screeningId).stream()
-                .map(screeningSeatMapper::toScreeningSeatResponse)
-                .toList();
+        return mapSeatsListToResponses(screeningSeatRepository.findByScreeningId(screeningId));
     }
 
     public List<ScreeningSeatResponse> getScreeningSeatsBySeatId(String seatId) {
-        return screeningSeatRepository.findBySeatId(seatId).stream()
-                .map(screeningSeatMapper::toScreeningSeatResponse)
-                .toList();
+        return mapSeatsListToResponses(screeningSeatRepository.findBySeatId(seatId));
     }
 
     public List<ScreeningSeatResponse> getScreeningSeats() {
-        return screeningSeatRepository.findAll().stream()
-                .map(screeningSeatMapper::toScreeningSeatResponse)
-                .toList();
+        return mapSeatsListToResponses(screeningSeatRepository.findAll());
     }
 
     public ScreeningSeatResponse getScreeningSeat(String screeningSeatId) {
-        ScreeningSeat screeningSeat = screeningSeatRepository.findById(screeningSeatId)
+        ScreeningSeat screeningSeat = screeningSeatRepository
+                .findById(screeningSeatId)
                 .orElseThrow(() -> new AppException(ErrorCode.SCREENING_SEAT_NOT_EXISTED));
-        return screeningSeatMapper.toScreeningSeatResponse(screeningSeat);
+        return mapSeatToResponse(screeningSeat);
     }
 
     public ScreeningSeatResponse updateScreeningSeat(String screeningSeatId, ScreeningSeatUpdateRequest request) {
-        ScreeningSeat screeningSeat = screeningSeatRepository.findById(screeningSeatId)
+        ScreeningSeat screeningSeat = screeningSeatRepository
+                .findById(screeningSeatId)
                 .orElseThrow(() -> new AppException(ErrorCode.SCREENING_SEAT_NOT_EXISTED));
 
-        if (screeningSeat.getStatus() == ScreeningSeatStatus.SOLD &&
-                request.getStatus() == ScreeningSeatStatus.AVAILABLE) {
+        if (screeningSeat.getStatus() == ScreeningSeatStatus.SOLD
+                && request.getStatus() == ScreeningSeatStatus.AVAILABLE) {
             throw new AppException(ErrorCode.SCREENING_SEAT_INVALID_STATUS_CHANGE);
         }
 
         screeningSeatMapper.updateScreeningSeat(screeningSeat, request);
-        return screeningSeatMapper.toScreeningSeatResponse(screeningSeatRepository.save(screeningSeat));
+        return mapSeatToResponse(screeningSeatRepository.save(screeningSeat));
     }
 
     public void deleteScreeningSeat(String screeningSeatId) {
-        ScreeningSeat ss = screeningSeatRepository.findById(screeningSeatId)
+        ScreeningSeat ss = screeningSeatRepository
+                .findById(screeningSeatId)
                 .orElseThrow(() -> new AppException(ErrorCode.SCREENING_SEAT_NOT_EXISTED));
-        if (ss.getStatus() == ScreeningSeatStatus.SOLD)
-            throw new AppException(ErrorCode.SCREENING_SEAT_CANNOT_DELETE);
+        if (ss.getStatus() == ScreeningSeatStatus.SOLD) throw new AppException(ErrorCode.SCREENING_SEAT_CANNOT_DELETE);
         screeningSeatRepository.deleteById(screeningSeatId);
+    }
+
+    private List<ScreeningSeatResponse> mapSeatsListToResponses(List<ScreeningSeat> seats) {
+        if (seats == null || seats.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        List<ScreeningSeatResponse> finalResult = new ArrayList<>();
+
+        // Gom nhóm ghế theo Suất chiếu (Screening)
+        // Map<Screening, List<ScreeningSeat>>
+        Map<Screening, List<ScreeningSeat>> seatsByScreening =
+                seats.stream().collect(Collectors.groupingBy(ScreeningSeat::getScreening));
+
+        for (Map.Entry<Screening, List<ScreeningSeat>> entry : seatsByScreening.entrySet()) {
+            Screening screening = entry.getKey();
+            List<ScreeningSeat> seatsInGroup = entry.getValue();
+
+            TimeSlot timeSlot = TimeSlot.from(screening.getStartTime().toLocalTime());
+            DayType dayType = DayType.from(screening.getStartTime().toLocalDate());
+
+            List<PriceConfig> priceConfigs = priceConfigRepository.findByDayTypeAndTimeSlot(dayType, timeSlot);
+
+            Map<String, BigDecimal> priceMap = priceConfigs.stream()
+                    .collect(Collectors.toMap(
+                            config -> config.getSeatType().getId(),
+                            PriceConfig::getPrice,
+                            (existing, replacement) -> existing));
+
+            List<ScreeningSeatResponse> groupResponses = seatsInGroup.stream()
+                    .map(seat -> screeningSeatMapper.toScreeningSeatResponse(seat, priceMap))
+                    .toList();
+
+            finalResult.addAll(groupResponses);
+        }
+
+        return finalResult;
+    }
+
+    private ScreeningSeatResponse mapSeatToResponse(ScreeningSeat seat) {
+        if (seat == null) return null;
+
+        List<ScreeningSeatResponse> results = mapSeatsListToResponses(List.of(seat));
+        return results.isEmpty() ? null : results.getFirst();
     }
 }

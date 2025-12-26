@@ -10,6 +10,8 @@ import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
+import java.time.Instant;
+
 @Setter
 @Getter
 @NoArgsConstructor
@@ -33,4 +35,6 @@ public class ScreeningSeat extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     ScreeningSeatStatus status;
+
+    Instant lockUntil;
 }

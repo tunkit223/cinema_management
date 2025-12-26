@@ -12,8 +12,12 @@ import java.time.LocalDateTime;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ScreeningResponse {
      String id;
+     String movieId;
      String movieName;
+     String roomId;
      String roomName;
+     String cinemaId;
+     String cinemaName;
      LocalDateTime startTime;
      LocalDateTime endTime;
      String status;

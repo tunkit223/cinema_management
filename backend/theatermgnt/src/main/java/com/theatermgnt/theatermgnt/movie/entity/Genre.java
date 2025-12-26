@@ -1,15 +1,17 @@
 package com.theatermgnt.theatermgnt.movie.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.theatermgnt.theatermgnt.common.entity.BaseEntity;
+import java.util.HashSet;
+import java.util.Set;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.theatermgnt.theatermgnt.common.entity.BaseEntity;
+
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-
-import java.util.HashSet;
-import java.util.Set;
 
 @Getter
 @Setter

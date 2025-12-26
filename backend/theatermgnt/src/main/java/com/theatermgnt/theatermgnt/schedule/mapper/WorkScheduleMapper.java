@@ -1,9 +1,10 @@
 package com.theatermgnt.theatermgnt.schedule.mapper;
 
-import com.theatermgnt.theatermgnt.schedule.dto.response.WorkScheduleResponse;
-import com.theatermgnt.theatermgnt.schedule.entity.WorkSchedule;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+
+import com.theatermgnt.theatermgnt.schedule.dto.response.WorkScheduleResponse;
+import com.theatermgnt.theatermgnt.schedule.entity.WorkSchedule;
 
 @Mapper(componentModel = "spring")
 public interface WorkScheduleMapper {
@@ -14,6 +15,3 @@ public interface WorkScheduleMapper {
     @Mapping(source = "shiftType.endTime", target = "shiftEnd")
     WorkScheduleResponse toResponse(WorkSchedule ws);
 }
-
-
-

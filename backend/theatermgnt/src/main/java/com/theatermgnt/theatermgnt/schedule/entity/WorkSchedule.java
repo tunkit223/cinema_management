@@ -1,22 +1,24 @@
 package com.theatermgnt.theatermgnt.schedule.entity;
 
+import java.time.LocalDate;
+
+import jakarta.persistence.*;
+
 import com.theatermgnt.theatermgnt.ShiftType.entity.ShiftType;
 import com.theatermgnt.theatermgnt.common.entity.BaseEntity;
-import jakarta.persistence.*;
+
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-
-import java.time.LocalDate;
 
 @Entity
 @Table(
         name = "work_schedules",
-        uniqueConstraints = @UniqueConstraint(
-                name = "uk_user_date_shift",
-                columnNames = {"user_id", "work_date", "shift_type_id"}
-        )
-)
-@Getter @Setter
+        uniqueConstraints =
+                @UniqueConstraint(
+                        name = "uk_user_date_shift",
+                        columnNames = {"user_id", "work_date", "shift_type_id"}))
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)

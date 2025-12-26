@@ -1,11 +1,12 @@
 package com.theatermgnt.theatermgnt.seatType.mapper;
 
+import org.mapstruct.Mapper;
+import org.mapstruct.MappingTarget;
+
 import com.theatermgnt.theatermgnt.seatType.dto.request.SeatTypeCreationRequest;
 import com.theatermgnt.theatermgnt.seatType.dto.request.SeatTypeUpdateRequest;
 import com.theatermgnt.theatermgnt.seatType.dto.response.SeatTypeResponse;
 import com.theatermgnt.theatermgnt.seatType.entity.SeatType;
-import org.mapstruct.Mapper;
-import org.mapstruct.MappingTarget;
 
 @Mapper(componentModel = "spring")
 public interface SeatTypeMapper {

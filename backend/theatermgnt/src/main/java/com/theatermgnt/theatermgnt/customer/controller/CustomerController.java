@@ -1,16 +1,19 @@
 package com.theatermgnt.theatermgnt.customer.controller;
 
+import java.util.List;
+
+import org.springframework.web.bind.annotation.*;
+
 import com.theatermgnt.theatermgnt.common.dto.response.ApiResponse;
 import com.theatermgnt.theatermgnt.customer.dto.request.CustomerProfileUpdateRequest;
+import com.theatermgnt.theatermgnt.customer.dto.response.CustomerLoyaltyPointsResponse;
 import com.theatermgnt.theatermgnt.customer.dto.response.CustomerResponse;
 import com.theatermgnt.theatermgnt.customer.service.CustomerService;
+
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RequestMapping("/customers")
 @RestController
@@ -46,6 +49,13 @@ public class CustomerController {
             @PathVariable String customerId, @RequestBody CustomerProfileUpdateRequest request) {
         return ApiResponse.<CustomerResponse>builder()
                 .result(customerService.updateCustomerProfile(customerId, request))
+                .build();
+    }
+
+    @GetMapping("/{customerId}/loyalty-points")
+    ApiResponse<CustomerLoyaltyPointsResponse> getLoyaltyPoints(@PathVariable String customerId) {
+        return ApiResponse.<CustomerLoyaltyPointsResponse>builder()
+                .result(customerService.getLoyaltyPoints(customerId))
                 .build();
     }
 }

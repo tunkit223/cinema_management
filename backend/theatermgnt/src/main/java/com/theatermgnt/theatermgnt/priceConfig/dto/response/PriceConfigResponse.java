@@ -1,11 +1,12 @@
 package com.theatermgnt.theatermgnt.priceConfig.dto.response;
 
+import java.math.BigDecimal;
+
 import com.theatermgnt.theatermgnt.common.enums.DayType;
 import com.theatermgnt.theatermgnt.common.enums.TimeSlot;
+
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-
-import java.math.BigDecimal;
 
 @Data
 @Builder

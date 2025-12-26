@@ -1,6 +1,7 @@
 package com.theatermgnt.theatermgnt.customer.dto.request;
 
 import com.theatermgnt.theatermgnt.account.dto.request.BaseAccountCreationRequest;
+
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
