@@ -232,34 +232,33 @@ public class BookingServiceImpl implements BookingService {
                         .stream().map(seatMapper::toSeatResponse).toList(),
                 movieResponse);
     }
-    
+
     @Override
     public InvoiceResponse createInvoiceForBooking(UUID bookingId) {
         log.info("Creating invoice for booking: {}", bookingId);
-        
+
         Booking booking = bookingRepository
                 .findById(bookingId)
                 .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_EXISTED));
-        
-        CreateInvoiceRequest invoiceRequest = CreateInvoiceRequest.builder()
-                .bookingId(bookingId.toString())
-                .build();
-        
+
+        CreateInvoiceRequest invoiceRequest =
+                CreateInvoiceRequest.builder().bookingId(bookingId.toString()).build();
+
         return invoiceService.createInvoice(invoiceRequest);
     }
-    
+
     @Override
     public void confirmBookingPayment(String bookingId) {
         log.info("Confirming booking payment for: {}", bookingId);
-        
+
         Booking booking = bookingRepository
                 .findById(UUID.fromString(bookingId))
                 .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_EXISTED));
-        
+
         // Update booking status to CONFIRMED
         booking.setStatus(BookingStatus.CONFIRM);
         bookingRepository.save(booking);
-        
+
         log.info("Booking {} confirmed", bookingId);
     }
 }

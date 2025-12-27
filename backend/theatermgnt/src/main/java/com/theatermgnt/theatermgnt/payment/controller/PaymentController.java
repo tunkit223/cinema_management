@@ -1,15 +1,18 @@
 package com.theatermgnt.theatermgnt.payment.controller;
 
-import com.theatermgnt.theatermgnt.payment.dto.response.PaymentDetailsResponse;
-import com.theatermgnt.theatermgnt.payment.service.PaymentService;
+import java.util.Map;
+
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
-import java.util.Map;
+import com.theatermgnt.theatermgnt.common.dto.response.ApiResponse;
+import com.theatermgnt.theatermgnt.payment.dto.response.PaymentDetailsResponse;
+import com.theatermgnt.theatermgnt.payment.service.PaymentService;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @RestController
 @RequestMapping("/payment")
@@ -24,12 +27,13 @@ public class PaymentController {
      * POST /api/theater-mgnt/payment/vnpay/{invoiceId}
      */
     @PostMapping("/vnpay/{invoiceId}")
-    public ResponseEntity<PaymentDetailsResponse> createVNPayPayment(
-            @PathVariable String invoiceId,
-            HttpServletRequest httpRequest) {
+    public ApiResponse<PaymentDetailsResponse> createVNPayPayment(
+            @PathVariable String invoiceId, HttpServletRequest httpRequest) {
         log.info("Creating VNPay payment for invoice: {}", invoiceId);
         PaymentDetailsResponse response = paymentService.createVNPayPayment(invoiceId, httpRequest);
-        return ResponseEntity.ok(response);
+        return ApiResponse.<PaymentDetailsResponse>builder()
+                .result(response)
+                .build();
     }
 
     /**

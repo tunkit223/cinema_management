@@ -1,17 +1,18 @@
 package com.theatermgnt.theatermgnt.payment.mapper;
 
+import org.springframework.stereotype.Component;
+
 import com.theatermgnt.theatermgnt.payment.dto.response.PaymentDetailsResponse;
 import com.theatermgnt.theatermgnt.payment.entity.Payment;
-import org.springframework.stereotype.Component;
 
 @Component
 public class PaymentMapper {
-    
+
     public PaymentDetailsResponse toResponse(Payment payment) {
         if (payment == null) {
             return null;
         }
-        
+
         return PaymentDetailsResponse.builder()
                 .id(payment.getId())
                 .invoiceId(payment.getInvoiceId())

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Loader2 } from "lucide-react"
+import { getToken } from "@/services/localStorageService"
 
 interface PaymentStepProps {
   bookingId: string
@@ -13,26 +14,46 @@ export default function PaymentStep({ bookingId, total, onPaymentSuccess }: Paym
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  console.log("=== PaymentStep Debug Info ===")
+  console.log("BookingId received:", bookingId)
+  console.log("BookingId type:", typeof bookingId)
+  console.log("BookingId length:", bookingId?.length)
+  console.log("Is valid UUID format:", /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(bookingId))
+  console.log("==============================")
+
   useEffect(() => {
     const initiatePayment = async () => {
       try {
         setIsLoading(true)
         setError(null)
 
-        // Step 1: Create invoice
-        console.log("Creating invoice for booking:", bookingId)
-        const invoiceResponse = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/bookings/${bookingId}/create-invoice`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-            },
-          }
-        )
+        const token = getToken()
+        console.log("Token exists:", !!token)
+        console.log("Token preview:", token?.substring(0, 20) + "...")
+        
+        if (!token) {
+          throw new Error("No authentication token found. Please log in.")
+        }
 
+        // Step 1: Create invoice
+        const invoiceUrl = `${process.env.NEXT_PUBLIC_API_URL}/bookings/${bookingId}/create-invoice`
+        console.log("Creating invoice for booking:", bookingId)
+        console.log("Invoice URL:", invoiceUrl)
+        console.log("API Base URL:", process.env.NEXT_PUBLIC_API_URL)
+        
+        const invoiceResponse = await fetch(invoiceUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        })
+
+        console.log("Invoice response status:", invoiceResponse.status)
+        
         if (!invoiceResponse.ok) {
+          const errorText = await invoiceResponse.text()
+          console.error("Invoice error response:", errorText)
           throw new Error(`Failed to create invoice: ${invoiceResponse.status}`)
         }
 
@@ -49,16 +70,25 @@ export default function PaymentStep({ bookingId, total, onPaymentSuccess }: Paym
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+              Authorization: `Bearer ${token}`,
             },
           }
         )
 
         if (!paymentResponse.ok) {
-          throw new Error(`Failed to create payment: ${paymentResponse.status}`)
+          const errorText = await paymentResponse.text()
+          console.error("Payment error response:", errorText)
+          throw new Error(`Failed to create payment: ${paymentResponse.status} - ${errorText}`)
         }
 
         const paymentData = await paymentResponse.json()
+        console.log("Full payment response:", paymentData)
+        
+        if (!paymentData.result) {
+          console.error("No result in payment response:", paymentData)
+          throw new Error(`Invalid payment response: ${JSON.stringify(paymentData)}`)
+        }
+        
         const paymentUrl = paymentData.result.paymentUrl
 
         console.log("Payment URL received:", paymentUrl)

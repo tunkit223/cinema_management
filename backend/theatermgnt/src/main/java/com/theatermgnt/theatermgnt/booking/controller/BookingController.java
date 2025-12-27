@@ -43,7 +43,7 @@ public class BookingController {
                 .result(bookingService.redeemPoints(bookingId, discountPointRequest))
                 .build();
     }
-    
+
     /**
      * Create invoice for booking (before payment)
      * POST /api/theater-mgnt/bookings/{bookingId}/create-invoice

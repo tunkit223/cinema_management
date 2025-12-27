@@ -1,15 +1,15 @@
 package com.theatermgnt.theatermgnt.payment.util;
 
-import lombok.extern.slf4j.Slf4j;
-
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class VNPayUtil {
@@ -145,6 +145,7 @@ public class VNPayUtil {
                 if (!data.isEmpty()) {
                     data.append("&");
                 }
+                // Always encode both key and value per VNPay spec
                 data.append(encode(fieldName));
                 data.append("=");
                 data.append(encode(fieldValue));

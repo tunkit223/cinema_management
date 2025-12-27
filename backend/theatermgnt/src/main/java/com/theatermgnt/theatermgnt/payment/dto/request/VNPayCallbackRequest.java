@@ -1,11 +1,11 @@
 package com.theatermgnt.theatermgnt.payment.dto.request;
 
+import java.util.Map;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.Map;
 
 @Data
 @Builder
@@ -25,7 +25,7 @@ public class VNPayCallbackRequest {
     private String vnp_TxnRef;
     private String vnp_SecureHashType;
     private String vnp_SecureHash;
-    
+
     public static VNPayCallbackRequest fromMap(Map<String, String> params) {
         return VNPayCallbackRequest.builder()
                 .vnp_TmnCode(params.get("vnp_TmnCode"))

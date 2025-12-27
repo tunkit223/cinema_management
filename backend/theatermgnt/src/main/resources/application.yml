@@ -11,6 +11,8 @@ spring:
     username: postgres
     password: TTKtao@223
     driver-class-name: org.postgresql.Driver
+    initialization-mode: always
+    continue-on-error: true
 
   jpa:
     hibernate:
@@ -39,8 +41,8 @@ otp:
 brevo:
   apiKey: ${BREVO_API_KEY}
 vnpay:
-  tmn-code: ${VNPAY_TMN_CODE:SANDBOX}
-  hash-secret: ${VNPAY_HASH_SECRET:SANDBOX}
+  tmn-code: ${VNPAY_TMN_CODE}
+  hash-secret: ${VNPAY_HASH_SECRET}
   url: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
   return-url: http://localhost:3000/payment/vnpay-return
   ipn-url: http://localhost:8080/api/theater-mgnt/payment/vnpay-ipn

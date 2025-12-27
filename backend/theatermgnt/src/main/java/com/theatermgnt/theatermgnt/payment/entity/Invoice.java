@@ -1,10 +1,13 @@
 package com.theatermgnt.theatermgnt.payment.entity;
 
-import jakarta.persistence.*;
-import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+
+import jakarta.persistence.*;
+
+import org.hibernate.annotations.CreationTimestamp;
+
+import lombok.*;
 
 @Entity
 @Table(name = "invoices")
@@ -14,26 +17,26 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Invoice {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
-    
+
     @Column(nullable = false, unique = true)
     private String bookingId; // Foreign key to Booking
-    
+
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal totalAmount; // VND
-    
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private InvoiceStatus status; // pending, paid, failed, refunded
-    
+
     private LocalDateTime dueDate;
-    
+
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
-    
+
     private LocalDateTime paidAt;
 }

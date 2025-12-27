@@ -1,19 +1,19 @@
 package com.theatermgnt.theatermgnt.payment.dto.response;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class PaymentDetailsResponse {
-    
+
     private String id;
     private String invoiceId;
     private String paymentMethodId;
@@ -24,7 +24,7 @@ public class PaymentDetailsResponse {
     private String description;
     private LocalDateTime paymentDate;
     private LocalDateTime createdAt;
-    
+
     // For VNPay redirect
     private String paymentUrl;
     private String code;

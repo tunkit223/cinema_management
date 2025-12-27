@@ -14,12 +14,12 @@ public interface BookingService {
     BookingSummaryResponse getBookingSummary(UUID bookingId);
 
     BookingSummaryResponse redeemPoints(UUID bookingId, DiscountPointRequest pointsToRedeem);
-    
+
     /**
      * Create invoice for confirmed booking
      */
     InvoiceResponse createInvoiceForBooking(UUID bookingId);
-    
+
     /**
      * Confirm booking after successful payment
      */

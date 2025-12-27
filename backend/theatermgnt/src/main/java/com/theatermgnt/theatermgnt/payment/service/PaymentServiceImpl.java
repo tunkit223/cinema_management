@@ -1,9 +1,19 @@
 package com.theatermgnt.theatermgnt.payment.service;
 
+import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.util.*;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.transaction.Transactional;
+
+import org.springframework.stereotype.Service;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.theatermgnt.theatermgnt.config.VNPayConfig;
+import com.theatermgnt.theatermgnt.booking.service.BookingService;
 import com.theatermgnt.theatermgnt.common.exception.AppException;
 import com.theatermgnt.theatermgnt.common.exception.ErrorCode;
+import com.theatermgnt.theatermgnt.config.VNPayConfig;
 import com.theatermgnt.theatermgnt.payment.dto.response.PaymentDetailsResponse;
 import com.theatermgnt.theatermgnt.payment.entity.Invoice;
 import com.theatermgnt.theatermgnt.payment.entity.InvoiceStatus;
@@ -12,19 +22,12 @@ import com.theatermgnt.theatermgnt.payment.entity.PaymentType;
 import com.theatermgnt.theatermgnt.payment.enums.PaymentStatus;
 import com.theatermgnt.theatermgnt.payment.mapper.PaymentMapper;
 import com.theatermgnt.theatermgnt.payment.repository.InvoiceRepository;
-import com.theatermgnt.theatermgnt.payment.repository.PaymentRepository;
 import com.theatermgnt.theatermgnt.payment.repository.PaymentMethodRepository;
+import com.theatermgnt.theatermgnt.payment.repository.PaymentRepository;
 import com.theatermgnt.theatermgnt.payment.util.VNPayUtil;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.transaction.Transactional;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
-import java.math.BigDecimal;
-import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
-import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -39,6 +42,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final InvoiceService invoiceService;
     private final PaymentMapper paymentMapper;
     private final ObjectMapper objectMapper;
+    private final BookingService bookingService;
 
     @Override
     public PaymentDetailsResponse createVNPayPayment(String invoiceId, HttpServletRequest httpRequest) {
@@ -47,19 +51,27 @@ public class PaymentServiceImpl implements PaymentService {
             Invoice invoice = invoiceRepository
                     .findById(invoiceId)
                     .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_EXISTED));
-            
+
             // Check if invoice is already paid
             if (invoice.getStatus() == InvoiceStatus.PAID) {
                 throw new AppException(ErrorCode.BOOKING_NOT_EXISTED); // custom error
             }
-            
+
             // Generate transaction reference
-            String txnRef = invoiceId + "_" + System.currentTimeMillis();
-            
+            // Compact numeric txnRef (no spaces/dashes), suitable for VNPay
+            String txnRef = VNPayUtil.getRandomNumber(12);
+            // Compact order info (no spaces/dashes), keep it short
+            String sanitized = invoiceId.replace("-", "");
+            String orderInfo = "INV" + sanitized.substring(Math.max(0, sanitized.length() - 8));
+
             // Get VNPay payment method
-            var vnpayMethod = paymentMethodRepository.findByName("VNPay")
-                    .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_EXISTED));
-            
+            var vnpayMethod = paymentMethodRepository
+                    .findByName("VNPay")
+                    .orElseThrow(() -> {
+                        log.error("VNPay payment method not found in database");
+                        return new AppException(ErrorCode.BOOKING_NOT_EXISTED);
+                    });
+
             // Create payment record
             Payment payment = Payment.builder()
                     .invoiceId(invoiceId)
@@ -72,15 +84,17 @@ public class PaymentServiceImpl implements PaymentService {
                     .build();
             paymentRepository.save(payment);
 
-            // Build VNPay parameters
+            // Build VNPay parameters (TreeMap for sorted keys)
             Map<String, String> vnpParams = new TreeMap<>();
             vnpParams.put("vnp_Version", vnPayConfig.getVersion());
             vnpParams.put("vnp_Command", vnPayConfig.getCommand());
             vnpParams.put("vnp_TmnCode", vnPayConfig.getTmnCode());
-            vnpParams.put("vnp_Amount", String.valueOf(invoice.getTotalAmount().longValue() * 100)); // VNPay requires amount * 100
+            vnpParams.put(
+                    "vnp_Amount",
+                    String.valueOf(invoice.getTotalAmount().longValue() * 100)); // VNPay requires amount * 100
             vnpParams.put("vnp_CurrCode", "VND");
             vnpParams.put("vnp_TxnRef", txnRef);
-            vnpParams.put("vnp_OrderInfo", "Payment for invoice " + invoiceId);
+            vnpParams.put("vnp_OrderInfo", orderInfo);
             vnpParams.put("vnp_OrderType", vnPayConfig.getOrderType());
             vnpParams.put("vnp_Locale", "vn");
             vnpParams.put("vnp_ReturnUrl", vnPayConfig.getReturnUrl());
@@ -95,7 +109,7 @@ public class PaymentServiceImpl implements PaymentService {
             // Build hash data
             String hashData = VNPayUtil.hashAllFields(vnpParams);
             String vnpSecureHash = VNPayUtil.hmacSHA512(vnPayConfig.getHashSecret(), hashData);
-            
+
             // Build payment URL
             String queryUrl = VNPayUtil.getPaymentURL(vnpParams, false);
             String paymentUrl = vnPayConfig.getUrl() + "?" + queryUrl + "&vnp_SecureHash=" + vnpSecureHash;
@@ -106,11 +120,13 @@ public class PaymentServiceImpl implements PaymentService {
             log.info("Amount: {}", invoice.getTotalAmount());
             log.info("TxnRef: {}", txnRef);
             log.info("HashSecret: {}", vnPayConfig.getHashSecret().substring(0, 10) + "...");
+            log.info("VNPay Params: {}", vnpParams);
             log.info("Hash Data: {}", hashData);
             log.info("Secure Hash: {}", vnpSecureHash);
+            log.info("Query URL: {}", queryUrl);
             log.info("Full Payment URL: {}", paymentUrl);
             log.info("=======================");
-            
+
             log.info("Created VNPay payment with txnRef: {}, invoiceId: {}", txnRef, invoiceId);
 
             return PaymentDetailsResponse.builder()
@@ -136,20 +152,20 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     public Map<String, Object> handleVNPayCallback(Map<String, String> params) {
         Map<String, Object> response = new HashMap<>();
-        
+
         try {
             // Verify signature
             String vnpSecureHash = params.get("vnp_SecureHash");
-            
+
             // Remove hash field before verification
             params.remove("vnp_SecureHash");
-            
+
             // Use callback hash (raw values, no encoding)
             String hashData = VNPayUtil.hashAllFieldsForCallback(params);
             String calculatedHash = VNPayUtil.hmacSHA512(vnPayConfig.getHashSecret(), hashData);
-            
+
             log.info("VNPay Callback Verification");
-            
+
             // Compare hashes (case-insensitive)
             if (!calculatedHash.equalsIgnoreCase(vnpSecureHash)) {
                 response.put("code", "97");
@@ -161,7 +177,7 @@ public class PaymentServiceImpl implements PaymentService {
             // Get payment by transaction code
             String txnRef = params.get("vnp_TxnRef");
             Optional<Payment> paymentOpt = paymentRepository.findByTransactionCode(txnRef);
-            
+
             if (paymentOpt.isEmpty()) {
                 response.put("code", "01");
                 response.put("message", "Payment not found");
@@ -170,12 +186,12 @@ public class PaymentServiceImpl implements PaymentService {
 
             Payment payment = paymentOpt.get();
             String responseCode = params.get("vnp_ResponseCode");
-            
+
             // Update payment
             payment.setPaymentDate(LocalDateTime.now());
             if ("00".equals(responseCode)) {
                 payment.setStatus(PaymentStatus.SUCCESS);
-                
+
                 // Update invoice status to PAID
                 Optional<Invoice> invoiceOpt = invoiceRepository.findById(payment.getInvoiceId());
                 if (invoiceOpt.isPresent()) {
@@ -184,8 +200,16 @@ public class PaymentServiceImpl implements PaymentService {
                     invoice.setPaidAt(LocalDateTime.now());
                     invoiceRepository.save(invoice);
                     log.info("Invoice {} marked as PAID", invoice.getId());
+                    
+                    // Update booking status to CONFIRMED
+                    try {
+                        bookingService.confirmBookingPayment(invoice.getBookingId());
+                        log.info("Booking {} confirmed after successful payment", invoice.getBookingId());
+                    } catch (Exception e) {
+                        log.error("Error confirming booking {}", invoice.getBookingId(), e);
+                    }
                 }
-                
+
                 response.put("code", "00");
                 response.put("message", "Payment successful");
             } else {
@@ -193,40 +217,40 @@ public class PaymentServiceImpl implements PaymentService {
                 response.put("code", responseCode);
                 response.put("message", "Payment failed with code: " + responseCode);
             }
-            
+
             paymentRepository.save(payment);
-            
+
             response.put("paymentId", payment.getId());
             response.put("invoiceId", payment.getInvoiceId());
             response.put("txnRef", txnRef);
             response.put("amount", Long.parseLong(params.get("vnp_Amount")) / 100);
-            
+
         } catch (Exception e) {
             log.error("Error handling VNPay callback", e);
             response.put("code", "99");
             response.put("message", "Error: " + e.getMessage());
         }
-        
+
         return response;
     }
 
     @Override
     public Map<String, Object> handleVNPayIPN(Map<String, String> params) {
         Map<String, Object> response = new HashMap<>();
-        
+
         try {
             // Verify signature
             String vnpSecureHash = params.get("vnp_SecureHash");
-            
+
             // Remove hash field before verification
             params.remove("vnp_SecureHash");
-            
+
             // Use callback hash (raw values, no encoding)
             String hashData = VNPayUtil.hashAllFieldsForCallback(params);
             String calculatedHash = VNPayUtil.hmacSHA512(vnPayConfig.getHashSecret(), hashData);
-            
+
             log.info("VNPay IPN Verification");
-            
+
             // Compare hashes (case-insensitive)
             if (!calculatedHash.equalsIgnoreCase(vnpSecureHash)) {
                 response.put("RspCode", "97");
@@ -237,7 +261,7 @@ public class PaymentServiceImpl implements PaymentService {
 
             String txnRef = params.get("vnp_TxnRef");
             Optional<Payment> paymentOpt = paymentRepository.findByTransactionCode(txnRef);
-            
+
             if (paymentOpt.isEmpty()) {
                 response.put("RspCode", "01");
                 response.put("Message", "Payment not found");
@@ -245,7 +269,7 @@ public class PaymentServiceImpl implements PaymentService {
             }
 
             Payment payment = paymentOpt.get();
-            
+
             // Check if already processed
             if (payment.getStatus() != PaymentStatus.PENDING) {
                 response.put("RspCode", "02");
@@ -266,7 +290,7 @@ public class PaymentServiceImpl implements PaymentService {
             if ("00".equals(responseCode)) {
                 payment.setStatus(PaymentStatus.SUCCESS);
                 payment.setPaymentDate(LocalDateTime.now());
-                
+
                 // Update invoice status to PAID
                 Optional<Invoice> invoiceOpt = invoiceRepository.findById(payment.getInvoiceId());
                 if (invoiceOpt.isPresent()) {
@@ -274,9 +298,14 @@ public class PaymentServiceImpl implements PaymentService {
                     invoice.setStatus(InvoiceStatus.PAID);
                     invoice.setPaidAt(LocalDateTime.now());
                     invoiceRepository.save(invoice);
-                    
-                    // TODO: Update Booking status to CONFIRMED
-                    // bookingService.confirmBookingPayment(invoice.getBookingId());
+
+                    // Update Booking status to CONFIRMED
+                    try {
+                        bookingService.confirmBookingPayment(invoice.getBookingId());
+                        log.info("Booking {} confirmed after successful payment", invoice.getBookingId());
+                    } catch (Exception e) {
+                        log.error("Error confirming booking {}", invoice.getBookingId(), e);
+                    }
                     
                     log.info("Invoice {} marked as PAID and payment success", invoice.getId());
                 }
@@ -296,7 +325,7 @@ public class PaymentServiceImpl implements PaymentService {
             response.put("RspCode", "99");
             response.put("Message", "Unknown error");
         }
-        
+
         return response;
     }
 }
