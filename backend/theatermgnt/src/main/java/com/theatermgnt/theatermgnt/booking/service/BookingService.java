@@ -13,4 +13,6 @@ public interface BookingService {
     BookingSummaryResponse getBookingSummary(UUID bookingId);
 
     BookingSummaryResponse redeemPoints(UUID bookingId, DiscountPointRequest pointsToRedeem);
+
+    void cancelBooking(UUID bookingId);
 }

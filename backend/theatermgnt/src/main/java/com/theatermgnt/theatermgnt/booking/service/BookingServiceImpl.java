@@ -80,7 +80,7 @@ public class BookingServiceImpl implements BookingService {
         int lockedCount = screeningSeatRepository.lockSeats(request.getScreeningSeatIds(), expiredAt);
 
         if (lockedCount != request.getScreeningSeatIds().size()) {
-            throw new AppException(ErrorCode.SCREENING_NOT_EXISTED);
+            throw new AppException(ErrorCode.SCREENING_SEATS_NOT_AVAILABLE);
         }
 
         List<ScreeningSeat> seats = screeningSeatRepository.findAllById(request.getScreeningSeatIds());
@@ -225,5 +225,21 @@ public class BookingServiceImpl implements BookingService {
                 (screeningSeats.stream().map(ScreeningSeat::getSeat).toList())
                         .stream().map(seatMapper::toSeatResponse).toList(),
                 movieResponse);
+    }
+
+    @Override
+    public void cancelBooking(UUID bookingId) {
+        Booking booking = bookingRepository
+                .findById(bookingId)
+                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_EXISTED));
+
+        if (booking.getStatus() != BookingStatus.PENDING) {
+            throw new IllegalStateException("Only pending bookings can be cancelled");
+        }
+
+        booking.setStatus(BookingStatus.CANCELLED);
+        bookingRepository.saveAndFlush(booking);
+
+        screeningSeatRepository.releaseSeatsByBooking(bookingId.toString());
     }
 }

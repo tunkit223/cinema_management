@@ -6,7 +6,7 @@ import { use } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { generateSeats } from "@/lib/mock-data"
 import { getMovieById, mapMovieForDisplay, getScreeningSeatsByScreeningId, mapScreeningSeatToSeat, getScreeningById, mapScreeningToShowtime, getCombos, mapComboForDisplay, getComboItemsByComboId, mapComboItemDetail } from "@/lib/api-movie"
-import { createBooking, getBookingSummary, updateBookingCombos, redeemBookingPoints } from "@/services/bookingService"
+import { createBooking, getBookingSummary, updateBookingCombos, redeemBookingPoints, cancelBooking } from "@/services/bookingService"
 import type { BookingSummaryResponse } from "@/services/bookingService"
 import { getUserInfo, getToken } from "@/services/localStorageService"
 import { getMyInfo, getCustomerLoyaltyPoints } from "@/services/customerService"
@@ -31,6 +31,7 @@ export default function BookingPage({
   const [showtime, setShowtime] = useState<Showtime | null>(null)
   const [loading, setLoading] = useState(true)
   const [seatsLoading, setSeatsLoading] = useState(true)
+  const [seatsError, setSeatsError] = useState<string | null>(null)
   const [seats, setSeats] = useState<Seat[]>([])
 
   const [currentStep, setCurrentStep] = useState(1)
@@ -51,6 +52,10 @@ export default function BookingPage({
   const [bookingExpiredAt, setBookingExpiredAt] = useState<string | null>(null)
   const [isCreatingBooking, setIsCreatingBooking] = useState(false)
   const hasRunStep1Reset = useRef(false)
+  const isCancellingBooking = useRef(false)
+  const skipStep1Effect = useRef(false)
+  const bookingIdRef = useRef<string | null>(null)
+  const currentStepRef = useRef<number>(1)
 
   // Save booking state to sessionStorage
   const saveBookingState = (state: any) => {
@@ -125,6 +130,94 @@ export default function BookingPage({
     setPointsUsed(0)
     setPointsDiscount(0)
   }
+
+  const reloadSeatsFromAPI = async () => {
+    try {
+      setSeatsLoading(true)
+      setSeatsError(null)
+      // Clear old seats first to ensure fresh data
+      setSeats([])
+      
+      const seatData = await getScreeningSeatsByScreeningId(showtimeId)
+      
+      if (seatData && Array.isArray(seatData)) {
+        const mappedSeats = seatData
+          .map((seat, idx) => mapScreeningSeatToSeat(seat, idx))
+          .filter((seat): seat is Seat => seat !== null)
+          .sort((a, b) => {
+            if (a.row === b.row) {
+              return a.number - b.number
+            }
+            return a.row.localeCompare(b.row, undefined, { numeric: true, sensitivity: "base" })
+          })
+        setSeats(mappedSeats)
+        console.log('Seats reloaded successfully')
+      } else {
+        console.error('No seat data from backend')
+        setSeatsError('Unable to load seats. Please refresh the page and try again.')
+        setSeats([])
+      }
+    } catch (error: any) {
+      console.error('Error reloading seats:', error)
+      setSeatsError(error?.response?.data?.message || 'Failed to reload seats. Please refresh the page and try again.')
+      setSeats([])
+    } finally {
+      setSeatsLoading(false)
+    }
+  }
+
+  const handleCancelBooking = async (id: string, shouldReloadSeats = false) => {
+    // Prevent duplicate cancel requests
+    if (isCancellingBooking.current) return
+    isCancellingBooking.current = true
+
+    try {
+      await cancelBooking(id)
+      console.log('Booking cancelled successfully:', id)
+      
+      // Reload seats after successful cancellation to show freed seats
+      if (shouldReloadSeats) {
+        await reloadSeatsFromAPI()
+      }
+    } catch (error: any) {
+      console.error('Error cancelling booking:', error)
+      // Continue with cleanup even if cancel fails
+    } finally {
+      isCancellingBooking.current = false
+    }
+  }
+
+  const goToStep1WithRefresh = async () => {
+    // Skip running step1 effect since we handle here
+    skipStep1Effect.current = true
+
+    // Optimistically move UI to step 1 so user doesn't have to click twice
+    setCurrentStep(1)
+
+    if (bookingId) {
+      await handleCancelBooking(bookingId, true)
+    } else {
+      await reloadSeatsFromAPI()
+    }
+
+    // Clear all state for step 1
+    setBookingId(null)
+    setBookingExpiredAt(null)
+    setBookingSummary(null)
+    setSelectedSeats([])
+    setSelectedCombos([])
+    setPointsUsed(0)
+    setPointsDiscount(0)
+    clearBookingState()
+
+    setCurrentStep(1)
+  }
+
+  // Keep refs in sync for use in unmount cleanup
+  useEffect(() => {
+    bookingIdRef.current = bookingId
+    currentStepRef.current = currentStep
+  }, [bookingId, currentStep])
 
   // Restore booking state from sessionStorage on mount
   useEffect(() => {
@@ -269,6 +362,7 @@ export default function BookingPage({
     const fetchSeats = async () => {
       try {
         setSeatsLoading(true)
+        setSeatsError(null)
         const seatData = await getScreeningSeatsByScreeningId(showtimeId)
         
         if (seatData && Array.isArray(seatData)) {
@@ -284,14 +378,16 @@ export default function BookingPage({
             })
           setSeats(mappedSeats)
         } else {
-          // Fallback to mock data if no seats from backend
-          console.warn('No seat data from backend, using mock data')
-          setSeats(generateSeats())
+          // Show error if no seats from backend
+          console.error('No seat data from backend')
+          setSeatsError('Unable to load seats. Please refresh the page and try again.')
+          setSeats([])
         }
       } catch (error) {
         console.error('Error fetching seats:', error)
-        // Fallback to mock data
-        setSeats(generateSeats())
+        // Show error instead of fallback to mock data
+        setSeatsError(error?.response?.data?.message || 'Failed to load seats. Please refresh the page and try again.')
+        setSeats([])
       } finally {
         setSeatsLoading(false)
       }
@@ -330,12 +426,21 @@ export default function BookingPage({
       setPointsDiscount(0)
       console.log('Booking summary reset for step 2')
     } else if (currentStep === 1 && showtimeId) {
+      // If we already handled the transition to step 1 manually, skip this effect
+      if (skipStep1Effect.current) {
+        skipStep1Effect.current = false
+        return
+      }
+
       // Skip the initial mount to avoid a duplicate seat fetch (causing timeout)
       if (!hasRunStep1Reset.current) {
         hasRunStep1Reset.current = true
         return
       }
 
+      // Cancel booking when returning to step 1
+      const bookingIdToCancel = bookingId
+      
       // Reset booking-related state without reloading seats to avoid timeout
       setBookingId(null)
       setBookingExpiredAt(null)
@@ -345,38 +450,16 @@ export default function BookingPage({
       setPointsUsed(0)
       setPointsDiscount(0)
       console.log('Booking state reset for step 1')
-      
-      // Reload seats to show updated availability
-      const reloadSeats = async () => {
-        try {
-          setSeatsLoading(true)
-          const seatData = await getScreeningSeatsByScreeningId(showtimeId)
-          
-          if (seatData && Array.isArray(seatData)) {
-            const mappedSeats = seatData
-              .map((seat, idx) => mapScreeningSeatToSeat(seat, idx))
-              .filter((seat): seat is Seat => seat !== null)
-              .sort((a, b) => {
-                if (a.row === b.row) {
-                  return a.number - b.number
-                }
-                return a.row.localeCompare(b.row, undefined, { numeric: true, sensitivity: "base" })
-              })
-            setSeats(mappedSeats)
-            console.log('Seats reloaded for step 1')
-          } else {
-            console.warn('No seat data from backend')
-            setSeats(generateSeats())
-          }
-        } catch (error) {
-          console.error('Error reloading seats for step 1:', error)
-          // Keep existing seats if reload fails
-        } finally {
-          setSeatsLoading(false)
+
+      // Cancel the booking and reload seats - use async IIFE to await
+      ;(async () => {
+        if (bookingIdToCancel) {
+          await handleCancelBooking(bookingIdToCancel, true)
+        } else {
+          // If no booking to cancel, just reload seats
+          await reloadSeatsFromAPI()
         }
-      }
-      
-      reloadSeats()
+      })()
     }
   }, [currentStep, showtimeId])
 
@@ -433,6 +516,17 @@ export default function BookingPage({
 
     updateSummaryOnComboChange()
   }, [selectedCombos, bookingId, currentStep])
+
+  // Handle cleanup when page is leaving (unmount) and booking is still active
+  useEffect(() => {
+    return () => {
+      const id = bookingIdRef.current
+      const step = currentStepRef.current
+      if (id && step < 5) {
+        handleCancelBooking(id)
+      }
+    }
+  }, [])
 
   if (loading) {
     return (
@@ -566,6 +660,7 @@ export default function BookingPage({
           // Reload seats from API
           try {
             setSeatsLoading(true)
+            setSeatsError(null)
             const seatData = await getScreeningSeatsByScreeningId(showtimeId)
             
             if (seatData && Array.isArray(seatData)) {
@@ -579,9 +674,14 @@ export default function BookingPage({
                   return a.row.localeCompare(b.row, undefined, { numeric: true, sensitivity: "base" })
                 })
               setSeats(mappedSeats)
+            } else {
+              setSeatsError('Unable to load seats. Please refresh the page and try again.')
+              setSeats([])
             }
-          } catch (reloadError) {
+          } catch (reloadError: any) {
             console.error('Error reloading seats:', reloadError)
+            setSeatsError(reloadError?.response?.data?.message || 'Failed to reload seats. Please try again.')
+            setSeats([])
           } finally {
             setSeatsLoading(false)
           }
@@ -722,6 +822,20 @@ export default function BookingPage({
                     <p className="text-muted-foreground mt-4">Loading seats...</p>
                   </div>
                 </div>
+              ) : seatsError ? (
+                <div className="bg-card dark:bg-slate-900 border border-red-500/50 dark:border-red-500/50 rounded-xl p-8 flex items-center justify-center min-h-[400px]">
+                  <div className="text-center">
+                    <div className="text-red-500 text-lg mb-2">⚠️</div>
+                    <h3 className="text-lg font-semibold text-red-500 mb-2">Unable to Load Seats</h3>
+                    <p className="text-muted-foreground mb-4">{seatsError}</p>
+                    <button
+                      onClick={() => window.location.reload()}
+                      className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition-colors"
+                    >
+                      Refresh Page
+                    </button>
+                  </div>
+                </div>
               ) : (
                 <SeatSelectionStep
                   seats={seats}
@@ -814,7 +928,14 @@ export default function BookingPage({
               <div className="space-y-3">
                 {currentStep > 1 && (
                   <button
-                    onClick={() => setCurrentStep(currentStep - 1)}
+                    onClick={async () => {
+                      if (currentStep === 2) {
+                        await goToStep1WithRefresh()
+                        return
+                      }
+
+                      setCurrentStep(currentStep - 1)
+                    }}
                     className="w-full px-4 py-3 rounded-lg border border-border dark:border-slate-700 hover:bg-muted dark:hover:bg-slate-800 transition-colors font-semibold flex items-center justify-center gap-2"
                   >
                     <ChevronLeft size={20} />

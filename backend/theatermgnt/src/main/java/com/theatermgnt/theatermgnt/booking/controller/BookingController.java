@@ -42,4 +42,12 @@ public class BookingController {
                 .result(bookingService.redeemPoints(bookingId, discountPointRequest))
                 .build();
     }
+
+    @PostMapping("/{bookingId}/cancel")
+    public ApiResponse<String> cancelBooking(@PathVariable UUID bookingId) {
+        bookingService.cancelBooking(bookingId);
+        return ApiResponse.<String>builder()
+                .result("Booking cancel successfully")
+                .build();
+    }
 }
