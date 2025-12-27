@@ -26,6 +26,7 @@ export default function BookingPage({
   const { movieId, showtimeId } = use(params)
   
   const BOOKING_STORAGE_KEY = `booking_${movieId}_${showtimeId}`
+  const BOOKING_RELOAD_FLAG_KEY = `booking_reload_${movieId}_${showtimeId}`
   
   const [movie, setMovie] = useState<any>(null)
   const [showtime, setShowtime] = useState<Showtime | null>(null)
@@ -219,43 +220,52 @@ export default function BookingPage({
     currentStepRef.current = currentStep
   }, [bookingId, currentStep])
 
-  // Restore booking state from sessionStorage on mount
+  // Mark reload so we skip cancelling booking during a page refresh
   useEffect(() => {
+    const handleBeforeUnload = () => {
+      sessionStorage.setItem(BOOKING_RELOAD_FLAG_KEY, '1')
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
+  }, [])
+
+  // Restore booking state on reload (if not expired) and clear reload flag
+  useEffect(() => {
+    // Clear the reload marker set during beforeunload
+    sessionStorage.removeItem(BOOKING_RELOAD_FLAG_KEY)
+
     try {
       const savedState = sessionStorage.getItem(BOOKING_STORAGE_KEY)
       if (savedState) {
         const state = JSON.parse(savedState)
-        
-        // Only restore if step >= 2 (from combo selection onwards)
-        if (state.currentStep && state.currentStep >= 2) {
-          // Check if booking is not expired
-          if (state.bookingExpiredAt) {
-            const expiredAt = new Date(state.bookingExpiredAt)
-            const now = new Date()
-            
-            if (now < expiredAt) {
-              // Restore state
-              if (state.bookingId) setBookingId(state.bookingId)
-              if (state.bookingExpiredAt) setBookingExpiredAt(state.bookingExpiredAt)
-              if (state.currentStep) setCurrentStep(state.currentStep)
-              if (state.selectedSeats) setSelectedSeats(state.selectedSeats)
-              if (state.selectedCombos) setSelectedCombos(state.selectedCombos)
-              if (state.pointsUsed) setPointsUsed(state.pointsUsed)
-              if (state.pointsDiscount) setPointsDiscount(state.pointsDiscount)
-              console.log('Booking state restored from sessionStorage')
-            } else {
-              // Booking expired, clear storage
-              clearBookingState()
-              console.log('Saved booking has expired, cleared from storage')
-            }
+
+        if (state.currentStep && state.currentStep >= 2 && state.bookingExpiredAt) {
+          const expiredAt = new Date(state.bookingExpiredAt)
+          const now = new Date()
+
+          if (now < expiredAt) {
+            if (state.bookingId) setBookingId(state.bookingId)
+            if (state.bookingExpiredAt) setBookingExpiredAt(state.bookingExpiredAt)
+            if (state.currentStep) setCurrentStep(state.currentStep)
+            if (state.selectedSeats) setSelectedSeats(state.selectedSeats)
+            if (state.selectedCombos) setSelectedCombos(state.selectedCombos)
+            if (state.pointsUsed) setPointsUsed(state.pointsUsed)
+            if (state.pointsDiscount) setPointsDiscount(state.pointsDiscount)
+            console.log('Booking state restored from sessionStorage')
+          } else {
+            clearBookingState()
+            console.log('Saved booking expired, cleared from storage')
           }
         } else {
-          // Step 1, clear any saved state
           clearBookingState()
         }
       }
     } catch (error) {
       console.error('Error restoring booking state:', error)
+      clearBookingState()
     }
   }, [])
 
@@ -517,13 +527,19 @@ export default function BookingPage({
     updateSummaryOnComboChange()
   }, [selectedCombos, bookingId, currentStep])
 
-  // Handle cleanup when page is leaving (unmount) and booking is still active
+  // Handle cleanup when leaving page: cancel only if not a reload, and clear stored state
   useEffect(() => {
     return () => {
       const id = bookingIdRef.current
       const step = currentStepRef.current
-      if (id && step < 5) {
+      const isReload = sessionStorage.getItem(BOOKING_RELOAD_FLAG_KEY) === '1'
+
+      if (!isReload && id && step < 5) {
         handleCancelBooking(id)
+      }
+
+      if (!isReload) {
+        clearBookingState()
       }
     }
   }, [])
