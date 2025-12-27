@@ -48,7 +48,7 @@ export default function EquipmentModal({
           roomId: room.id,
           serialNumber: "",
           status: "ACTIVE",
-          purchaseDate: undefined,
+          purchaseDate: "",
         }
   );
   const [loading, setLoading] = useState(false);
@@ -70,6 +70,33 @@ export default function EquipmentModal({
       setLoading(true);
       setError(null);
 
+      if (!formData.serialNumber || !formData.serialNumber.trim()) {
+        setError("Serial number is required");
+        setLoading(false);
+        return;
+      }
+
+      if (!formData.purchaseDate) {
+        setError("Purchase date is required");
+        setLoading(false);
+        return;
+      }
+
+      const purchase = new Date(formData.purchaseDate);
+      const today = new Date();
+
+      if (Number.isNaN(purchase.getTime())) {
+        setError("Purchase date is invalid");
+        setLoading(false);
+        return;
+      }
+
+      if (purchase > today) {
+        setError("Purchase date cannot be in the future");
+        setLoading(false);
+        return;
+      }
+
       if (equipment) {
         await updateEquipment(equipment.id, formData as UpdateEquipmentRequest);
       } else {
@@ -89,8 +116,12 @@ export default function EquipmentModal({
   const equipmentStatuses = ["ACTIVE", "MAINTENANCE", "BROKEN"];
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div
+        className="absolute inset-0 bg-black/50"
+        onClick={onClose}
+      />
+      <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full">
         <div className="flex justify-between items-center p-6 border-b">
           <div>
             <h2 className="text-xl font-semibold">
@@ -167,26 +198,28 @@ export default function EquipmentModal({
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Serial Number
+                  Serial Number *
                 </label>
                 <input
                   type="text"
                   name="serialNumber"
                   value={formData.serialNumber}
                   onChange={handleChange}
+                  required
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Purchase Date
+                  Purchase Date *
                 </label>
                 <input
                   type="date"
                   name="purchaseDate"
                   value={formData.purchaseDate || ""}
                   onChange={handleChange}
+                  required
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Plus, Trash2, Edit } from "lucide-react";
 import {
@@ -65,18 +66,23 @@ export default function EquipmentListDetail({
   const getStatusColor = (status: string) => {
     switch (status) {
       case "ACTIVE":
-        return "bg-green-100 text-green-800";
+        return "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300";
       case "MAINTENANCE":
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300";
       case "BROKEN":
-        return "bg-red-100 text-red-800";
+        return "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300";
     }
   };
 
   return (
     <div className="space-y-6">
+      <PageHeader
+        title="Equipment Management"
+        description={`Managing equipment for ${room.name}`}
+      />
+
       <div className="flex items-center gap-4">
         <Button
           onClick={onBack}
@@ -90,10 +96,7 @@ export default function EquipmentListDetail({
 
       <div className="bg-white rounded-lg shadow-sm p-6">
         <div className="flex justify-between items-center mb-6">
-          <div>
-            <h2 className="text-3xl font-bold">{room.name}</h2>
-            <p className="text-gray-500 mt-1">Equipment Management</p>
-          </div>
+          <div></div>
           <Button
             onClick={handleCreate}
             className="bg-blue-600 hover:bg-blue-700 text-white"
@@ -112,66 +115,70 @@ export default function EquipmentListDetail({
         {loading ? (
           <div className="text-center py-8">Loading...</div>
         ) : equipment.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
+          <div className="text-center py-8 text-muted-foreground">
             No equipment found. Add one to get started.
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-3 px-4 font-semibold">Name</th>
-                  <th className="text-left py-3 px-4 font-semibold">Category</th>
-                  <th className="text-left py-3 px-4 font-semibold">Serial Number</th>
-                  <th className="text-left py-3 px-4 font-semibold">Status</th>
-                  <th className="text-left py-3 px-4 font-semibold">Purchase Date</th>
-                  <th className="text-left py-3 px-4 font-semibold">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {equipment.map((eq) => (
-                  <tr key={eq.id} className="border-b hover:bg-gray-50">
-                    <td className="py-3 px-4 font-medium">{eq.name}</td>
-                    <td className="py-3 px-4">
-                      <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
-                        {getCategoryName(eq.categoryId)}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-sm">{eq.serialNumber || "-"}</td>
-                    <td className="py-3 px-4">
-                      <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor(eq.status)}`}>
-                        {eq.status}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-sm">
-                      {eq.purchaseDate
-                        ? new Date(eq.purchaseDate).toLocaleDateString()
-                        : "-"}
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={() => handleEdit(eq)}
-                          variant="ghost"
-                          size="sm"
-                          className="text-blue-600 hover:text-blue-800"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          onClick={() => handleDelete(eq.id)}
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </td>
+          <div className="rounded-lg border border-border bg-card overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-muted/50 border-b border-border">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Name</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Category</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Serial Number</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Status</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">Purchase Date</th>
+                    <th className="px-6 py-4 text-center text-sm font-semibold text-foreground">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {equipment.map((eq) => (
+                    <tr key={eq.id} className="hover:bg-muted/30 transition-colors">
+                      <td className="px-6 py-4 text-foreground font-medium">{eq.name}</td>
+                      <td className="px-6 py-4">
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-medium">
+                          {getCategoryName(eq.categoryId)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-muted-foreground">{eq.serialNumber || "-"}</td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(eq.status)}`}>
+                          {eq.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-muted-foreground">
+                        {eq.purchaseDate
+                          ? new Date(eq.purchaseDate).toLocaleDateString()
+                          : "-"}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center justify-center gap-2">
+                          <Button
+                            onClick={() => handleEdit(eq)}
+                            variant="outline"
+                            size="sm"
+                            className="gap-2"
+                          >
+                            <Edit className="h-3.5 w-3.5" />
+                            Edit
+                          </Button>
+                          <Button
+                            onClick={() => handleDelete(eq.id)}
+                            variant="destructive"
+                            size="sm"
+                            className="gap-2"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                            Delete
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>

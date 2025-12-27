@@ -3,6 +3,8 @@ package com.theatermgnt.theatermgnt.equipment.dto.request;
 import java.time.LocalDate;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PastOrPresent;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -22,10 +24,13 @@ public class EquipmentCreationRequest {
     @NotBlank(message = "Room ID is required")
     String roomId;
 
+    @NotBlank(message = "Serial number is required")
     String serialNumber;
 
     @NotBlank(message = "Status is required")
     String status;
 
+    @NotNull(message = "Purchase date is required")
+    @PastOrPresent(message = "Purchase date cannot be in the future")
     LocalDate purchaseDate;
 }

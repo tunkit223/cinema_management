@@ -81,6 +81,12 @@ public class EquipmentService {
                 .findById(equipmentId)
                 .orElseThrow(() -> new AppException(ErrorCode.EQUIPMENT_NOT_EXISTED));
 
+        if (request.getSerialNumber() != null
+                && !request.getSerialNumber().equals(equipment.getSerialNumber())
+                && equipmentRepository.existsBySerialNumber(request.getSerialNumber())) {
+            throw new AppException(ErrorCode.EQUIPMENT_EXISTED);
+        }
+
         equipmentMapper.updateEquipment(equipment, request);
         equipment.setUpdatedAt(LocalDateTime.now());
 

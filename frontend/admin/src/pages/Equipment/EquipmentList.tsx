@@ -181,12 +181,10 @@ export function EquipmentList() {
   if (selectedCinema) {
     return (
       <div className="space-y-6">
-        {isManager && (
-          <PageHeader
-            title="Equipment Management"
-            description={`Managing equipment for ${selectedCinema.name}`}
-          />
-        )}
+        <PageHeader
+          title="Equipment Management"
+          description={`Managing equipment for ${selectedCinema.name}`}
+        />
         {!isManager && (
           <div className="flex items-center gap-4">
             <Button
