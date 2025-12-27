@@ -27,7 +27,7 @@ export default function BookingPage({
   
   const BOOKING_STORAGE_KEY = `booking_${movieId}_${showtimeId}`
   const BOOKING_RELOAD_FLAG_KEY = `booking_reload_${movieId}_${showtimeId}`
-  
+
   const [movie, setMovie] = useState<any>(null)
   const [showtime, setShowtime] = useState<Showtime | null>(null)
   const [loading, setLoading] = useState(true)
@@ -61,6 +61,11 @@ export default function BookingPage({
   // Save booking state to sessionStorage
   const saveBookingState = (state: any) => {
     try {
+      // Don't save if payment is successful or step is 5 (success)
+      if (state.paymentSuccess || state.currentStep === 5) {
+        clearBookingState()
+        return
+      }
       sessionStorage.setItem(BOOKING_STORAGE_KEY, JSON.stringify(state))
     } catch (error) {
       console.error('Error saving booking state:', error)
@@ -138,9 +143,9 @@ export default function BookingPage({
       setSeatsError(null)
       // Clear old seats first to ensure fresh data
       setSeats([])
-      
+
       const seatData = await getScreeningSeatsByScreeningId(showtimeId)
-      
+
       if (seatData && Array.isArray(seatData)) {
         const mappedSeats = seatData
           .map((seat, idx) => mapScreeningSeatToSeat(seat, idx))
@@ -175,7 +180,7 @@ export default function BookingPage({
     try {
       await cancelBooking(id)
       console.log('Booking cancelled successfully:', id)
-      
+
       // Reload seats after successful cancellation to show freed seats
       if (shouldReloadSeats) {
         await reloadSeatsFromAPI()
@@ -241,33 +246,54 @@ export default function BookingPage({
       const savedState = sessionStorage.getItem(BOOKING_STORAGE_KEY)
       if (savedState) {
         const state = JSON.parse(savedState)
+        
+        // Only restore if step >= 2 (from combo selection onwards)
+        // But NEVER restore to step 4 (payment) or step 5 (success)
+        // to avoid using expired/deleted bookingId
+        if (state.currentStep && state.currentStep >= 2) {
+          // Check if booking is not expired
+          if (state.bookingExpiredAt) {
+            const expiredAt = new Date(state.bookingExpiredAt)
+            const now = new Date()
 
-        if (state.currentStep && state.currentStep >= 2 && state.bookingExpiredAt) {
-          const expiredAt = new Date(state.bookingExpiredAt)
-          const now = new Date()
+            if (now < expiredAt) {
+              // Restore state, but limit to step 3 max
+              const restoredStep = Math.min(state.currentStep, 3)
 
-          if (now < expiredAt) {
-            if (state.bookingId) setBookingId(state.bookingId)
-            if (state.bookingExpiredAt) setBookingExpiredAt(state.bookingExpiredAt)
-            if (state.currentStep) setCurrentStep(state.currentStep)
-            if (state.selectedSeats) setSelectedSeats(state.selectedSeats)
-            if (state.selectedCombos) setSelectedCombos(state.selectedCombos)
-            if (state.pointsUsed) setPointsUsed(state.pointsUsed)
-            if (state.pointsDiscount) setPointsDiscount(state.pointsDiscount)
-            console.log('Booking state restored from sessionStorage')
-          } else {
-            clearBookingState()
-            console.log('Saved booking expired, cleared from storage')
+              // Only restore bookingId if we're restoring to step <= 3
+              if (restoredStep <= 3) {
+                if (state.bookingId) setBookingId(state.bookingId)
+                if (state.bookingExpiredAt) setBookingExpiredAt(state.bookingExpiredAt)
+              }
+
+              setCurrentStep(restoredStep)
+              if (state.selectedSeats) setSelectedSeats(state.selectedSeats)
+              if (state.selectedCombos) setSelectedCombos(state.selectedCombos)
+              if (state.pointsUsed) setPointsUsed(state.pointsUsed)
+              if (state.pointsDiscount) setPointsDiscount(state.pointsDiscount)
+
+              if (restoredStep < state.currentStep) {
+                console.log(`Booking state restored to step ${restoredStep} (was step ${state.currentStep})`)
+              } else {
+                console.log('Booking state restored from sessionStorage')
+              }
+            } else {
+              // Booking expired, clear storage
+              clearBookingState()
+              console.log('Saved booking has expired, cleared from storage')
+            }
           }
         } else {
+          // Step 1 or invalid step, clear any saved state for fresh start
           clearBookingState()
+          console.log('Starting fresh booking, cleared old state')
         }
       }
     } catch (error) {
       console.error('Error restoring booking state:', error)
       clearBookingState()
     }
-  }, [])
+  }, [movieId, showtimeId]) // Re-run when movieId/showtimeId changes
 
   // Fetch movie from API
   useEffect(() => {
@@ -450,7 +476,7 @@ export default function BookingPage({
 
       // Cancel booking when returning to step 1
       const bookingIdToCancel = bookingId
-      
+
       // Reset booking-related state without reloading seats to avoid timeout
       setBookingId(null)
       setBookingExpiredAt(null)
@@ -891,6 +917,7 @@ export default function BookingPage({
             )}
             {currentStep === 4 && (
               <PaymentStep
+                bookingId={bookingId!}
                 total={total}
                 onPaymentSuccess={() => {
                   setPaymentSuccess(true)

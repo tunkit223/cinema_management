@@ -6,7 +6,7 @@ const API_BASE_URL = 'http://localhost:8080/api/theater-mgnt'
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
+  // timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
   },

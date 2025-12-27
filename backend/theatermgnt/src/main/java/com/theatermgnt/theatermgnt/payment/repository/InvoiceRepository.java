@@ -1,0 +1,17 @@
+package com.theatermgnt.theatermgnt.payment.repository;
+
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import com.theatermgnt.theatermgnt.payment.entity.Invoice;
+import com.theatermgnt.theatermgnt.payment.entity.InvoiceStatus;
+
+@Repository
+public interface InvoiceRepository extends JpaRepository<Invoice, String> {
+    Optional<Invoice> findByBookingId(String bookingId);
+
+    List<Invoice> findByStatus(InvoiceStatus status);
+}
