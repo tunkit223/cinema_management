@@ -7,7 +7,7 @@ import { Profile } from "@/pages/Profile/StaffProfile";
 import { PermissionList } from "@/pages/Permissions";
 import { RoleList } from "@/pages/Roles";
 import { MovieList } from "@/pages/Movies";
-import { ShowtimeList, CreateShowtime } from "@/pages/Showtimes";
+import { ShowtimeList, CreateShowtime, ShowtimeCalendarPage } from "@/pages/Showtimes";
 import { TheaterList } from "@/pages/Cinemas";
 import { RoomList, CreateRoom, EditRoom } from "@/pages/Rooms";
 import { TicketList } from "@/pages/Tickets";
@@ -77,6 +77,10 @@ export const routes = [
             children: [
               {
                 index: true,
+                element: <ShowtimeCalendarPage />,
+              },
+              {
+                path: "list",
                 element: <ShowtimeList />,
               },
               {

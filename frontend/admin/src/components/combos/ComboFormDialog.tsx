@@ -199,16 +199,16 @@ export function ComboFormDialog({
       isOpen={isOpen}
       onClose={onClose}
       title={combo ? "Edit Combo" : "Add New Combo"}
-      maxWidth="xl"
+      maxWidth="2xl"
     >
-      <form onSubmit={handleSubmit} className="flex flex-col h-full">
-        <div className="overflow-y-auto max-h-[calc(85vh-120px)] pr-2 space-y-6">
+      <form onSubmit={handleSubmit} className="flex flex-col h-full max-h-[calc(90vh-8rem)]">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-4 pr-2">
           {/* Combo Information Section */}
-          <div className="space-y-4 border-b border-border pb-6">
+          <div className="space-y-3 border-b border-border pb-4">
           <h3 className="text-lg font-semibold text-foreground">Combo Information</h3>
           
           {/* Combo Name */}
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="name" className="flex items-center gap-2">
               <Package className="h-4 w-4 text-muted-foreground" />
               Combo Name <span className="text-destructive">*</span>
@@ -227,7 +227,7 @@ export function ComboFormDialog({
           </div>
 
           {/* Description */}
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="description" className="flex items-center gap-2">
               <FileText className="h-4 w-4 text-muted-foreground" />
               Description <span className="text-destructive">*</span>
@@ -237,10 +237,10 @@ export function ComboFormDialog({
               value={formData.description}
               onChange={(e) => handleComboChange("description", e.target.value)}
               placeholder="Describe your combo..."
-              rows={3}
+              rows={2}
               aria-invalid={!!errors.combo?.description}
               disabled={isLoading}
-              className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-0 focus-visible:border-ring disabled:cursor-not-allowed disabled:opacity-50 transition-[color,box-shadow,ring]"
             />
             {errors.combo?.description && (
               <p className="text-sm text-destructive">{errors.combo.description}</p>
@@ -248,7 +248,7 @@ export function ComboFormDialog({
           </div>
 
           {/* Price */}
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="price" className="flex items-center gap-2">
               Price (VND) <span className="text-destructive">*</span>
             </Label>
@@ -269,12 +269,12 @@ export function ComboFormDialog({
           </div>
 
           {/* Image Upload */}
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label className="flex items-center gap-2">
               <Upload className="h-4 w-4 text-muted-foreground" />
               Combo Image <span className="text-sm text-muted-foreground">(Optional)</span>
             </Label>
-            <div className="border border-dashed border-border rounded-lg p-4 bg-muted/20">
+            <div className="border border-dashed border-border rounded-lg p-3 bg-muted/20">
               <ImageUploader 
                 onUploadSuccess={handleImageUploadSuccess}
               />
@@ -302,32 +302,32 @@ export function ComboFormDialog({
               )}
             </div>
           </div>
-        </div>
-
-        {/* Combo Items Section */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-foreground">Combo Items</h3>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleAddItem}
-              className="gap-2"
-              disabled={isLoading}
-            >
-              <Plus className="h-4 w-4" />
-              Add Item
-            </Button>
           </div>
 
-          <div className="space-y-3">
+          {/* Combo Items Section */}
+          <div className="space-y-3 pb-2">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-foreground">Combo Items</h3>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleAddItem}
+                className="gap-2"
+                disabled={isLoading}
+              >
+                <Plus className="h-4 w-4" />
+                Add Item
+              </Button>
+            </div>
+
+          <div className="space-y-2">
             {items.map((item, index) => (
               <div
                 key={index}
-                className="flex gap-3 p-4 rounded-lg border border-border bg-muted/30"
+                className="flex gap-3 p-3 rounded-lg border border-border bg-muted/30"
               >
-                <div className="flex-1 space-y-2">
+                <div className="flex-1 space-y-1.5">
                   <Label htmlFor={`item-name-${index}`} className="text-sm">
                     Item Name <span className="text-destructive">*</span>
                   </Label>
@@ -344,7 +344,7 @@ export function ComboFormDialog({
                   )}
                 </div>
 
-                <div className="w-32 space-y-2">
+                <div className="w-32 space-y-1.5">
                   <Label htmlFor={`item-quantity-${index}`} className="text-sm flex items-center gap-1">
                     <Hash className="h-3 w-3" />
                     Quantity <span className="text-destructive">*</span>
@@ -384,11 +384,11 @@ export function ComboFormDialog({
               At least one item is required
             </p>
           )}
-          </div>
+        </div>
         </div>
 
         {/* Actions */}
-        <div className="flex items-center justify-end gap-3 pt-4 border-t border-border mt-4">
+        <div className="flex items-center justify-end gap-3 pt-3 border-t border-border mt-auto flex-shrink-0">
           <Button
             type="button"
             variant="outline"
