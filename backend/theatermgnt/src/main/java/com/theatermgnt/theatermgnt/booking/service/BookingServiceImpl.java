@@ -47,6 +47,7 @@ import com.theatermgnt.theatermgnt.screeningSeat.entity.ScreeningSeat;
 import com.theatermgnt.theatermgnt.screeningSeat.repository.ScreeningSeatRepository;
 import com.theatermgnt.theatermgnt.seat.entity.Seat;
 import com.theatermgnt.theatermgnt.seat.mapper.SeatMapper;
+import com.theatermgnt.theatermgnt.ticket.service.TicketService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -71,6 +72,7 @@ public class BookingServiceImpl implements BookingService {
     private final CustomerService customerService;
     private final DiscountService discountService;
     private final InvoiceService invoiceService;
+    private final TicketService ticketService;
 
     private static final Duration HOLD_DURATION = Duration.ofMinutes(10);
 
@@ -274,6 +276,8 @@ public class BookingServiceImpl implements BookingService {
         // Update booking status to CONFIRMED
         booking.setStatus(BookingStatus.CONFIRM);
         bookingRepository.save(booking);
+
+        ticketService.createTickets(UUID.fromString(bookingId));
 
         log.info("Booking {} confirmed", bookingId);
     }

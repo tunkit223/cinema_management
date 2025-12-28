@@ -6,7 +6,6 @@ import { CheckCircle, XCircle, Loader } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { createTickets } from '@/services/ticketService';
 
 interface PaymentResult {
   code: string;
@@ -82,17 +81,7 @@ export default function VNPayReturnPage() {
         // Log result
         console.log('Payment Result:', data);
         
-        // Create tickets if payment is successful
-        if (data.code === '00' && data.bookingId) {
-          try {
-            console.log('Creating tickets for bookingId:', data.bookingId);
-            await createTickets(data.bookingId);
-            console.log('Tickets created successfully');
-          } catch (ticketError) {
-            console.error('Failed to create tickets:', ticketError);
-            // Don't block the flow, just log the error
-          }
-        }
+        // Backend will automatically create tickets when payment is successful
       } catch (err) {
         console.error('Payment verification failed:', err);
         setError(

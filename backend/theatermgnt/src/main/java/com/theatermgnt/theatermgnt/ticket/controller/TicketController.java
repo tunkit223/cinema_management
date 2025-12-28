@@ -18,16 +18,6 @@ public class TicketController {
     private final TicketService ticketService;
     private final TicketMapper ticketMapper;
 
-    @PostMapping("/create/{bookingId}")
-    public ApiResponse<List<TicketResponse>> createTickets(@PathVariable UUID bookingId) {
-
-        List<Ticket> tickets = ticketService.createTickets(bookingId);
-
-        return ApiResponse.<List<TicketResponse>>builder()
-                .result(tickets.stream().map(ticketMapper::toResponse).toList())
-                .build();
-    }
-
     @GetMapping("/by-booking/{bookingId}")
     public List<TicketResponse> getTicketsByBooking(@PathVariable UUID bookingId) {
 
