@@ -1,6 +1,6 @@
 import type { ComboWithItems } from "@/types/ComboType/comboType";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, DollarSign, Package, ImageIcon } from "lucide-react";
+import { Pencil, Trash2, DollarSign, Package, ImageIcon } from "lucide-react";
 
 interface ComboTableProps {
   combos: ComboWithItems[];
@@ -129,24 +129,23 @@ export function ComboTable({
                   )}
                 </td>
                 <td className="px-6 py-4">
-                  <div className="flex items-center justify-center gap-2">
+                  <div className="flex items-center justify-center gap-1">
                     <Button
-                      variant="outline"
-                      size="sm"
+                      variant="ghost"
+                      size="icon-sm"
                       onClick={() => onEdit(combo)}
-                      className="gap-2"
+                      title="Edit combo"
                     >
-                      <Edit className="h-3.5 w-3.5" />
-                      Edit
+                      <Pencil className="w-4 h-4" />
                     </Button>
                     <Button
-                      variant="destructive"
-                      size="sm"
+                      variant="ghost"
+                      size="icon-sm"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
                       onClick={() => onDelete(combo)}
-                      className="gap-2"
+                      title="Delete combo"
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
-                      Delete
+                      <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
                 </td>
