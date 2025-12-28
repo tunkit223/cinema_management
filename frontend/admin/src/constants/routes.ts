@@ -6,6 +6,8 @@ const ROUTE_PATHS = {
   LOGIN: "login",
   DASHBOARD: "dashboard",
   MOVIES: "movies",
+  MOVIES_CREATE: "movies/create",
+  MOVIES_EDIT: "movies/edit/:id",
   CINEMAS: "cinemas",
   ROOMS: "rooms",
   ROOMS_CREATE: "rooms/create",
@@ -28,6 +30,9 @@ const ROUTE_PATHS = {
   SETTINGS_NOTIFICATIONS: "settings/notifications",
   SETTINGS_SECURITY: "settings/security",
   FORBIDDEN: "forbidden",
+  REVIEWS: "reviews",
+  MEDIA: "media",
+  CHATBOT_CONFIG: "chatbot/documents",
 } as const;
 
 // Generate full routes with base path
@@ -36,6 +41,8 @@ export const ROUTES = {
   LOGIN: getRoutePath(ROUTE_PATHS.LOGIN),
   DASHBOARD: getRoutePath(ROUTE_PATHS.DASHBOARD),
   MOVIES: getRoutePath(ROUTE_PATHS.MOVIES),
+  MOVIES_CREATE: getRoutePath(ROUTE_PATHS.MOVIES_CREATE),
+  MOVIES_EDIT: getRoutePath(ROUTE_PATHS.MOVIES_EDIT),
   CINEMAS: getRoutePath(ROUTE_PATHS.CINEMAS),
   ROOMS: getRoutePath(ROUTE_PATHS.ROOMS),
   ROOMS_CREATE: getRoutePath(ROUTE_PATHS.ROOMS_CREATE),
@@ -58,4 +65,7 @@ export const ROUTES = {
   SETTINGS_NOTIFICATIONS: getRoutePath(ROUTE_PATHS.SETTINGS_NOTIFICATIONS),
   SETTINGS_SECURITY: getRoutePath(ROUTE_PATHS.SETTINGS_SECURITY),
   FORBIDDEN: getRoutePath(ROUTE_PATHS.FORBIDDEN),
+  REVIEWS: getRoutePath(ROUTE_PATHS.REVIEWS),
+  MEDIA: getRoutePath(ROUTE_PATHS.MEDIA),
+  CHATBOT_CONFIG: getRoutePath(ROUTE_PATHS.CHATBOT_CONFIG),
 } as const;

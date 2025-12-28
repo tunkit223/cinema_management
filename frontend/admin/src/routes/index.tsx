@@ -6,8 +6,12 @@ import { Login } from "@/pages/Login/Login";
 import { Profile } from "@/pages/Profile/StaffProfile";
 import { PermissionList } from "@/pages/Permissions";
 import { RoleList } from "@/pages/Roles";
-import { MovieList } from "@/pages/Movies";
-import { ShowtimeList, CreateShowtime, ShowtimeCalendarPage } from "@/pages/Showtimes";
+import { CreateMovie, EditMovie, MovieList } from "@/pages/Movies";
+import {
+  ShowtimeList,
+  CreateShowtime,
+  ShowtimeCalendarPage,
+} from "@/pages/Showtimes";
 import { TheaterList } from "@/pages/Cinemas";
 import { RoomList, CreateRoom, EditRoom } from "@/pages/Rooms";
 import { TicketList } from "@/pages/Tickets";
@@ -26,6 +30,9 @@ import { TicketBookingPage } from "@/pages/TicketBooking/TickKetBookingPage";
 import { WorkSchedulePage } from "@/pages/WorkSchedules/WorkSchedulePage";
 import { ShiftTypesPage } from "@/pages/WorkSchedules/ShiftTypesPage";
 import { EquipmentList } from "@/pages/Equipment/EquipmentList";
+import { ReviewList } from "@/pages/Reviews";
+import MediaLibrary from "@/pages/Medias/MediaLibrary";
+import { ChatbotConfig } from "@/pages/ChatbotConfig";
 
 export const routes = [
   {
@@ -64,6 +71,34 @@ export const routes = [
               {
                 index: true,
                 element: <MovieList />,
+              },
+              {
+                path: "create",
+                element: (
+                  <ProtectedRoute
+                    requiredPermissions={[PERMISSIONS.MOVIE_CREATE]}
+                  />
+                ),
+                children: [
+                  {
+                    index: true,
+                    element: <CreateMovie />,
+                  },
+                ],
+              },
+              {
+                path: "edit/:id",
+                element: (
+                  <ProtectedRoute
+                    requiredPermissions={[PERMISSIONS.MOVIE_UPDATE]}
+                  />
+                ),
+                children: [
+                  {
+                    index: true,
+                    element: <EditMovie />,
+                  },
+                ],
               },
             ],
           },
@@ -168,9 +203,9 @@ export const routes = [
           {
             path: `${ROUTES.EQUIPMENT}`,
             element: (
-                <ProtectedRoute
-                    requiredPermissions={[PERMISSIONS.EQUIPMENT_READ]}
-                />
+              <ProtectedRoute
+                requiredPermissions={[PERMISSIONS.EQUIPMENT_READ]}
+              />
             ),
             children: [
               {
@@ -324,6 +359,26 @@ export const routes = [
                 element: <TicketBookingPage />,
               },
             ],
+          },
+          {
+            path: `${ROUTES.REVIEWS}`,
+            element: (
+              <ProtectedRoute requiredPermissions={[PERMISSIONS.REVIEW_READ]} />
+            ),
+            children: [
+              {
+                index: true,
+                element: <ReviewList />,
+              },
+            ],
+          },
+          {
+            path: `${ROUTES.MEDIA}`,
+            element: <MediaLibrary />,
+          },
+          {
+            path: `${ROUTES.CHATBOT_CONFIG}`,
+            element: <ChatbotConfig />,
           },
         ],
       },
