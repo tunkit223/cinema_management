@@ -13,6 +13,7 @@ interface PaymentResult {
   txnRef?: string;
   amount?: number;
   orderInfo?: string;
+  bookingId?: string;
 }
 
 export default function VNPayReturnPage() {
@@ -30,12 +31,14 @@ export default function VNPayReturnPage() {
         const responseCode = params.get('vnp_ResponseCode');
         const txnRef = params.get('vnp_TxnRef');
         const amount = params.get('vnp_Amount');
+        const orderInfo = params.get('vnp_OrderInfo');
 
         // Log for debugging
         console.log('Payment Callback Params:', {
           responseCode,
           txnRef,
           amount,
+          orderInfo,
         });
 
         // Call backend to verify and process payment
@@ -55,10 +58,30 @@ export default function VNPayReturnPage() {
         }
 
         const data = await response.json();
+        
+        // Try to get bookingId from sessionStorage (saved during booking process)
+        if (!data.bookingId) {
+          const savedBookingId = sessionStorage.getItem('current_booking_id');
+          if (savedBookingId) {
+            data.bookingId = savedBookingId;
+            console.log('Retrieved bookingId from sessionStorage:', savedBookingId);
+            // Clear it after reading to avoid reusing in future bookings
+            sessionStorage.removeItem('current_booking_id');
+          }
+        }
+        
+        // Alternative: Use txnRef as fallback if still no bookingId
+        if (!data.bookingId && txnRef) {
+          data.bookingId = txnRef;
+          console.log('Using txnRef as bookingId fallback:', txnRef);
+        }
+        
         setResult(data);
 
         // Log result
         console.log('Payment Result:', data);
+        
+        // Backend will automatically create tickets when payment is successful
       } catch (err) {
         console.error('Payment verification failed:', err);
         setError(
@@ -169,7 +192,15 @@ export default function VNPayReturnPage() {
 
             <div className="space-y-3">
               <Button
-                onClick={() => router.push('/my-tickets')}
+                onClick={() => {
+                  if (result?.bookingId) {
+                    console.log('Navigating to success page with bookingId:', result.bookingId);
+                    router.push(`/booking/success/${result.bookingId}`);
+                  } else {
+                    console.warn('No bookingId found, redirecting to my-tickets');
+                    router.push('/my-tickets');
+                  }
+                }}
                 className="w-full bg-green-600 hover:bg-green-700"
               >
                 Xem vé của tôi

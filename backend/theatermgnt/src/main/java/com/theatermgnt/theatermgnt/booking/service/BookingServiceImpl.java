@@ -36,6 +36,7 @@ import com.theatermgnt.theatermgnt.customer.repository.CustomerRepository;
 import com.theatermgnt.theatermgnt.customer.service.CustomerService;
 import com.theatermgnt.theatermgnt.movie.dto.response.MovieResponse;
 import com.theatermgnt.theatermgnt.movie.service.MovieService;
+import com.theatermgnt.theatermgnt.notification.listener.NotificationEventListener;
 import com.theatermgnt.theatermgnt.payment.dto.request.CreateInvoiceRequest;
 import com.theatermgnt.theatermgnt.payment.dto.response.InvoiceResponse;
 import com.theatermgnt.theatermgnt.payment.service.InvoiceService;
@@ -47,6 +48,7 @@ import com.theatermgnt.theatermgnt.screeningSeat.entity.ScreeningSeat;
 import com.theatermgnt.theatermgnt.screeningSeat.repository.ScreeningSeatRepository;
 import com.theatermgnt.theatermgnt.seat.entity.Seat;
 import com.theatermgnt.theatermgnt.seat.mapper.SeatMapper;
+import com.theatermgnt.theatermgnt.ticket.service.TicketService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -71,6 +73,8 @@ public class BookingServiceImpl implements BookingService {
     private final CustomerService customerService;
     private final DiscountService discountService;
     private final InvoiceService invoiceService;
+    private final TicketService ticketService;
+    private final NotificationEventListener eventPublisher;
 
     private static final Duration HOLD_DURATION = Duration.ofMinutes(10);
 
@@ -86,7 +90,7 @@ public class BookingServiceImpl implements BookingService {
         int lockedCount = screeningSeatRepository.lockSeats(request.getScreeningSeatIds(), expiredAt);
 
         if (lockedCount != request.getScreeningSeatIds().size()) {
-            throw new AppException(ErrorCode.SCREENING_NOT_EXISTED);
+            throw new AppException(ErrorCode.SCREENING_SEATS_NOT_AVAILABLE);
         }
 
         List<ScreeningSeat> seats = screeningSeatRepository.findAllById(request.getScreeningSeatIds());
@@ -179,7 +183,7 @@ public class BookingServiceImpl implements BookingService {
     public BookingSummaryResponse getBookingSummary(UUID bookingId) {
         Booking booking = bookingRepository
                 .findById(bookingId)
-                .orElseThrow(() -> new IllegalArgumentException("Booking not found"));
+                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_EXISTED));
 
         List<ScreeningSeat> screeningSeats = screeningSeatRepository.findByBooking(bookingId.toString());
         List<BookingCombo> combo = bookingComboRepository.findByBookingId(bookingId.toString());
@@ -234,6 +238,22 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
+    public void cancelBooking(UUID bookingId) {
+        Booking booking = bookingRepository
+                .findById(bookingId)
+                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_EXISTED));
+
+        if (booking.getStatus() != BookingStatus.PENDING) {
+            throw new IllegalStateException("Only pending bookings can be cancelled");
+        }
+
+        booking.setStatus(BookingStatus.CANCELLED);
+        bookingRepository.saveAndFlush(booking);
+
+        screeningSeatRepository.releaseSeatsByBooking(bookingId.toString());
+    }
+
+    @Override
     public InvoiceResponse createInvoiceForBooking(UUID bookingId) {
         log.info("Creating invoice for booking: {}", bookingId);
 
@@ -258,6 +278,8 @@ public class BookingServiceImpl implements BookingService {
         // Update booking status to CONFIRMED
         booking.setStatus(BookingStatus.CONFIRM);
         bookingRepository.save(booking);
+
+        ticketService.createTickets(UUID.fromString(bookingId));
 
         log.info("Booking {} confirmed", bookingId);
     }

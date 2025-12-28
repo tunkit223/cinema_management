@@ -44,6 +44,14 @@ public class BookingController {
                 .build();
     }
 
+    @PostMapping("/{bookingId}/cancel")
+    public ApiResponse<String> cancelBooking(@PathVariable UUID bookingId) {
+        bookingService.cancelBooking(bookingId);
+        return ApiResponse.<String>builder()
+                .result("Booking cancel successfully")
+                .build();
+    }
+
     /**
      * Create invoice for booking (before payment)
      * POST /api/theater-mgnt/bookings/{bookingId}/create-invoice

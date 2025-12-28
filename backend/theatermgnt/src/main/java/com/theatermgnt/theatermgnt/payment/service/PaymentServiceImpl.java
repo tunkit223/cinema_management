@@ -67,12 +67,10 @@ public class PaymentServiceImpl implements PaymentService {
             String orderInfo = "INV" + sanitized.substring(Math.max(0, sanitized.length() - 8));
 
             // Get VNPay payment method
-            var vnpayMethod = paymentMethodRepository
-                    .findByName("VNPay")
-                    .orElseThrow(() -> {
-                        log.error("VNPay payment method not found in database");
-                        return new AppException(ErrorCode.BOOKING_NOT_EXISTED);
-                    });
+            var vnpayMethod = paymentMethodRepository.findByName("VNPay").orElseThrow(() -> {
+                log.error("VNPay payment method not found in database");
+                return new AppException(ErrorCode.BOOKING_NOT_EXISTED);
+            });
 
             // Create payment record
             Payment payment = Payment.builder()
@@ -202,7 +200,7 @@ public class PaymentServiceImpl implements PaymentService {
                     invoice.setPaidAt(LocalDateTime.now());
                     invoiceRepository.save(invoice);
                     log.info("Invoice {} marked as PAID", invoice.getId());
-                    
+
                     // Update booking status to CONFIRMED
                     try {
                         bookingService.confirmBookingPayment(invoice.getBookingId());
@@ -317,7 +315,7 @@ public class PaymentServiceImpl implements PaymentService {
                     } catch (Exception e) {
                         log.error("Error confirming booking {}", invoice.getBookingId(), e);
                     }
-                    
+
                     log.info("Invoice {} marked as PAID and payment success", invoice.getId());
                 }
 
@@ -330,7 +328,8 @@ public class PaymentServiceImpl implements PaymentService {
                     log.error("Error aggregating revenue for payment {}", payment.getId(), e);
                     // Don't fail the IPN, just log the error
                 }
-                
+
+
                 response.put("RspCode", "00");
                 response.put("Message", "Confirm success");
             } else {
@@ -339,7 +338,8 @@ public class PaymentServiceImpl implements PaymentService {
                 response.put("RspCode", "00");
                 response.put("Message", "Confirm success");
             }
-            
+
+
         } catch (Exception e) {
             log.error("Error handling VNPay IPN", e);
             response.put("RspCode", "99");

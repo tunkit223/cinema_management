@@ -1,15 +1,17 @@
 package com.theatermgnt.theatermgnt.notification.service;
 
-import com.theatermgnt.theatermgnt.notification.enums.EmailType;
-import lombok.AccessLevel;
-import lombok.RequiredArgsConstructor;
-import lombok.experimental.FieldDefaults;
+import java.time.Year;
+import java.util.Map;
+
 import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
-import java.time.Year;
-import java.util.Map;
+import com.theatermgnt.theatermgnt.notification.enums.EmailType;
+
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +34,7 @@ public class EmailTemplateFactory {
                     case RESET_PASSWORD -> "email/reset-password";
                     case WELCOME_STAFF -> "email/welcome-staff";
                     case NOTIFICATION_EMAIL -> "email/notification-email";
+                    case TICKET_ISSUE -> "email/ticket-issue";
                 };
         return templateEngine.process(templateName, context);
     }

@@ -1,13 +1,16 @@
 package com.theatermgnt.theatermgnt.chatbotInternal.entity;
 
-import com.theatermgnt.theatermgnt.common.entity.BaseEntity;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
-import lombok.*;
-import lombok.experimental.FieldDefaults;
+
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
+
+import com.theatermgnt.theatermgnt.common.entity.BaseEntity;
+
+import lombok.*;
+import lombok.experimental.FieldDefaults;
 
 @Entity
 @Getter
@@ -15,10 +18,12 @@ import org.hibernate.annotations.Where;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "vector_documents", indexes = {
-        @Index(name = "idx_file_id", columnList = "fileId"),
-        @Index(name = "idx_chatbot_doc_id", columnList = "chatbotDocumentId")
-})
+@Table(
+        name = "vector_documents",
+        indexes = {
+            @Index(name = "idx_file_id", columnList = "fileId"),
+            @Index(name = "idx_chatbot_doc_id", columnList = "chatbotDocumentId")
+        })
 @SQLDelete(sql = "UPDATE vector_documents SET deleted = true WHERE id = ?")
 @Where(clause = "deleted = false")
 @FieldDefaults(level = AccessLevel.PRIVATE)

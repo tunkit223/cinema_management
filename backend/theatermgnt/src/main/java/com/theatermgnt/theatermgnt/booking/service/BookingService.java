@@ -15,6 +15,8 @@ public interface BookingService {
 
     BookingSummaryResponse redeemPoints(UUID bookingId, DiscountPointRequest pointsToRedeem);
 
+    void cancelBooking(UUID bookingId);
+
     /**
      * Create invoice for confirmed booking
      */

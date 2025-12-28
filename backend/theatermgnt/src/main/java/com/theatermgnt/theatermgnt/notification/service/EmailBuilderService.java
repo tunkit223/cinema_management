@@ -1,13 +1,15 @@
 package com.theatermgnt.theatermgnt.notification.service;
 
+import org.springframework.stereotype.Service;
+
 import com.theatermgnt.theatermgnt.notification.dto.request.EmailBuilderRequest;
 import com.theatermgnt.theatermgnt.notification.dto.request.Recipient;
 import com.theatermgnt.theatermgnt.notification.dto.request.SendEmailRequest;
+
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor

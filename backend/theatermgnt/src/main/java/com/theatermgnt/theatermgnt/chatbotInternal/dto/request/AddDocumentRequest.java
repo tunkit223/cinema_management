@@ -1,9 +1,10 @@
 package com.theatermgnt.theatermgnt.chatbotInternal.dto.request;
 
-import com.theatermgnt.theatermgnt.chatbotInternal.enums.DocumentType;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
+
+import com.theatermgnt.theatermgnt.chatbotInternal.enums.DocumentType;
+
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -18,9 +19,11 @@ public class AddDocumentRequest {
 
     @NonNull
     DocumentType documentType;
+
     String description;
 
     @Min(value = 0, message = "PRIORITY_INVALID")
     Integer priority;
+
     boolean syncImmediately;
 }
