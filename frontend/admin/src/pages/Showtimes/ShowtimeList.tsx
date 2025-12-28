@@ -81,12 +81,14 @@ export function ShowtimeList() {
     startTime: string;
     endTime: string;
     movieDuration: number;
+    isInitialLoad: boolean;
   }>({
     open: false,
     showtime: null,
     startTime: "",
     endTime: "",
     movieDuration: 0,
+    isInitialLoad: false,
   });
 
   useEffect(() => {
@@ -117,23 +119,40 @@ export function ShowtimeList() {
     syncToMinute: true,
   });
 
-  // Auto-calculate end time when start time changes in edit dialog
+  // Auto-calculate end time when start time changes in edit dialog (with 1s delay)
   useEffect(() => {
-    if (editDialog.open && editDialog.startTime && editDialog.movieDuration > 0) {
-      try {
-        const start = parse(editDialog.startTime, "yyyy-MM-dd'T'HH:mm", new Date());
-        const end = addMinutes(start, editDialog.movieDuration);
-        const endTimeStr = format(end, "yyyy-MM-dd'T'HH:mm");
-        
-        if (editDialog.endTime !== endTimeStr) {
-          setEditDialog(prev => ({ ...prev, endTime: endTimeStr }));
-        }
-      } catch (error) {
-        console.error("Failed to auto-calculate end time:", error);
-      }
+    // Skip auto-calculation during initial load
+    if (editDialog.isInitialLoad) {
+      const timer = setTimeout(() => {
+        setEditDialog(prev => ({ ...prev, isInitialLoad: false }));
+      }, 0);
+      return () => clearTimeout(timer);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editDialog.startTime, editDialog.movieDuration, editDialog.open]);
+
+    if (editDialog.open && editDialog.startTime && editDialog.movieDuration > 0) {
+      // Delay 1 second to allow user to finish selecting date/time
+      const debounceTimer = setTimeout(() => {
+        try {
+          const start = parse(editDialog.startTime, "yyyy-MM-dd'T'HH:mm", new Date());
+          if (isNaN(start.getTime())) {
+            return;
+          }
+          
+          const end = addMinutes(start, editDialog.movieDuration);
+          const endTimeStr = format(end, "yyyy-MM-dd'T'HH:mm");
+          
+          // Only update if different to avoid infinite loops
+          if (editDialog.endTime !== endTimeStr) {
+            setEditDialog(prev => ({ ...prev, endTime: endTimeStr }));
+          }
+        } catch (error) {
+          console.error("Failed to auto-calculate end time:", error);
+        }
+      }, 1000); // 1 second delay
+
+      return () => clearTimeout(debounceTimer);
+    }
+  }, [editDialog.startTime, editDialog.movieDuration, editDialog.open, editDialog.isInitialLoad, editDialog.endTime]);
 
   const loadData = async () => {
     try {
@@ -200,7 +219,12 @@ export function ShowtimeList() {
       startTime: format(start, "yyyy-MM-dd'T'HH:mm"),
       endTime: format(end, "yyyy-MM-dd'T'HH:mm"),
       movieDuration: durationMinutes,
+      isInitialLoad: true, // Mark as initial load to skip first auto-calculation
     });
+  };
+
+  const handleStartTimeChange = (newStartTime: string) => {
+    setEditDialog(prev => ({ ...prev, startTime: newStartTime }));
   };
 
   const handleSaveEdit = async () => {
@@ -218,13 +242,10 @@ export function ShowtimeList() {
       endTime: formatForBackend(editDialog.endTime),
     };
 
-    console.log("Updating showtime:", editDialog.showtime.id);
-    console.log("Update payload:", payload);
-
     const success = await handleUpdateShowtime(editDialog.showtime.id, payload);
 
     if (success) {
-      setEditDialog({ open: false, showtime: null, startTime: "", endTime: "", movieDuration: 0 });
+      setEditDialog({ open: false, showtime: null, startTime: "", endTime: "", movieDuration: 0, isInitialLoad: false });
     }
   };
 
@@ -457,7 +478,7 @@ export function ShowtimeList() {
                 <Input
                   type="datetime-local"
                   value={editDialog.startTime}
-                  onChange={(e) => setEditDialog({ ...editDialog, startTime: e.target.value })}
+                  onChange={(e) => handleStartTimeChange(e.target.value)}
                 />
               </div>
 
@@ -476,7 +497,7 @@ export function ShowtimeList() {
           )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditDialog({ open: false, showtime: null, startTime: "", endTime: "", movieDuration: 0 })}>
+            <Button variant="outline" onClick={() => setEditDialog({ open: false, showtime: null, startTime: "", endTime: "", movieDuration: 0, isInitialLoad: false })}>
               Cancel
             </Button>
             <Button onClick={handleSaveEdit} disabled={saving}>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Plus, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -15,13 +16,19 @@ import { getRoomsByCinema, type Room } from "@/services/roomService";
 import { useNotificationStore } from "@/stores";
 
 export function ShowtimeCalendarPage() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const addNotification = useNotificationStore((state) => state.addNotification);
 
   // State
   const [cinemas, setCinemas] = useState<Cinema[]>([]);
-  const [selectedCinemaId, setSelectedCinemaId] = useState<string | null>(null);
+  const [selectedCinemaId, setSelectedCinemaId] = useState<string | null>(
+    searchParams.get("cinema") || null
+  );
   const [rooms, setRooms] = useState<Room[]>([]);
-  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
+  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(
+    searchParams.get("room") || null
+  );
   const [allShowtimes, setAllShowtimes] = useState<ShowtimeResponse[]>([]);
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const [selectedShowtime, setSelectedShowtime] = useState<ShowtimeResponse | null>(null);
@@ -125,15 +132,28 @@ export function ShowtimeCalendarPage() {
     }
   };
 
+  // Sync cinema and room filters to URL params
+  const updateUrlParams = (cinemaId: string | null, roomId: string | null) => {
+    const params = new URLSearchParams();
+    if (cinemaId) params.set("cinema", cinemaId);
+    if (roomId) params.set("room", roomId);
+    
+    const queryString = params.toString();
+    const newUrl = queryString ? `/admin/showtimes?${queryString}` : "/admin/showtimes";
+    navigate(newUrl, { replace: true });
+  };
+
   const handleSelectCinema = (cinemaId: string) => {
     setSelectedCinemaId(cinemaId);
     setSelectedRoomId(null);
+    updateUrlParams(cinemaId, null);
   };
 
   const handleBackToCinemas = () => {
     setSelectedCinemaId(null);
     setSelectedRoomId(null);
     setAllShowtimes([]);
+    updateUrlParams(null, null);
   };
 
   const handleShowtimeClick = (showtime: ShowtimeResponse) => {
@@ -222,7 +242,10 @@ export function ShowtimeCalendarPage() {
           <RoomFilter
             rooms={rooms}
             selectedRoomId={selectedRoomId}
-            onSelectRoom={setSelectedRoomId}
+            onSelectRoom={(roomId) => {
+              setSelectedRoomId(roomId);
+              updateUrlParams(selectedCinemaId, roomId);
+            }}
             loading={loadingRooms}
           />
 

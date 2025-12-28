@@ -6,6 +6,7 @@ import { Login } from "@/pages/Login/Login";
 import { Profile } from "@/pages/Profile/StaffProfile";
 import { PermissionList } from "@/pages/Permissions";
 import { RoleList } from "@/pages/Roles";
+import { PriceConfigList } from "@/pages/PriceConfigs";
 import { CreateMovie, EditMovie, MovieList } from "@/pages/Movies";
 import {
   ShowtimeList,
@@ -239,6 +240,10 @@ export const routes = [
                 element: <PermissionList />,
               },
             ],
+          },
+          {
+            path: `${ROUTES.SEAT_PRICES}`,
+            element: <PriceConfigList />,
           },
           {
             path: `${ROUTES.CUSTOMERS}`,
