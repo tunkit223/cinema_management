@@ -3,7 +3,8 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { revenueService, type DailyRevenueRow, type MovieRevenue, type RevenueReportRow, type ReportType } from "@/services/revenueService";
 import { getAllCinemas, type Cinema } from "@/services/cinemaService";
 import { getAllMovies, type Movie } from "@/services/movieService";
-import { useToast } from "@/components/ui/use-toast";
+import { useNotificationStore } from "@/stores";
+import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 const currency = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" });
 
@@ -12,6 +13,7 @@ type TabType = "movies" | "daily" | "reports";
 export const ReportList = () => {
   const today = useMemo(() => new Date(), []);
   const [activeTab, setActiveTab] = useState<TabType>("movies");
+  const addNotification = useNotificationStore((state) => state.addNotification);
 
   // Movies tab filters
   const [movieFrom, setMovieFrom] = useState(() => {
@@ -68,7 +70,6 @@ export const ReportList = () => {
   const [dailyError, setDailyError] = useState<string | null>(null);
   const [reportsError, setReportsError] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
-  const { toast } = useToast();
 
   useEffect(() => {
     getAllCinemas().then(setCinemas).catch(() => {});
@@ -202,20 +203,40 @@ export const ReportList = () => {
   ];
 
   const handleGenerateReport = async () => {
+    const todayDate = today.toISOString().slice(0, 10);
     let startDate = reportsFrom;
     let endDate = reportsTo;
 
-    // Calculate date range based on report type
+    // Validate dates based on report type
     if (reportType !== "CUSTOM") {
       switch (reportType) {
         case "DAILY":
+          if (reportDate > todayDate) {
+            addNotification({
+              type: "error",
+              title: "Invalid date",
+              message: "Cannot select future date",
+            });
+            return;
+          }
           startDate = reportDate;
           endDate = reportDate;
           break;
         case "WEEKLY": {
-          // Calculate week from Monday to Sunday
           const year = parseInt(reportYearForWeekly);
           const month = parseInt(reportMonthForWeekly);
+          const currentYear = today.getFullYear();
+          const currentMonth = today.getMonth() + 1;
+          
+          if (year > currentYear || (year === currentYear && month > currentMonth)) {
+            addNotification({
+              type: "error",
+              title: "Invalid week",
+              message: "Cannot select future week",
+            });
+            return;
+          }
+
           const week = parseInt(reportWeek);
 
           // Find first Monday of the month
@@ -239,6 +260,18 @@ export const ReportList = () => {
         case "MONTHLY": {
           const year = parseInt(reportYear);
           const month = parseInt(reportMonth);
+          const currentYear = today.getFullYear();
+          const currentMonth = today.getMonth() + 1;
+          
+          if (year > currentYear || (year === currentYear && month > currentMonth)) {
+            addNotification({
+              type: "error",
+              title: "Invalid month",
+              message: "Cannot select future month",
+            });
+            return;
+          }
+
           const firstDay = new Date(year, month - 1, 1);
           const lastDay = new Date(year, month, 0);
           startDate = firstDay.toISOString().slice(0, 10);
@@ -247,11 +280,34 @@ export const ReportList = () => {
         }
         case "YEARLY": {
           const year = parseInt(reportYear);
+          const currentYear = today.getFullYear();
+          
+          if (year > currentYear) {
+            addNotification({
+              type: "error",
+              title: "Invalid year",
+              message: "Cannot select future year",
+            });
+            return;
+          }
+
           startDate = `${year}-01-01`;
           endDate = `${year}-12-31`;
           break;
         }
       }
+    } else {
+      // CUSTOM type validation
+      if (reportsFrom > todayDate || reportsTo > todayDate) {
+        addNotification({
+          type: "error",
+          title: "Invalid date range",
+          message: "Cannot select future dates",
+        });
+        return;
+      }
+      startDate = reportsFrom;
+      endDate = reportsTo;
     }
 
     try {
@@ -262,15 +318,15 @@ export const ReportList = () => {
         startDate,
         endDate,
       });
-      toast({ title: "Report generated", description: "Saved report has been created" });
+      addNotification({ type: "success", title: "Report generated", message: "Saved report has been created" });
       // Refresh reports
       const refreshed = await revenueService.getRevenueReports({ cinemaId: reportsCinemaId, reportType, from: startDate, to: endDate });
       setReports(refreshed);
     } catch (err: any) {
-      toast({
+      addNotification({
+        type: "error",
         title: "Failed to generate",
-        description: err?.response?.data?.message || "Could not generate report",
-        variant: "destructive",
+        message: err?.response?.data?.message || "Could not generate report",
       });
     } finally {
       setGenerating(false);
@@ -325,11 +381,11 @@ export const ReportList = () => {
                 <div className="grid gap-3 md:grid-cols-4">
                   <div className="space-y-1">
                     <label className="text-sm text-muted-foreground">From</label>
-                    <input className="w-full rounded-md border border-border px-3 py-2" type="date" value={movieFrom} onChange={(e) => setMovieFrom(e.target.value)} />
+                    <input className="w-full rounded-md border border-border px-3 py-2" type="date" value={movieFrom} onChange={(e) => setMovieFrom(e.target.value)} max={today.toISOString().slice(0, 10)} />
                   </div>
                   <div className="space-y-1">
                     <label className="text-sm text-muted-foreground">To</label>
-                    <input className="w-full rounded-md border border-border px-3 py-2" type="date" value={movieTo} onChange={(e) => setMovieTo(e.target.value)} />
+                    <input className="w-full rounded-md border border-border px-3 py-2" type="date" value={movieTo} onChange={(e) => setMovieTo(e.target.value)} max={today.toISOString().slice(0, 10)} />
                   </div>
                   <div className="space-y-1">
                     <label className="text-sm text-muted-foreground">Cinema</label>
@@ -374,36 +430,60 @@ export const ReportList = () => {
               {moviesLoading ? (
                 <div className="rounded-lg border border-border bg-muted/40 p-4 text-center text-sm">Loading movie revenue...</div>
               ) : (
-                <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/50 text-left">
-                    <tr>
-                      <th className="px-3 py-2">Date</th>
-                      <th className="px-3 py-2">Movie</th>
-                      <th className="px-3 py-2">Cinema</th>
-                      <th className="px-3 py-2">Tickets</th>
-                      <th className="px-3 py-2">Revenue</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {movieRevenue.map((row) => (
-                      <tr key={row.id} className="hover:bg-muted/30">
-                        <td className="px-3 py-2">{row.reportDate}</td>
-                        <td className="px-3 py-2 font-medium">{movieMap[row.movieId]?.title ?? row.movieId}</td>
-                        <td className="px-3 py-2">{cinemaMap[row.cinemaId]?.name ?? row.cinemaId}</td>
-                        <td className="px-3 py-2">{row.totalTicketsSold}</td>
-                        <td className="px-3 py-2">{currency.format(row.totalRevenue)}</td>
-                      </tr>
-                    ))}
-                    {movieRevenue.length === 0 && (
-                      <tr>
-                        <td className="px-3 py-4 text-center text-muted-foreground" colSpan={5}>
-                          No movie revenue data
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                <div className="space-y-6">
+                  {/* Bar Chart - Only show when both cinema and movie are selected */}
+                  {movieRevenue.length > 0 && movieCinemaId && movieId && (
+                    <div className="rounded-lg border border-border bg-muted/20 p-4">
+                      <h3 className="mb-4 text-sm font-semibold">Revenue by Date</h3>
+                      <ResponsiveContainer width="100%" height={300}>
+                        <BarChart data={movieRevenue.sort((a, b) => a.reportDate.localeCompare(b.reportDate)).map(m => ({
+                          date: m.reportDate,
+                          revenue: Number(m.totalRevenue)
+                        }))}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                          <YAxis tick={{ fontSize: 12 }} />
+                          <Tooltip formatter={(value) => currency.format(Number(value))} />
+                          <Bar dataKey="revenue" fill="#3b82f6" name="Revenue" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
+
+                  <div>
+                    <h3 className="mb-3 text-sm font-semibold">Detailed Data</h3>
+                    <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="bg-muted/50 text-left">
+                        <tr>
+                          <th className="px-3 py-2">Date</th>
+                          <th className="px-3 py-2">Movie</th>
+                          <th className="px-3 py-2">Cinema</th>
+                          <th className="px-3 py-2">Tickets</th>
+                          <th className="px-3 py-2">Revenue</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {movieRevenue.map((row) => (
+                          <tr key={row.id} className="hover:bg-muted/30">
+                            <td className="px-3 py-2">{row.reportDate}</td>
+                            <td className="px-3 py-2 font-medium">{movieMap[row.movieId]?.title ?? row.movieId}</td>
+                            <td className="px-3 py-2">{cinemaMap[row.cinemaId]?.name ?? row.cinemaId}</td>
+                            <td className="px-3 py-2">{row.totalTicketsSold}</td>
+                            <td className="px-3 py-2">{currency.format(row.totalRevenue)}</td>
+                          </tr>
+                        ))}
+                        {movieRevenue.length === 0 && (
+                          <tr>
+                            <td className="px-3 py-4 text-center text-muted-foreground" colSpan={5}>
+                              No movie revenue data
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                    </div>
+                  </div>
                 </div>
               )}
             </section>
@@ -417,11 +497,11 @@ export const ReportList = () => {
                 <div className="grid gap-3 md:grid-cols-3">
                   <div className="space-y-1">
                     <label className="text-sm text-muted-foreground">From</label>
-                    <input className="w-full rounded-md border border-border px-3 py-2" type="date" value={dailyFrom} onChange={(e) => setDailyFrom(e.target.value)} />
+                    <input className="w-full rounded-md border border-border px-3 py-2" type="date" value={dailyFrom} onChange={(e) => setDailyFrom(e.target.value)} max={today.toISOString().slice(0, 10)} />
                   </div>
                   <div className="space-y-1">
                     <label className="text-sm text-muted-foreground">To</label>
-                    <input className="w-full rounded-md border border-border px-3 py-2" type="date" value={dailyTo} onChange={(e) => setDailyTo(e.target.value)} />
+                    <input className="w-full rounded-md border border-border px-3 py-2" type="date" value={dailyTo} onChange={(e) => setDailyTo(e.target.value)} max={today.toISOString().slice(0, 10)} />
                   </div>
                   <div className="space-y-1">
                     <label className="text-sm text-muted-foreground">Cinema</label>
@@ -451,8 +531,57 @@ export const ReportList = () => {
               {dailyLoading ? (
                 <div className="rounded-lg border border-border bg-muted/40 p-4 text-center text-sm">Loading daily revenue...</div>
               ) : (
-                <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <div className="space-y-6">
+                  {/* Charts - Only show when specific cinema is selected */}
+                  {dailySummary.length > 0 && dailyCinemaId && (
+                    <div className="grid gap-6 md:grid-cols-2">
+                      {/* Line Chart - Revenue Trend */}
+                      <div className="rounded-lg border border-border bg-muted/20 p-4">
+                        <h3 className="mb-4 text-sm font-semibold">Revenue Trend</h3>
+                        <ResponsiveContainer width="100%" height={300}>
+                          <LineChart data={dailySummary.sort((a, b) => a.reportDate.localeCompare(b.reportDate)).map(d => ({ date: d.reportDate, net: Number(d.netRevenue) }))}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                            <YAxis tick={{ fontSize: 12 }} />
+                            <Tooltip formatter={(value) => currency.format(Number(value))} />
+                            <Line type="monotone" dataKey="net" stroke="#3b82f6" strokeWidth={2} dot={{ r: 4 }} />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+
+                      {/* Pie Chart - Ticket vs Combo */}
+                      <div className="rounded-lg border border-border bg-muted/20 p-4">
+                        <h3 className="mb-4 text-sm font-semibold">Revenue Breakdown</h3>
+                        <ResponsiveContainer width="100%" height={300}>
+                          <PieChart>
+                            <Pie
+                              data={[
+                                { name: "Ticket", value: dailySummary.reduce((acc, d) => acc + Number(d.ticketRevenue), 0) },
+                                { name: "Combo", value: dailySummary.reduce((acc, d) => acc + Number(d.comboRevenue), 0) }
+                              ]}
+                              cx="50%"
+                              cy="50%"
+                              labelLine={false}
+                              label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                              outerRadius={80}
+                              fill="#8884d8"
+                              dataKey="value"
+                            >
+                              <Cell fill="#3b82f6" />
+                              <Cell fill="#8b5cf6" />
+                            </Pie>
+                            <Tooltip formatter={(value) => currency.format(Number(value))} />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Table */}
+                  <div>
+                    <h3 className="mb-3 text-sm font-semibold">Detailed Data</h3>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
                   <thead className="bg-muted/50 text-left">
                     <tr>
                       <th className="px-3 py-2">Date</th>
@@ -483,6 +612,8 @@ export const ReportList = () => {
                     )}
                   </tbody>
                 </table>
+                    </div>
+                  </div>
                 </div>
               )}
             </section>
@@ -530,7 +661,7 @@ export const ReportList = () => {
                   <div className="grid gap-3 md:grid-cols-1">
                     <div className="space-y-1">
                       <label className="text-sm text-muted-foreground">Date</label>
-                      <input className="w-full rounded-md border border-border px-3 py-2" type="date" value={reportDate} onChange={(e) => setReportDate(e.target.value)} />
+                      <input className="w-full rounded-md border border-border px-3 py-2" type="date" value={reportDate} onChange={(e) => setReportDate(e.target.value)} max={today.toISOString().slice(0, 10)} />
                     </div>
                   </div>
                 )}
@@ -614,11 +745,11 @@ export const ReportList = () => {
                   <div className="grid gap-3 grid-cols-2">
                     <div className="space-y-1">
                       <label className="text-sm text-muted-foreground">From</label>
-                      <input className="w-full rounded-md border border-border px-3 py-2" type="date" value={reportsFrom} onChange={(e) => setReportsFrom(e.target.value)} />
+                      <input className="w-full rounded-md border border-border px-3 py-2" type="date" value={reportsFrom} onChange={(e) => setReportsFrom(e.target.value)} max={today.toISOString().slice(0, 10)} />
                     </div>
                     <div className="space-y-1">
                       <label className="text-sm text-muted-foreground">To</label>
-                      <input className="w-full rounded-md border border-border px-3 py-2" type="date" value={reportsTo} onChange={(e) => setReportsTo(e.target.value)} />
+                      <input className="w-full rounded-md border border-border px-3 py-2" type="date" value={reportsTo} onChange={(e) => setReportsTo(e.target.value)} max={today.toISOString().slice(0, 10)} />
                     </div>
                   </div>
                 )}
@@ -643,8 +774,36 @@ export const ReportList = () => {
               {reportsLoading ? (
                 <div className="rounded-lg border border-border bg-muted/40 p-4 text-center text-sm">Loading reports...</div>
               ) : (
-                <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <div className="space-y-6">
+                  {/* Bar Chart - Revenue by Cinema */}
+                  {reports.length > 0 && (
+                    <div className="rounded-lg border border-border bg-muted/20 p-4">
+                      <h3 className="mb-4 text-sm font-semibold">Revenue by Cinema</h3>
+                      <ResponsiveContainer width="100%" height={300}>
+                        <BarChart data={reports.map(r => ({
+                          cinema: cinemaMap[r.cinemaId]?.name ?? r.cinemaId,
+                          ticket: Number(r.totalTicketRevenue),
+                          combo: Number(r.totalComboRevenue),
+                          net: Number(r.netRevenue)
+                        }))}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="cinema" tick={{ fontSize: 12 }} />
+                          <YAxis tick={{ fontSize: 12 }} />
+                          <Tooltip formatter={(value) => currency.format(Number(value))} />
+                          <Legend />
+                          <Bar dataKey="ticket" fill="#3b82f6" name="Ticket Revenue" />
+                          <Bar dataKey="combo" fill="#8b5cf6" name="Combo Revenue" />
+                          <Bar dataKey="net" fill="#10b981" name="Net Revenue" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
+
+                  {/* Table */}
+                  <div>
+                    <h3 className="mb-3 text-sm font-semibold">Report Details</h3>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
                   <thead className="bg-muted/50 text-left">
                     <tr>
                       <th className="px-3 py-2">Type</th>
@@ -677,6 +836,8 @@ export const ReportList = () => {
                     )}
                   </tbody>
                 </table>
+                    </div>
+                  </div>
                 </div>
               )}
             </section>
