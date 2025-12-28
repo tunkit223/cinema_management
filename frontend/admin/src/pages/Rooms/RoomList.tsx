@@ -48,8 +48,8 @@ export function RoomList() {
   };
 
   const handleViewSchedule = (room: Room) => {
-    console.log("View schedule:", room);
-    // TODO: Implement view schedule functionality
+    // Navigate to ShowtimeCalendarPage with cinema and room filters pre-applied
+    navigate(`${ROUTES.SHOWTIMES}?cinema=${room.cinemaId}&room=${room.id}`);
   };
 
   const handleAddRoom = () => {

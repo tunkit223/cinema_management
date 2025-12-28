@@ -76,7 +76,7 @@ export function EditShowtimeDialog({
     }
   }, [selectedRoomId]);
 
-  // Load showtime details when selected
+  // Load showtime details when selected (only on initial selection)
   useEffect(() => {
     if (selectedShowtimeId) {
       setIsLoadingShowtime(true);
@@ -90,24 +90,31 @@ export function EditShowtimeDialog({
       // Delay to prevent auto-calculate from overriding
       setTimeout(() => setIsLoadingShowtime(false), 100);
     }
-  }, [selectedShowtimeId, scheduledShowtimes]);
+    // Only run when selectedShowtimeId changes, not when scheduledShowtimes changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedShowtimeId]);
 
-  // Auto-calculate end time based on movie duration (only when not loading)
+  // Auto-calculate end time based on movie duration (with 1s delay)
   useEffect(() => {
     if (isLoadingShowtime) return; // Don't auto-calculate when loading showtime data
     
     const selectedMovie = movies.find((m) => m.id === selectedMovieId);
     if (selectedMovie && startTime && selectedMovie.duration) {
-      try {
-        const start = parse(startTime, "yyyy-MM-dd'T'HH:mm", new Date());
-        if (!isNaN(start.getTime())) {
-          const end = addMinutes(start, selectedMovie.duration);
-          const endTimeStr = format(end, "yyyy-MM-dd'T'HH:mm");
-          setEndTime(endTimeStr);
+      // Delay 1 second to allow user to finish selecting date/time
+      const debounceTimer = setTimeout(() => {
+        try {
+          const start = parse(startTime, "yyyy-MM-dd'T'HH:mm", new Date());
+          if (!isNaN(start.getTime())) {
+            const end = addMinutes(start, selectedMovie.duration);
+            const endTimeStr = format(end, "yyyy-MM-dd'T'HH:mm");
+            setEndTime(endTimeStr);
+          }
+        } catch (error) {
+          console.error("Error calculating end time:", error);
         }
-      } catch (error) {
-        console.error("Error calculating end time:", error);
-      }
+      }, 1000); // 1 second delay
+
+      return () => clearTimeout(debounceTimer);
     }
   }, [selectedMovieId, startTime, movies, isLoadingShowtime]);
 

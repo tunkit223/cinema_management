@@ -1,6 +1,7 @@
 package com.theatermgnt.theatermgnt.priceConfig.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -14,4 +15,6 @@ public interface PriceConfigRepository extends JpaRepository<PriceConfig, String
     PriceConfig getPriceBySeatTypeIdAndDayTypeAndTimeSlot(String seatTypeId, DayType dayType, TimeSlot timeSlot);
 
     List<PriceConfig> findByDayTypeAndTimeSlot(DayType dayType, TimeSlot timeSlot);
+
+    Optional<PriceConfig> findBySeatTypeIdAndDayTypeAndTimeSlot(String seatTypeId, DayType dayType, TimeSlot timeSlot);
 }

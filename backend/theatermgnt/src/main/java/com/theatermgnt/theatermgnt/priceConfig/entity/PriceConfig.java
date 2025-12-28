@@ -22,15 +22,21 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity
-@Table(name = "priceConfigs")
-@SQLDelete(sql = "UPDATE priceConfigs SET deleted = true WHERE id = ?")
+@Table(
+        name = "price_configs",
+        uniqueConstraints = {
+            @UniqueConstraint(columnNames = {"seat_type_id", "day_type", "time_slot"})
+        })
+@SQLDelete(sql = "UPDATE price_configs SET deleted = true WHERE id = ?")
 @Where(clause = "deleted = false")
 public class PriceConfig extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "day_type")
     DayType dayType;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "time_slot")
     TimeSlot timeSlot;
 
     @Column(precision = 10, scale = 2)
@@ -38,6 +44,6 @@ public class PriceConfig extends BaseEntity {
 
     // Quan hệ nhiều-1 với SeatType
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "seatTypeId", nullable = false)
+    @JoinColumn(name = "seat_type_id", nullable = false)
     SeatType seatType;
 }

@@ -15,11 +15,5 @@ import lombok.experimental.FieldDefaults;
 public class PriceConfigUpdateRequest {
 
     @NotNull
-    String dayType;
-
-    @NotNull
-    String timeSlot;
-
-    @NotNull
     BigDecimal price;
 }

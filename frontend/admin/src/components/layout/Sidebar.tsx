@@ -10,6 +10,7 @@ import {
   Bell,
   Shield,
   ShieldCheck,
+  DollarSign,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/utils/cn";
@@ -270,6 +271,22 @@ export function Sidebar() {
                     Permissions
                   </NavLink>
                 )}
+
+                {/* Seat Prices */}
+                <NavLink
+                  to={ROUTES.SEAT_PRICES}
+                  className={({ isActive }) =>
+                    cn(
+                      "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
+                      isActive
+                        ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                        : "text-sidebar-foreground hover:bg-sidebar-accent/50"
+                    )
+                  }
+                >
+                  <DollarSign className="h-3.5 w-3.5" />
+                  Seat Prices
+                </NavLink>
               </div>
             )}
           </div>
