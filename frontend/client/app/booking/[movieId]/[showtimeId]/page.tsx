@@ -30,7 +30,7 @@ export default function BookingPage({
 
   const [movie, setMovie] = useState<any>(null)
   const [showtime, setShowtime] = useState<Showtime | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [initialLoading, setInitialLoading] = useState(true)
   const [seatsLoading, setSeatsLoading] = useState(true)
   const [seatsError, setSeatsError] = useState<string | null>(null)
   const [seats, setSeats] = useState<Seat[]>([])
@@ -67,6 +67,11 @@ export default function BookingPage({
         return
       }
       sessionStorage.setItem(BOOKING_STORAGE_KEY, JSON.stringify(state))
+      
+      // Also save to a global key for payment return page to access
+      if (state.bookingId) {
+        sessionStorage.setItem('current_booking_id', state.bookingId)
+      }
     } catch (error) {
       console.error('Error saving booking state:', error)
     }
@@ -76,6 +81,7 @@ export default function BookingPage({
   const clearBookingState = () => {
     try {
       sessionStorage.removeItem(BOOKING_STORAGE_KEY)
+      sessionStorage.removeItem('current_booking_id')
     } catch (error) {
       console.error('Error clearing booking state:', error)
     }
@@ -137,12 +143,16 @@ export default function BookingPage({
     setPointsDiscount(0)
   }
 
+  // Force the UI into a loading state before we kick off a fresh seat fetch
+  const beginSeatRefresh = () => {
+    setSeatsLoading(true)
+    setSeats([])
+    setSeatsError(null)
+  }
+
   const reloadSeatsFromAPI = async () => {
     try {
-      setSeatsLoading(true)
-      setSeatsError(null)
-      // Clear old seats first to ensure fresh data
-      setSeats([])
+      beginSeatRefresh()
 
       const seatData = await getScreeningSeatsByScreeningId(showtimeId)
 
@@ -196,6 +206,9 @@ export default function BookingPage({
   const goToStep1WithRefresh = async () => {
     // Skip running step1 effect since we handle here
     skipStep1Effect.current = true
+
+    // Immediately show loading instead of stale seats
+    beginSeatRefresh()
 
     // Optimistically move UI to step 1 so user doesn't have to click twice
     setCurrentStep(1)
@@ -295,43 +308,49 @@ export default function BookingPage({
     }
   }, [movieId, showtimeId]) // Re-run when movieId/showtimeId changes
 
-  // Fetch movie from API
+  // Fetch movie and showtime together to avoid a brief "Booking Not Found" flash
   useEffect(() => {
-    const fetchMovie = async () => {
-      try {
-        setLoading(true)
-        const data = await getMovieById(movieId)
-        if (data) {
-          const mappedMovie = mapMovieForDisplay(data)
-          setMovie(mappedMovie)
-        }
-      } catch (error) {
-        console.error('Error fetching movie:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchMovie()
-  }, [movieId])
+    let isMounted = true
 
-  // Fetch showtime from API
-  useEffect(() => {
-    const fetchShowtime = async () => {
+    const fetchInitial = async () => {
       try {
-        const screeningData = await getScreeningById(showtimeId)
+        setInitialLoading(true)
+
+        const [movieData, screeningData] = await Promise.all([
+          getMovieById(movieId),
+          getScreeningById(showtimeId)
+        ])
+
+        if (!isMounted) return
+
+        if (movieData) {
+          setMovie(mapMovieForDisplay(movieData))
+        }
+
         if (screeningData) {
-          const mappedShowtime = mapScreeningToShowtime(screeningData)
-          setShowtime(mappedShowtime)
+          setShowtime(mapScreeningToShowtime(screeningData))
+        } else {
+          setShowtime(null)
         }
       } catch (error) {
-        console.error('Error fetching showtime:', error)
+        if (!isMounted) return
+        console.error('Error fetching initial booking data:', error)
         setShowtime(null)
+      } finally {
+        if (isMounted) {
+          setInitialLoading(false)
+        }
       }
     }
-    if (showtimeId) {
-      fetchShowtime()
+
+    if (movieId && showtimeId) {
+      fetchInitial()
     }
-  }, [showtimeId])
+
+    return () => {
+      isMounted = false
+    }
+  }, [movieId, showtimeId])
 
   // Fetch combos from backend
   useEffect(() => {
@@ -373,25 +392,6 @@ export default function BookingPage({
 
     fetchCombos()
   }, [])
-
-  // Fetch showtime from API
-  useEffect(() => {
-    const fetchShowtime = async () => {
-      try {
-        const screeningData = await getScreeningById(showtimeId)
-        if (screeningData) {
-          const mappedShowtime = mapScreeningToShowtime(screeningData)
-          setShowtime(mappedShowtime)
-        }
-      } catch (error) {
-        console.error('Error fetching showtime:', error)
-        setShowtime(null)
-      }
-    }
-    if (showtimeId) {
-      fetchShowtime()
-    }
-  }, [showtimeId])
 
   // Fetch seats from API
   useEffect(() => {
@@ -487,6 +487,9 @@ export default function BookingPage({
       setPointsDiscount(0)
       console.log('Booking state reset for step 1')
 
+      // Show the spinner while we cancel/reload
+      beginSeatRefresh()
+
       // Cancel the booking and reload seats - use async IIFE to await
       ;(async () => {
         if (bookingIdToCancel) {
@@ -570,7 +573,7 @@ export default function BookingPage({
     }
   }, [])
 
-  if (loading) {
+  if (initialLoading) {
     return (
       <div className="min-h-screen bg-background dark:bg-slate-950 flex items-center justify-center">
         <div className="text-center">
@@ -924,6 +927,10 @@ export default function BookingPage({
                   setCurrentStep(5)
                   // Clear booking state on success
                   clearBookingState()
+                  // Also clear the current booking ID after a delay to allow payment return page to read it
+                  setTimeout(() => {
+                    sessionStorage.removeItem('current_booking_id')
+                  }, 5000)
                 }}
               />
             )}
@@ -934,6 +941,7 @@ export default function BookingPage({
                 selectedSeats={selectedSeats}
                 selectedCombos={selectedCombos}
                 total={total}
+                bookingId={bookingId!}
               />
             )}
           </div>

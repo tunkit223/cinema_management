@@ -31,9 +31,7 @@ public class PaymentController {
             @PathVariable String invoiceId, HttpServletRequest httpRequest) {
         log.info("Creating VNPay payment for invoice: {}", invoiceId);
         PaymentDetailsResponse response = paymentService.createVNPayPayment(invoiceId, httpRequest);
-        return ApiResponse.<PaymentDetailsResponse>builder()
-                .result(response)
-                .build();
+        return ApiResponse.<PaymentDetailsResponse>builder().result(response).build();
     }
 
     /**

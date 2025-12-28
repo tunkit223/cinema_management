@@ -179,7 +179,7 @@ public class BookingServiceImpl implements BookingService {
     public BookingSummaryResponse getBookingSummary(UUID bookingId) {
         Booking booking = bookingRepository
                 .findById(bookingId)
-                .orElseThrow(() -> new IllegalArgumentException("Booking not found"));
+                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_EXISTED));
 
         List<ScreeningSeat> screeningSeats = screeningSeatRepository.findByBooking(bookingId.toString());
         List<BookingCombo> combo = bookingComboRepository.findByBookingId(bookingId.toString());

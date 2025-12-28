@@ -1,0 +1,154 @@
+package com.theatermgnt.theatermgnt.ticket.service;
+
+import com.theatermgnt.theatermgnt.booking.entity.Booking;
+import com.theatermgnt.theatermgnt.booking.enums.BookingStatus;
+import com.theatermgnt.theatermgnt.booking.repository.BookingRepository;
+import com.theatermgnt.theatermgnt.common.exception.AppException;
+import com.theatermgnt.theatermgnt.common.exception.ErrorCode;
+import com.theatermgnt.theatermgnt.screeningSeat.entity.ScreeningSeat;
+import com.theatermgnt.theatermgnt.screeningSeat.repository.ScreeningSeatRepository;
+import com.theatermgnt.theatermgnt.screeningSeat.service.ScreeningSeatService;
+import com.theatermgnt.theatermgnt.ticket.dto.response.TicketCheckInResponse;
+import com.theatermgnt.theatermgnt.ticket.dto.response.TicketResponse;
+import com.theatermgnt.theatermgnt.ticket.entity.Ticket;
+import com.theatermgnt.theatermgnt.ticket.enums.TicketStatus;
+import com.theatermgnt.theatermgnt.ticket.mapper.TicketMapper;
+import com.theatermgnt.theatermgnt.ticket.repository.TicketRepository;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.util.List;
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class TicketServiceImpl implements TicketService {
+    private final TicketRepository ticketRepository;
+    private final TicketMapper ticketMapper;
+    private final BookingRepository bookingRepository;
+    private final ScreeningSeatRepository screeningSeatRepository;
+    private final ScreeningSeatService screeningSeatService;
+    private final TicketCodeGenerator ticketCodeGenerator;
+    private final QrGenerator qrGenerator;
+
+    @Override
+    @Transactional
+    public List<TicketResponse> getTicketsByBooking(UUID bookingId) {
+        return ticketRepository.findAllByBookingId(bookingId)
+                .stream()
+                .map(ticketMapper::toResponse)
+                .toList();
+    }
+
+    @Override
+    public TicketCheckInResponse checkInByQr(String qrContent) {
+        String ticketCode = extractTicketCode(qrContent);
+
+        Ticket ticket = ticketRepository.findByTicketCode(ticketCode)
+                .orElseThrow(() -> new AppException(ErrorCode.TICKET_NOT_EXISTED));
+
+        if (ticket.getStatus() != TicketStatus.ACTIVE) {
+            return new TicketCheckInResponse(
+                    ticketCode,
+                    ticket.getStatus(),
+                    ticket.getUsedAt(),
+                    "Ticket is not active"
+            );
+        }
+
+        if (Instant.now().isAfter(ticket.getExpiresAt())) {
+            ticket.setStatus(TicketStatus.EXPIRED);
+            return new TicketCheckInResponse(
+                    ticketCode,
+                    TicketStatus.EXPIRED,
+                    null,
+                    "Ticket expired"
+            );
+        }
+
+        ticket.setStatus(TicketStatus.USED);
+        ticket.setUsedAt(Instant.now());
+
+        return new TicketCheckInResponse(
+                ticketCode,
+                TicketStatus.USED,
+                ticket.getUsedAt(),
+                "Check-in successful"
+        );
+    }
+
+    private String extractTicketCode(String qrContent) {
+        return qrContent.split("\\|")[0];
+    }
+
+    @Override
+    public List<Ticket> createTickets(UUID bookingId) {
+
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_EXISTED));
+
+        // chỉ tạo vé khi đã thanh toán
+        if (booking.getStatus() != BookingStatus.CONFIRM) {
+            throw new IllegalStateException("Booking not paid");
+        }
+
+        List<ScreeningSeat> seats =
+                screeningSeatRepository.findByBooking(bookingId.toString());
+
+        if (seats.isEmpty()) {
+            throw new AppException(ErrorCode.SCREENING_SEAT_NOT_EXISTED);
+        }
+
+        Instant expiresAt = booking.getScreening()
+                .getEndTime()
+                .atZone(ZoneId.of("Asia/Ho_Chi_Minh"))
+                .toInstant();
+
+
+        List<Ticket> tickets = seats.stream().map(seat -> {
+
+            String ticketCode = generateUniqueCode();
+            String qrContent = qrGenerator.generateQrContent(ticketCode);
+            BigDecimal ticketPrice = screeningSeatService.getScreeningSeat(seat.getId()).getPrice();
+
+            return Ticket.builder()
+                    .booking(booking)
+                    .screeningSeat(seat)
+                    .seatName(seat.getSeat().getRowChair() + seat.getSeat().getSeatNumber())
+                    .price(ticketPrice)
+                    .ticketCode(ticketCode)
+                    .qrContent(qrContent)
+                    .status(TicketStatus.ACTIVE)
+                    .expiresAt(expiresAt)
+                    .build();
+        }).toList();
+
+        return ticketRepository.saveAll(tickets);
+    }
+
+    private String generateUniqueCode() {
+        String code;
+        do {
+            code = ticketCodeGenerator.generate();
+        } while (ticketRepository.existsByTicketCode(code));
+        return code;
+    }
+
+    @Override
+    public Ticket getTicketByCode(String ticketCode) {
+        return ticketRepository.findByTicketCode(ticketCode)
+                .orElseThrow(() -> new AppException(ErrorCode.TICKET_NOT_EXISTED));
+    }
+
+    @Override
+    public List<Ticket> getTicketsByCustomerId(String customerId) {
+        return ticketRepository.findByBooking_Customer_IdOrderByCreatedAtDesc(customerId);
+    }
+}
