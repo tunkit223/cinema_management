@@ -5,17 +5,21 @@ import com.theatermgnt.theatermgnt.booking.enums.BookingStatus;
 import com.theatermgnt.theatermgnt.booking.repository.BookingRepository;
 import com.theatermgnt.theatermgnt.common.exception.AppException;
 import com.theatermgnt.theatermgnt.common.exception.ErrorCode;
+import com.theatermgnt.theatermgnt.notification.listener.NotificationEventListener;
 import com.theatermgnt.theatermgnt.screeningSeat.entity.ScreeningSeat;
 import com.theatermgnt.theatermgnt.screeningSeat.repository.ScreeningSeatRepository;
 import com.theatermgnt.theatermgnt.screeningSeat.service.ScreeningSeatService;
 import com.theatermgnt.theatermgnt.ticket.dto.response.TicketCheckInResponse;
+import com.theatermgnt.theatermgnt.ticket.dto.response.TicketEmailView;
 import com.theatermgnt.theatermgnt.ticket.dto.response.TicketResponse;
 import com.theatermgnt.theatermgnt.ticket.entity.Ticket;
 import com.theatermgnt.theatermgnt.ticket.enums.TicketStatus;
+import com.theatermgnt.theatermgnt.ticket.event.TicketCreatedEvent;
 import com.theatermgnt.theatermgnt.ticket.mapper.TicketMapper;
 import com.theatermgnt.theatermgnt.ticket.repository.TicketRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -37,6 +41,10 @@ public class TicketServiceImpl implements TicketService {
     private final ScreeningSeatService screeningSeatService;
     private final TicketCodeGenerator ticketCodeGenerator;
     private final QrGenerator qrGenerator;
+    private final QrImageGenerator qrImageGenerator;
+    private final NotificationEventListener notificationEventListener;
+    private final ApplicationEventPublisher eventPublisher;
+
 
     @Override
     @Transactional
@@ -129,8 +137,21 @@ public class TicketServiceImpl implements TicketService {
                     .expiresAt(expiresAt)
                     .build();
         }).toList();
+        List<Ticket> savedTickets = ticketRepository.saveAll(tickets);
 
-        return ticketRepository.saveAll(tickets);
+        eventPublisher.publishEvent(
+                TicketCreatedEvent.builder()
+                        .accountId(UUID.fromString(booking.getCustomer().getAccount().getId()))
+                        .bookingId(booking.getId())
+                        .ticketIds(
+                                savedTickets.stream()
+                                        .map(Ticket::getId)
+                                        .toList()
+                        )
+                        .build()
+        );
+
+        return savedTickets;
     }
 
     private String generateUniqueCode() {
@@ -150,5 +171,28 @@ public class TicketServiceImpl implements TicketService {
     @Override
     public List<Ticket> getTicketsByCustomerId(String customerId) {
         return ticketRepository.findByBooking_Customer_IdOrderByCreatedAtDesc(customerId);
+    }
+
+    @Override
+    @Transactional
+    public void expireTickets() {
+
+        Instant now = Instant.now();
+
+        List<Ticket> expiredTickets =
+                ticketRepository.findAllByStatusAndExpiresAtBefore(
+                        TicketStatus.ACTIVE,
+                        now
+                );
+
+        if (expiredTickets.isEmpty()) {
+            return;
+        }
+
+        expiredTickets.forEach(ticket ->
+                ticket.setStatus(TicketStatus.EXPIRED)
+        );
+
+        ticketRepository.saveAll(expiredTickets);
     }
 }

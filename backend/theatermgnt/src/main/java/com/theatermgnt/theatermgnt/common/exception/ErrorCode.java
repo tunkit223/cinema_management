@@ -132,23 +132,21 @@ public enum ErrorCode {
     CANNOT_VOTE_OWN_REVIEW(5010, "You cannot vote on your own review", HttpStatus.BAD_REQUEST),
     MOVIE_NOT_SHOWING(5011, "Reviews are only available for movies currently showing", HttpStatus.BAD_REQUEST),
 
-
     // FILE
     FILE_NOT_FOUND(5001, "File not existed", HttpStatus.NOT_FOUND),
     FILE_DOWNLOAD_FAILED(5002, "File download failed", HttpStatus.NOT_FOUND),
     DOCUMENT_PARSING_FAILED(5003, "Document parsing failed", HttpStatus.BAD_REQUEST),
     FILE_SYNC_TO_VECTOR_STORE_FAILED(5004, "File sync to vector store failed", HttpStatus.INTERNAL_SERVER_ERROR),
-    FILE_DELETE_FROM_VECTOR_STORE_FAILED(5005, "File delete from vector store failed", HttpStatus.INTERNAL_SERVER_ERROR),
+    FILE_DELETE_FROM_VECTOR_STORE_FAILED(
+            5005, "File delete from vector store failed", HttpStatus.INTERNAL_SERVER_ERROR),
     INVALID_FILE_TYPE(5006, "Invalid file type", HttpStatus.BAD_REQUEST),
     DOCUMENT_ALREADY_EXISTS(5007, "Document already exists", HttpStatus.BAD_REQUEST),
     DOCUMENT_NOT_FOUND(5008, "Document not found", HttpStatus.NOT_FOUND),
     DOCUMENT_ALREADY_PROCESSING(5009, "Document is already being processed", HttpStatus.BAD_REQUEST),
 
     // CHATBOT DOCUMENT;
-    PRIORITY_INVALID(6001, "Priority must have greater than 0", HttpStatus.BAD_REQUEST)
+    PRIORITY_INVALID(6001, "Priority must have greater than 0", HttpStatus.BAD_REQUEST);
     ;
-    ;
-
 
     private int code;
     private String message;

@@ -1,23 +1,37 @@
 package com.theatermgnt.theatermgnt.notification.listener;
 
-import com.theatermgnt.theatermgnt.authentication.event.PasswordResetEvent;
-import com.theatermgnt.theatermgnt.notification.dto.request.EmailBuilderRequest;
-import com.theatermgnt.theatermgnt.notification.enums.EmailType;
-import com.theatermgnt.theatermgnt.notification.service.EmailBuilderService;
-import com.theatermgnt.theatermgnt.notification.service.EmailTemplateFactory;
-import com.theatermgnt.theatermgnt.staff.event.StaffCreatedEvent;
-import lombok.AccessLevel;
-import lombok.RequiredArgsConstructor;
-import lombok.experimental.FieldDefaults;
-import lombok.experimental.NonFinal;
-import lombok.extern.slf4j.Slf4j;
+import java.util.List;
+import java.util.Map;
+
+import jakarta.transaction.Transactional;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
-import java.util.Map;
+import com.theatermgnt.theatermgnt.account.entity.Account;
+import com.theatermgnt.theatermgnt.account.repository.AccountRepository;
+import com.theatermgnt.theatermgnt.authentication.event.PasswordResetEvent;
+import com.theatermgnt.theatermgnt.booking.entity.Booking;
+import com.theatermgnt.theatermgnt.booking.repository.BookingRepository;
+import com.theatermgnt.theatermgnt.notification.dto.request.EmailBuilderRequest;
+import com.theatermgnt.theatermgnt.notification.enums.EmailType;
+import com.theatermgnt.theatermgnt.notification.service.EmailBuilderService;
+import com.theatermgnt.theatermgnt.notification.service.EmailTemplateFactory;
+import com.theatermgnt.theatermgnt.staff.event.StaffCreatedEvent;
+import com.theatermgnt.theatermgnt.ticket.dto.response.TicketEmailView;
+import com.theatermgnt.theatermgnt.ticket.entity.Ticket;
+import com.theatermgnt.theatermgnt.ticket.event.TicketCreatedEvent;
+import com.theatermgnt.theatermgnt.ticket.repository.TicketRepository;
+import com.theatermgnt.theatermgnt.ticket.service.QrImageGenerator;
+
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
+import lombok.experimental.NonFinal;
+import lombok.extern.slf4j.Slf4j;
 
 @Component
 @RequiredArgsConstructor
@@ -26,6 +40,10 @@ import java.util.Map;
 public class NotificationEventListener {
     EmailTemplateFactory emailTemplateFactory;
     EmailBuilderService emailBuilderService;
+    QrImageGenerator qrImageGenerator;
+    BookingRepository bookingRepository;
+    AccountRepository accountRepository;
+    TicketRepository ticketRepository;
 
     @NonFinal
     @Value("${otp.valid-duration}")
@@ -78,6 +96,62 @@ public class NotificationEventListener {
                 .subject("Welcome" + event.getStaff().getFirstName() + " to Our Team!")
                 .htmlContent(htmlContent)
                 .emailTypeForLog("Welcome New Staff")
+                .build());
+    }
+
+    @Async
+    @Transactional
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleTicketCreatedEvent(TicketCreatedEvent event) {
+        Booking booking = bookingRepository.findById(event.getBookingId()).orElseThrow();
+
+        Account account =
+                accountRepository.findById(String.valueOf(event.getAccountId())).orElseThrow();
+
+        List<Ticket> tickets = ticketRepository.findAllForEmail(event.getTicketIds());
+        ;
+
+        log.info("Sending ticket email to {}", account.getEmail());
+
+        String subject = "Your Movie Ticket – Cifastar HCM";
+
+        List<TicketEmailView> ticketViews = tickets.stream()
+                .map(t -> TicketEmailView.builder()
+                        .seatCode(t.getSeatName())
+                        .seatType(t.getScreeningSeat().getSeat().getSeatType().getTypeName())
+                        .ticketPrice(t.getPrice())
+                        .ticketCode(t.getTicketCode())
+                        .qrBase64("data:image/png;base64," + qrImageGenerator.generateBase64Qr(t.getQrContent()))
+                        .build())
+                .toList();
+
+        Map<String, Object> variables = Map.of(
+                "subject",
+                subject,
+                "username",
+                account.getUsername(),
+                "bookingCode",
+                booking.getId(),
+                "movieName",
+                booking.getScreening().getMovie().getTitle(),
+                "showTime",
+                booking.getScreening().getStartTime(),
+                "cinema",
+                booking.getScreening().getRoom().getCinema().getName(),
+                "tickets",
+                ticketViews,
+                "totalPrice",
+                booking.getTotalAmount(),
+                "email",
+                account.getEmail());
+
+        String htmlContent = emailTemplateFactory.buildTemplate(EmailType.TICKET_ISSUE, variables);
+
+        emailBuilderService.buildAndSendEmail(EmailBuilderRequest.builder()
+                .account(account)
+                .subject(subject)
+                .htmlContent(htmlContent)
+                .emailTypeForLog("Ticket Issued")
                 .build());
     }
 }

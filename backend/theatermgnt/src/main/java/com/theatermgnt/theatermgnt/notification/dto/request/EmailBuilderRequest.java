@@ -1,6 +1,7 @@
 package com.theatermgnt.theatermgnt.notification.dto.request;
 
 import com.theatermgnt.theatermgnt.account.entity.Account;
+
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 

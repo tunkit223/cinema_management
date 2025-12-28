@@ -1,19 +1,21 @@
 package com.theatermgnt.theatermgnt.chatbotInternal.config;
 
-import com.theatermgnt.theatermgnt.chatbotInternal.entity.ChatbotDocument;
-import com.theatermgnt.theatermgnt.chatbotInternal.enums.DocumentStatus;
-import com.theatermgnt.theatermgnt.chatbotInternal.repository.ChatbotDocumentRepository;
-import com.theatermgnt.theatermgnt.chatbotInternal.service.ChatbotConfigService;
-import lombok.AccessLevel;
-import lombok.RequiredArgsConstructor;
-import lombok.experimental.FieldDefaults;
-import lombok.extern.slf4j.Slf4j;
+import java.util.List;
+
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-import java.util.List;
+import com.theatermgnt.theatermgnt.chatbotInternal.entity.ChatbotDocument;
+import com.theatermgnt.theatermgnt.chatbotInternal.enums.DocumentStatus;
+import com.theatermgnt.theatermgnt.chatbotInternal.repository.ChatbotDocumentRepository;
+import com.theatermgnt.theatermgnt.chatbotInternal.service.ChatbotConfigService;
+
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 
 @Configuration
 @Slf4j
@@ -40,7 +42,9 @@ public class RagConfig {
                     log.info("Found {} active documents. Syncing to vector store...", activeDocuments.size());
                     for (ChatbotDocument doc : activeDocuments) {
                         try {
-                            chatbotConfigService.syncDocumentToVector(doc.getId()).join();
+                            chatbotConfigService
+                                    .syncDocumentToVector(doc.getId())
+                                    .join();
                         } catch (Exception e) {
                             log.error("Failed to sync document {}", doc.getId(), e);
                         }

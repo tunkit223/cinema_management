@@ -36,6 +36,7 @@ import com.theatermgnt.theatermgnt.customer.repository.CustomerRepository;
 import com.theatermgnt.theatermgnt.customer.service.CustomerService;
 import com.theatermgnt.theatermgnt.movie.dto.response.MovieResponse;
 import com.theatermgnt.theatermgnt.movie.service.MovieService;
+import com.theatermgnt.theatermgnt.notification.listener.NotificationEventListener;
 import com.theatermgnt.theatermgnt.payment.dto.request.CreateInvoiceRequest;
 import com.theatermgnt.theatermgnt.payment.dto.response.InvoiceResponse;
 import com.theatermgnt.theatermgnt.payment.service.InvoiceService;
@@ -73,6 +74,7 @@ public class BookingServiceImpl implements BookingService {
     private final DiscountService discountService;
     private final InvoiceService invoiceService;
     private final TicketService ticketService;
+    private final NotificationEventListener eventPublisher;
 
     private static final Duration HOLD_DURATION = Duration.ofMinutes(10);
 

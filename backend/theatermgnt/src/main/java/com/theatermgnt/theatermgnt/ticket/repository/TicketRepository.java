@@ -3,6 +3,8 @@ package com.theatermgnt.theatermgnt.ticket.repository;
 import com.theatermgnt.theatermgnt.ticket.entity.Ticket;
 import com.theatermgnt.theatermgnt.ticket.enums.TicketStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
 import java.util.List;
@@ -24,4 +26,14 @@ public interface TicketRepository extends JpaRepository<Ticket, UUID> {
     boolean existsByTicketCode(String ticketCode);
 
     List<Ticket> findByBooking_Customer_IdOrderByCreatedAtDesc(String customerId);
+
+    @Query("""
+    select t from Ticket t
+    join fetch t.screeningSeat ss
+    join fetch ss.seat s
+    join fetch s.seatType st
+    where t.id in :ids
+    """)
+    List<Ticket> findAllForEmail(@Param("ids") List<UUID> ids);
+
 }

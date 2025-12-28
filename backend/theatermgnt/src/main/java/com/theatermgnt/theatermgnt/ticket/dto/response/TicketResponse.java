@@ -9,6 +9,7 @@ import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Data
@@ -18,6 +19,8 @@ import java.util.UUID;
 public class TicketResponse {
     UUID id;
     String ticketCode;
+    String movieTitle;
+    LocalDateTime startTime;
     String qrContent;
     String seatName;
     BigDecimal price;
