@@ -2,6 +2,9 @@ package com.theatermgnt.theatermgnt.notification.dto.request;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import sibModel.SendSmtpEmailAttachment;
+
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -12,4 +15,5 @@ public class SendEmailRequest {
     Recipient to;
     String subject;
     String htmlContent;
+    List<SendSmtpEmailAttachment> attachments;
 }

@@ -4,6 +4,9 @@ import com.theatermgnt.theatermgnt.account.entity.Account;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import sibModel.SendSmtpEmailAttachment;
+
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -15,4 +18,5 @@ public class EmailBuilderRequest {
     String subject;
     String htmlContent;
     String emailTypeForLog;
+    List<SendSmtpEmailAttachment> attachments;
 }

@@ -131,38 +131,40 @@
         <thead>
         <tr>
             <th>Seat</th>
-            <th align="center">QR Check-in</th>
+            <th>Ticket Code</th>
         </tr>
         </thead>
         <tbody>
         <tr th:each="ticket : ${tickets}">
             <td>
                 <strong>
-                    Seat:
                     <span th:text="${ticket.seatCode}">F12</span>
                     (<span th:text="${ticket.seatType}">VIP</span>)
                 </strong>
-                <div style="margin-top: 4px">
-                    Ticket Code:
-                    <span th:text="${ticket.ticketCode}">X88-01</span>
-                </div>
-                <div class="price">
-                    Price:
-                    <span th:text="${#numbers.formatDecimal(ticket.ticketPrice, 0, 'COMMA', 0, 'POINT')}">
-                        80,000
-                    </span> VND
-                </div>
             </td>
 
-            <td align="center">
-                <img th:src="${ticket.qrBase64}"
-                     alt="QR Code"
-                     width="120"
-                     height="120" />
+            <td>
+                <span th:text="${ticket.ticketCode}">X88-01</span>
             </td>
         </tr>
         </tbody>
     </table>
+
+    <div style="
+    margin-top: 20px;
+    padding: 14px;
+    background-color: #f8f9fa;
+    border-left: 4px solid #00bc69;
+    font-size: 0.9em;
+">
+        <strong>📎 QR Check-in Instructions</strong>
+        <p style="margin: 6px 0 0 0;">
+            Each ticket has a <strong>QR code attached to this email</strong>.
+            <br />
+            Please <strong>open the attached QR image</strong> and present it
+            at the cinema entrance for check-in.
+        </p>
+    </div>
 
     <!-- Total -->
     <p style="margin-top: 12px">
