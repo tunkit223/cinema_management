@@ -145,11 +145,12 @@ export function ShowtimeCalendar({
           <div className="grid grid-cols-7">
             {calendarDays.map((day, index) => {
               const isWeekend = day.date.getDay() === 0 || day.date.getDay() === 6;
+              const showScrollbar = day.showtimes.length > 10;
               
               return (
                 <div
                   key={day.dateString}
-                  className={`min-h-32 border-b border-r border-gray-200 p-2 ${
+                  className={`min-h-32 border-b border-r border-gray-200 p-2 flex flex-col ${
                     index >= calendarDays.length - 7 ? "border-b-0" : ""
                   } ${
                     (index + 1) % 7 === 0 ? "border-r-0" : ""
@@ -160,7 +161,7 @@ export function ShowtimeCalendar({
                   }`}
                 >
                   {/* Date Number */}
-                  <div className="mb-2 flex items-center justify-between">
+                  <div className="mb-2 flex items-center justify-between flex-shrink-0">
                     <span
                       className={`text-sm font-semibold ${
                         !day.isCurrentMonth
@@ -183,22 +184,25 @@ export function ShowtimeCalendar({
                     )}
                   </div>
 
-                  {/* Showtimes */}
-                  <div className="space-y-1">
-                    {day.showtimes.slice(0, 3).map((showtime) => (
+                  {/* Showtimes with Scrollbar */}
+                  <div 
+                    className={`space-y-1 flex-1 ${
+                      showScrollbar 
+                        ? "overflow-y-auto max-h-[400px] pr-1" 
+                        : ""
+                    }`}
+                    style={showScrollbar ? {
+                      scrollbarWidth: 'thin',
+                      scrollbarColor: '#9ca3af #f3f4f6'
+                    } : {}}
+                  >
+                    {day.showtimes.map((showtime) => (
                       <ShowtimeCardCompact
                         key={showtime.id}
                         showtime={showtime}
                         onClick={() => onShowtimeClick(showtime)}
                       />
                     ))}
-
-                    {/* More Indicator */}
-                    {day.showtimes.length > 3 && (
-                      <div className="rounded-md bg-gray-100 p-1 text-center text-xs font-medium text-gray-600">
-                        +{day.showtimes.length - 3} more
-                      </div>
-                    )}
                   </div>
                 </div>
               );

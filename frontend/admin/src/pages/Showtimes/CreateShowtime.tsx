@@ -47,8 +47,6 @@ export function CreateShowtime() {
   const loadMovies = async () => {
     try {
       const data = await getAllMovies();
-      console.log("Movies loaded:", data);
-      console.log("First movie:", data[0]);
       setMovies(data);
     } catch (error) {
       console.error("Failed to load movies:", error);
@@ -104,19 +102,13 @@ export function CreateShowtime() {
   // Auto-calculate end time based on movie duration
   useEffect(() => {
     if (selectedMovie && startTime) {
-      console.log("Auto-calculating end time for movie:", selectedMovie);
-      console.log("Movie duration:", selectedMovie.duration);
-      console.log("Start time:", startTime);
-      
       if (selectedMovie.duration) {
         try {
           const start = parse(startTime, "yyyy-MM-dd'T'HH:mm", new Date());
-          console.log("Parsed start date:", start);
           
           if (!isNaN(start.getTime())) {
             const end = addMinutes(start, selectedMovie.duration);
             const endTimeStr = format(end, "yyyy-MM-dd'T'HH:mm");
-            console.log("Calculated end time:", endTimeStr);
             setEndTime(endTimeStr);
           } else {
             console.error("Invalid start time");
@@ -124,15 +116,12 @@ export function CreateShowtime() {
         } catch (error) {
           console.error("Error calculating end time:", error);
         }
-      } else {
-        console.warn("Movie duration is missing or zero");
       }
     }
   }, [selectedMovie, startTime]);
 
   const handleMovieChange = (movieId: string) => {
     const movie = movies.find((m) => m.id === movieId);
-    console.log("Selected movie:", movie);
     setSelectedMovie(movie || null);
   };
 
@@ -200,8 +189,6 @@ export function CreateShowtime() {
         startTime: formatForBackend(startTime),
         endTime: formatForBackend(endTime),
       };
-
-      console.log("Creating showtime with payload:", payload);
       
       await createShowtime(payload);
 

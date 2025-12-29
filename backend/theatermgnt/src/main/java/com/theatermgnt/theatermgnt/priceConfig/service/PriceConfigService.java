@@ -2,6 +2,8 @@ package com.theatermgnt.theatermgnt.priceConfig.service;
 
 import java.util.List;
 
+import com.theatermgnt.theatermgnt.common.enums.DayType;
+import com.theatermgnt.theatermgnt.common.enums.TimeSlot;
 import org.springframework.stereotype.Service;
 
 import com.theatermgnt.theatermgnt.common.exception.AppException;
@@ -18,9 +20,7 @@ import com.theatermgnt.theatermgnt.seatType.repository.SeatTypeRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -33,6 +33,21 @@ public class PriceConfigService {
         SeatType seatType = seatTypeRepository
                 .findById(request.getSeatTypeId())
                 .orElseThrow(() -> new AppException(ErrorCode.SEATTYPE_NOT_EXISTED));
+
+
+        DayType dayType = DayType.valueOf(request.getDayType());
+        TimeSlot timeSlot = TimeSlot.valueOf(request.getTimeSlot());
+
+        var existingConfig = priceConfigRepository.findBySeatTypeIdAndDayTypeAndTimeSlot(
+                request.getSeatTypeId(),
+                dayType,
+                timeSlot);
+
+        if (existingConfig.isPresent()) {
+            PriceConfig priceConfig = existingConfig.get();
+            priceConfig.setPrice(request.getPrice());
+            return priceConfigMapper.toPriceConfigResponse(priceConfigRepository.save(priceConfig));
+        }
 
         PriceConfig priceConfig = priceConfigMapper.toPriceConfig(request);
         priceConfig.setSeatType(seatType);
@@ -64,12 +79,14 @@ public class PriceConfigService {
                 .findById(priceConfigId)
                 .orElseThrow(() -> new AppException(ErrorCode.PRICECONFIG_NOT_EXISTED));
 
-        priceConfigMapper.updatePriceConfig(priceConfig, request);
+        priceConfig.setPrice(request.getPrice());
         return priceConfigMapper.toPriceConfigResponse(priceConfigRepository.save(priceConfig));
     }
 
     public void deletePriceConfig(String priceConfigId) {
-        if (!priceConfigRepository.existsById(priceConfigId)) throw new AppException(ErrorCode.PRICECONFIG_NOT_EXISTED);
-        priceConfigRepository.deleteById(priceConfigId);
+        PriceConfig priceConfig = priceConfigRepository
+                .findById(priceConfigId)
+                .orElseThrow(() -> new AppException(ErrorCode.PRICECONFIG_NOT_EXISTED));
+        priceConfigRepository.delete(priceConfig);
     }
 }
