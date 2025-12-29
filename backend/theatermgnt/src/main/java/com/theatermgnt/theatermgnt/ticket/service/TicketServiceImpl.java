@@ -103,7 +103,7 @@ public class TicketServiceImpl implements TicketService {
                 .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_EXISTED));
 
         // chỉ tạo vé khi đã thanh toán
-        if (booking.getStatus() != BookingStatus.CONFIRM) {
+        if (booking.getStatus() != BookingStatus.PAID) {
             throw new IllegalStateException("Booking not paid");
         }
 

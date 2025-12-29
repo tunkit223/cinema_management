@@ -260,6 +260,8 @@ public class BookingServiceImpl implements BookingService {
         Booking booking = bookingRepository
                 .findById(bookingId)
                 .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_EXISTED));
+        booking.setStatus(BookingStatus.CONFIRM);
+        bookingRepository.save(booking);
 
         CreateInvoiceRequest invoiceRequest =
                 CreateInvoiceRequest.builder().bookingId(bookingId.toString()).build();
@@ -276,7 +278,7 @@ public class BookingServiceImpl implements BookingService {
                 .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_EXISTED));
 
         // Update booking status to CONFIRMED
-        booking.setStatus(BookingStatus.CONFIRM);
+        booking.setStatus(BookingStatus.PAID);
         bookingRepository.save(booking);
 
         ticketService.createTickets(UUID.fromString(bookingId));
