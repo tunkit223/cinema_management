@@ -240,18 +240,10 @@ export default function SuccessStep({ movie, showtime, selectedSeats, selectedCo
       </div>
 
       {/* Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <button className="px-4 py-3 rounded-lg border border-border dark:border-slate-700 hover:bg-muted dark:hover:bg-slate-800 transition-colors font-semibold flex items-center justify-center gap-2">
-          <Download size={20} />
-          Download Ticket
-        </button>
-        <button className="px-4 py-3 rounded-lg border border-border dark:border-slate-700 hover:bg-muted dark:hover:bg-slate-800 transition-colors font-semibold flex items-center justify-center gap-2">
-          <Share2 size={20} />
-          Share Booking
-        </button>
+      <div className="mb-8">
         <Link
           href="/"
-          className="px-4 py-3 rounded-lg gradient-primary text-white font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2"
+          className="w-full block text-center px-4 py-3 rounded-lg gradient-primary text-white font-semibold hover:shadow-lg transition-all"
         >
           Back to Home
         </Link>

@@ -72,6 +72,10 @@ export default function BookingPage({
       if (state.bookingId) {
         sessionStorage.setItem('current_booking_id', state.bookingId)
       }
+
+      // Save route info for payment return page
+      sessionStorage.setItem('current_booking_movie_id', movieId)
+      sessionStorage.setItem('current_booking_showtime_id', showtimeId)
     } catch (error) {
       console.error('Error saving booking state:', error)
     }
@@ -82,6 +86,8 @@ export default function BookingPage({
     try {
       sessionStorage.removeItem(BOOKING_STORAGE_KEY)
       sessionStorage.removeItem('current_booking_id')
+      sessionStorage.removeItem('current_booking_movie_id')
+      sessionStorage.removeItem('current_booking_showtime_id')
     } catch (error) {
       console.error('Error clearing booking state:', error)
     }
@@ -930,6 +936,8 @@ export default function BookingPage({
                   // Also clear the current booking ID after a delay to allow payment return page to read it
                   setTimeout(() => {
                     sessionStorage.removeItem('current_booking_id')
+                    sessionStorage.removeItem('current_booking_movie_id')
+                    sessionStorage.removeItem('current_booking_showtime_id')
                   }, 5000)
                 }}
               />

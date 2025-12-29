@@ -122,7 +122,7 @@ export default function BookingSuccessPage() {
           <p className="text-muted-foreground mb-4">{error || 'Không tìm thấy thông tin vé'}</p>
           <Link href="/" className="text-purple-600 hover:text-purple-700 font-semibold flex items-center gap-2 justify-center">
             <ArrowLeft size={20} />
-            Quay về trang chủ
+            Back to home
           </Link>
         </div>
       </div>
@@ -152,13 +152,6 @@ export default function BookingSuccessPage() {
   return (
     <div className="min-h-screen bg-background dark:bg-slate-950 py-8 px-4">
       <div className="max-w-6xl mx-auto">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 text-purple-600 hover:text-purple-700 font-semibold mb-6"
-        >
-          <ArrowLeft size={20} />
-          Quay về trang chủ
-        </Link>
 
         <SuccessStep
           movie={movie}

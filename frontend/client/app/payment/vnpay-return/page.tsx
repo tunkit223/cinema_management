@@ -6,6 +6,7 @@ import { CheckCircle, XCircle, Loader } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { cancelBooking } from '@/lib/api-movie';
 
 interface PaymentResult {
   code: string;
@@ -22,6 +23,48 @@ export default function VNPayReturnPage() {
   const [loading, setLoading] = useState(true);
   const [result, setResult] = useState<PaymentResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const clearBookingSession = () => {
+    sessionStorage.removeItem('current_booking_id');
+    sessionStorage.removeItem('current_booking_movie_id');
+    sessionStorage.removeItem('current_booking_showtime_id');
+    Object.keys(sessionStorage).forEach(key => {
+      if (key.startsWith('booking_') || key.startsWith('booking_reload_')) {
+        sessionStorage.removeItem(key);
+      }
+    });
+  };
+
+  const findBookingRoute = () => {
+    const bookingKey = Object.keys(sessionStorage).find(key => key.startsWith('booking_') && !key.startsWith('booking_reload_'));
+    if (!bookingKey) return null;
+    const parts = bookingKey.split('_');
+    if (parts.length < 3) return null;
+    const movieId = parts[1];
+    const showtimeId = parts.slice(2).join('_');
+    return { movieId, showtimeId };
+  };
+
+  const findRouteFromFallback = () => {
+    const movieId = sessionStorage.getItem('current_booking_movie_id');
+    const showtimeId = sessionStorage.getItem('current_booking_showtime_id');
+    if (movieId && showtimeId) return { movieId, showtimeId };
+    return null;
+  };
+
+  const cancelBookingIfPossible = async (bookingId?: string) => {
+    if (!bookingId) {
+      console.log('No bookingId to cancel');
+      return;
+    }
+    try {
+      console.log('Attempting to cancel booking:', bookingId);
+      await cancelBooking(bookingId);
+      console.log('Booking cancelled successfully:', bookingId);
+    } catch (cancelErr) {
+      console.error('Error cancelling booking:', bookingId, cancelErr);
+    }
+  };
 
   useEffect(() => {
     const handlePaymentCallback = async () => {
@@ -65,8 +108,6 @@ export default function VNPayReturnPage() {
           if (savedBookingId) {
             data.bookingId = savedBookingId;
             console.log('Retrieved bookingId from sessionStorage:', savedBookingId);
-            // Clear it after reading to avoid reusing in future bookings
-            sessionStorage.removeItem('current_booking_id');
           }
         }
         
@@ -81,12 +122,14 @@ export default function VNPayReturnPage() {
         // Log result
         console.log('Payment Result:', data);
         
-        // Backend will automatically create tickets when payment is successful
+        // Keep booking data in session so user can retry or view ticket
       } catch (err) {
         console.error('Payment verification failed:', err);
         setError(
           err instanceof Error ? err.message : 'Có lỗi xảy ra khi xác thực thanh toán'
         );
+        
+        // Keep booking data so user can retry
       } finally {
         setLoading(false);
       }
@@ -128,7 +171,16 @@ export default function VNPayReturnPage() {
             {error}
           </p>
             <Button
-              onClick={() => router.push('/booking')}
+              onClick={async () => {
+                await cancelBookingIfPossible(result?.bookingId ?? result?.txnRef);
+                clearBookingSession();
+                const route = findBookingRoute() || findRouteFromFallback();
+                if (route) {
+                  router.push(`/booking/${route.movieId}/${route.showtimeId}`);
+                } else {
+                  router.push('/booking');
+                }
+              }}
               className="w-full bg-red-600 hover:bg-red-700"
             >
               Quay lại đặt vé
@@ -200,6 +252,7 @@ export default function VNPayReturnPage() {
                     console.warn('No bookingId found, redirecting to my-tickets');
                     router.push('/my-tickets');
                   }
+                  clearBookingSession();
                 }}
                 className="w-full bg-green-600 hover:bg-green-700"
               >
@@ -207,7 +260,10 @@ export default function VNPayReturnPage() {
               </Button>
               <Button
                 variant="secondary"
-                onClick={() => router.push('/')}
+                onClick={() => {
+                  clearBookingSession();
+                  router.push('/');
+                }}
                 className="w-full"
               >
                 Quay về trang chủ
@@ -235,14 +291,27 @@ export default function VNPayReturnPage() {
 
             <div className="space-y-3">
               <Button
-                onClick={() => router.push('/booking')}
+                onClick={async () => {
+                  await cancelBookingIfPossible(result?.bookingId ?? result?.txnRef);
+                  clearBookingSession();
+                  const route = findBookingRoute() || findRouteFromFallback();
+                  if (route) {
+                    router.push(`/booking/${route.movieId}/${route.showtimeId}`);
+                  } else {
+                    router.push('/booking');
+                  }
+                }}
                 className="w-full bg-orange-600 hover:bg-orange-700 text-white"
               >
                 Thử lại
               </Button>
               <Button
                 variant="secondary"
-                onClick={() => router.push('/')}
+                onClick={async () => {
+                  await cancelBookingIfPossible(result?.bookingId ?? result?.txnRef);
+                  clearBookingSession();
+                  router.push('/');
+                }}
                 className="w-full"
               >
                 Quay về trang chủ
