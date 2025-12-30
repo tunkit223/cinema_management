@@ -30,6 +30,7 @@ public class EmailBuilderService {
                 .to(recipient)
                 .subject(request.getSubject())
                 .htmlContent(request.getHtmlContent())
+                .attachments(request.getAttachments())
                 .build();
 
         // 3. Send email

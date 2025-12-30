@@ -12,5 +12,4 @@ public class TicketEmailView {
     String seatType;
     String ticketCode;
     BigDecimal ticketPrice;
-    String qrBase64;
 }

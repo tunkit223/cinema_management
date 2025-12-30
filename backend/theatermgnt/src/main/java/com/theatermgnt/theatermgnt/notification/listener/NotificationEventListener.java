@@ -1,5 +1,6 @@
 package com.theatermgnt.theatermgnt.notification.listener;
 
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 
@@ -32,6 +33,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
+import sibModel.SendSmtpEmailAttachment;
 
 @Component
 @RequiredArgsConstructor
@@ -121,8 +123,20 @@ public class NotificationEventListener {
                         .seatType(t.getScreeningSeat().getSeat().getSeatType().getTypeName())
                         .ticketPrice(t.getPrice())
                         .ticketCode(t.getTicketCode())
-                        .qrBase64("data:image/png;base64," + qrImageGenerator.generateBase64Qr(t.getQrContent()))
                         .build())
+                .toList();
+
+        List<SendSmtpEmailAttachment> attachments = tickets.stream()
+                .map(t -> {
+
+                    byte[] qrBytes = Base64.getDecoder()
+                            .decode(qrImageGenerator.generateBase64Qr(t.getQrContent()));
+
+                    SendSmtpEmailAttachment attachment = new SendSmtpEmailAttachment();
+                    attachment.setName("QR-" + t.getTicketCode() + ".png");
+                    attachment.setContent(qrBytes);
+                    return attachment;
+                })
                 .toList();
 
         Map<String, Object> variables = Map.of(
@@ -151,6 +165,7 @@ public class NotificationEventListener {
                 .account(account)
                 .subject(subject)
                 .htmlContent(htmlContent)
+                .attachments(attachments)
                 .emailTypeForLog("Ticket Issued")
                 .build());
     }

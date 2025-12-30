@@ -5,6 +5,8 @@ import java.util.List;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import sibModel.SendSmtpEmailAttachment;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -15,4 +17,5 @@ public class EmailRequest {
     List<Recipient> to;
     String subject;
     String htmlContent;
+    List<SendSmtpEmailAttachment> attachment;
 }
