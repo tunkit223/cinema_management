@@ -281,6 +281,12 @@ public class BookingServiceImpl implements BookingService {
         booking.setStatus(BookingStatus.PAID);
         bookingRepository.save(booking);
 
+        int pointsEarned = discountService.calculateEarnedPoints(booking.getTotalAmount());
+        int pointDiscounted = discountService.caculateDiscountPoints(booking.getDiscount());
+
+        customerService.addLoyaltyPoints(
+                booking.getCustomer().getId(), pointsEarned - pointDiscounted);
+
         ticketService.createTickets(UUID.fromString(bookingId));
 
         log.info("Booking {} confirmed", bookingId);
