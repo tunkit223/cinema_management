@@ -20,7 +20,6 @@ public class InvoiceMapper {
                 .status(invoice.getStatus().name())
                 .createdAt(invoice.getCreatedAt())
                 .paidAt(invoice.getPaidAt())
-                .dueDate(invoice.getDueDate())
                 .build();
     }
 }

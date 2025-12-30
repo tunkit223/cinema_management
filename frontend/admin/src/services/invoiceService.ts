@@ -1,0 +1,130 @@
+import httpClient from "@/configurations/httpClient";
+import type {
+  InvoiceResponse,
+  InvoiceDetailResponse,
+  InvoiceStatisticsResponse,
+  InvoiceFilterParams,
+  PaginatedInvoiceResponse,
+  InvoiceStatus,
+} from "@/types/InvoiceType/invoice";
+import { handleApiResponse } from "@/utils/apiResponse";
+import type { ApiResponse } from "@/utils/apiResponse";
+
+const BASE_URL = "/invoices";
+
+export const getAllInvoices = async (
+  page: number = 0,
+  size: number = 10
+): Promise<PaginatedInvoiceResponse> => {
+  return handleApiResponse<PaginatedInvoiceResponse>(
+    httpClient.get<ApiResponse<PaginatedInvoiceResponse>>(BASE_URL, {
+      params: { page, size },
+    })
+  );
+};
+
+export const getInvoiceById = async (
+  invoiceId: string
+): Promise<InvoiceResponse> => {
+  return handleApiResponse<InvoiceResponse>(
+    httpClient.get<ApiResponse<InvoiceResponse>>(`${BASE_URL}/${invoiceId}`)
+  );
+};
+
+export const getInvoiceDetail = async (
+  invoiceId: string
+): Promise<InvoiceDetailResponse> => {
+  return handleApiResponse<InvoiceDetailResponse>(
+    httpClient.get<ApiResponse<InvoiceDetailResponse>>(
+      `${BASE_URL}/${invoiceId}/detail`
+    )
+  );
+};
+
+export const getInvoiceByBookingId = async (
+  bookingId: string
+): Promise<InvoiceResponse> => {
+  return handleApiResponse<InvoiceResponse>(
+    httpClient.get<ApiResponse<InvoiceResponse>>(
+      `${BASE_URL}/booking/${bookingId}`
+    )
+  );
+};
+
+export const getInvoicesByStatus = async (
+  status: InvoiceStatus,
+  page: number = 0,
+  size: number = 10
+): Promise<PaginatedInvoiceResponse> => {
+  return handleApiResponse<PaginatedInvoiceResponse>(
+    httpClient.get<ApiResponse<PaginatedInvoiceResponse>>(
+      `${BASE_URL}/status/${status}`,
+      {
+        params: { page, size },
+      }
+    )
+  );
+};
+
+export const searchInvoices = async (
+  filters: InvoiceFilterParams
+): Promise<PaginatedInvoiceResponse> => {
+  const { page = 0, size = 10, search, status } = filters;
+
+  if (search) {
+    return handleApiResponse<PaginatedInvoiceResponse>(
+      httpClient.get<ApiResponse<PaginatedInvoiceResponse>>(
+        `${BASE_URL}/search`,
+        {
+          params: { query: search, status, page, size },
+        }
+      )
+    );
+  }
+
+  if (status) {
+    return getInvoicesByStatus(status, page, size);
+  }
+
+  return getAllInvoices(page, size);
+};
+
+export const getInvoicesByDateRange = async (
+  startDate: string,
+  endDate: string,
+  page: number = 0,
+  size: number = 10
+): Promise<PaginatedInvoiceResponse> => {
+  return handleApiResponse<PaginatedInvoiceResponse>(
+    httpClient.get<ApiResponse<PaginatedInvoiceResponse>>(
+      `${BASE_URL}/date-range`,
+      {
+        params: { startDate, endDate, page, size },
+      }
+    )
+  );
+};
+
+export const getInvoiceStatistics =
+  async (): Promise<InvoiceStatisticsResponse> => {
+    return handleApiResponse<InvoiceStatisticsResponse>(
+      httpClient.get<ApiResponse<InvoiceStatisticsResponse>>(
+        `${BASE_URL}/statistics`
+      )
+    );
+  };
+
+export const updateInvoiceStatus = async (
+  invoiceId: string,
+  status: InvoiceStatus
+): Promise<InvoiceResponse> => {
+  return handleApiResponse<InvoiceResponse>(
+    httpClient.patch<ApiResponse<InvoiceResponse>>(
+      `${BASE_URL}/${invoiceId}/status`,
+      null,
+      {
+        params: { status },
+      }
+    )
+  );
+};

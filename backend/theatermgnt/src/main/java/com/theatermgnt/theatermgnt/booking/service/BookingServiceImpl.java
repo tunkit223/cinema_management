@@ -37,9 +37,6 @@ import com.theatermgnt.theatermgnt.customer.service.CustomerService;
 import com.theatermgnt.theatermgnt.movie.dto.response.MovieResponse;
 import com.theatermgnt.theatermgnt.movie.service.MovieService;
 import com.theatermgnt.theatermgnt.notification.listener.NotificationEventListener;
-import com.theatermgnt.theatermgnt.payment.dto.request.CreateInvoiceRequest;
-import com.theatermgnt.theatermgnt.payment.dto.response.InvoiceResponse;
-import com.theatermgnt.theatermgnt.payment.service.InvoiceService;
 import com.theatermgnt.theatermgnt.priceConfig.entity.PriceConfig;
 import com.theatermgnt.theatermgnt.priceConfig.repository.PriceConfigRepository;
 import com.theatermgnt.theatermgnt.screening.entity.Screening;
@@ -72,7 +69,6 @@ public class BookingServiceImpl implements BookingService {
     private final MovieService movieService;
     private final CustomerService customerService;
     private final DiscountService discountService;
-    private final InvoiceService invoiceService;
     private final TicketService ticketService;
     private final NotificationEventListener eventPublisher;
 
@@ -253,21 +249,6 @@ public class BookingServiceImpl implements BookingService {
         screeningSeatRepository.releaseSeatsByBooking(bookingId.toString());
     }
 
-    @Override
-    public InvoiceResponse createInvoiceForBooking(UUID bookingId) {
-        log.info("Creating invoice for booking: {}", bookingId);
-
-        Booking booking = bookingRepository
-                .findById(bookingId)
-                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_EXISTED));
-        booking.setStatus(BookingStatus.CONFIRM);
-        bookingRepository.save(booking);
-
-        CreateInvoiceRequest invoiceRequest =
-                CreateInvoiceRequest.builder().bookingId(bookingId.toString()).build();
-
-        return invoiceService.createInvoice(invoiceRequest);
-    }
 
     @Override
     public void confirmBookingPayment(String bookingId) {
