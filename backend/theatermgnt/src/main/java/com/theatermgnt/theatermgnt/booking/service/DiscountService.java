@@ -28,7 +28,9 @@ public class DiscountService {
     }
 
     public int calculateEarnedPoints(BigDecimal totalAmount) {
-        return totalAmount.divide(BigDecimal.valueOf(TOTAL_AMOUNT_RATE_TO_POINT)).intValue();
+        return totalAmount
+                .divide(BigDecimal.valueOf(TOTAL_AMOUNT_RATE_TO_POINT))
+                .intValue();
     }
 
     public int caculateDiscountPoints(BigDecimal discountAmount) {

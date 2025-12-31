@@ -113,8 +113,8 @@ public enum ErrorCode {
     INSUFFICIENT_LOYALTY_POINTS(2061, "Insufficient loyalty points", HttpStatus.BAD_REQUEST),
     SCREENING_SEATS_NOT_AVAILABLE(2062, "One or more selected seats are not available", HttpStatus.BAD_REQUEST),
 
-        // Reporting
-        INVALID_DATE_RANGE(5001, "End date must be greater than or equal start date", HttpStatus.BAD_REQUEST),
+    // Reporting
+    INVALID_DATE_RANGE(5001, "End date must be greater than or equal start date", HttpStatus.BAD_REQUEST),
 
     // ticket
     TICKET_NOT_EXISTED(2063, "Ticket not existed", HttpStatus.NOT_FOUND),

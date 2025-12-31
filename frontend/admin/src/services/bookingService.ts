@@ -15,6 +15,7 @@ export interface CreateBookingResponse {
   id: string
   expiredAt: string
   subtotal: number
+  customerId?: string
 }
 
 export interface BookingSummaryResponse {
@@ -128,8 +129,8 @@ export const redeemBookingPoints = async (
 // Cancel booking
 export const cancelBooking = async (bookingId: string): Promise<string> => {
   try {
-    const response = await httpClient.delete<ApiResponse<string>>(
-      `/bookings/${bookingId}`
+    const response = await httpClient.post<ApiResponse<string>>(
+      `/bookings/${bookingId}/cancel`
     )
     return response.data.result
   } catch (error) {

@@ -35,8 +35,7 @@ public class MovieRevenueService {
 
     public List<MovieRevenueResponse> find(String cinemaId, String movieId, LocalDate from, LocalDate to) {
         validateDateRangeOptional(from, to);
-        return movieRevenueRepository.findFiltered(cinemaId, movieId, from, to)
-                .stream()
+        return movieRevenueRepository.findFiltered(cinemaId, movieId, from, to).stream()
                 .map(this::toResponse)
                 .toList();
     }

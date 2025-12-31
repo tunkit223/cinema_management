@@ -36,8 +36,7 @@ public class DailyRevenueService {
 
     public List<DailyRevenueResponse> find(String cinemaId, LocalDate from, LocalDate to) {
         validateDateRangeOptional(from, to);
-        return dailyRevenueSummaryRepository.findFiltered(cinemaId, from, to)
-                .stream()
+        return dailyRevenueSummaryRepository.findFiltered(cinemaId, from, to).stream()
                 .map(this::toResponse)
                 .toList();
     }

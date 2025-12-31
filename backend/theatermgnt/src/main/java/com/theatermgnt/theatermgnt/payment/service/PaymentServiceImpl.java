@@ -329,7 +329,6 @@ public class PaymentServiceImpl implements PaymentService {
                     // Don't fail the IPN, just log the error
                 }
 
-
                 response.put("RspCode", "00");
                 response.put("Message", "Confirm success");
             } else {
@@ -338,7 +337,6 @@ public class PaymentServiceImpl implements PaymentService {
                 response.put("RspCode", "00");
                 response.put("Message", "Confirm success");
             }
-
 
         } catch (Exception e) {
             log.error("Error handling VNPay IPN", e);

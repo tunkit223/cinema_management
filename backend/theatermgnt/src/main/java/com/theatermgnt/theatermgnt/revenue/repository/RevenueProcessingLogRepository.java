@@ -8,5 +8,6 @@ import com.theatermgnt.theatermgnt.revenue.entity.RevenueProcessingLog;
 
 public interface RevenueProcessingLogRepository extends JpaRepository<RevenueProcessingLog, String> {
     Optional<RevenueProcessingLog> findByPaymentId(String paymentId);
+
     boolean existsByPaymentId(String paymentId);
 }

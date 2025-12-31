@@ -2,10 +2,10 @@ package com.theatermgnt.theatermgnt.priceConfig.service;
 
 import java.util.List;
 
-import com.theatermgnt.theatermgnt.common.enums.DayType;
-import com.theatermgnt.theatermgnt.common.enums.TimeSlot;
 import org.springframework.stereotype.Service;
 
+import com.theatermgnt.theatermgnt.common.enums.DayType;
+import com.theatermgnt.theatermgnt.common.enums.TimeSlot;
 import com.theatermgnt.theatermgnt.common.exception.AppException;
 import com.theatermgnt.theatermgnt.common.exception.ErrorCode;
 import com.theatermgnt.theatermgnt.priceConfig.dto.request.PriceConfigCreationRequest;
@@ -34,14 +34,11 @@ public class PriceConfigService {
                 .findById(request.getSeatTypeId())
                 .orElseThrow(() -> new AppException(ErrorCode.SEATTYPE_NOT_EXISTED));
 
-
         DayType dayType = DayType.valueOf(request.getDayType());
         TimeSlot timeSlot = TimeSlot.valueOf(request.getTimeSlot());
 
-        var existingConfig = priceConfigRepository.findBySeatTypeIdAndDayTypeAndTimeSlot(
-                request.getSeatTypeId(),
-                dayType,
-                timeSlot);
+        var existingConfig =
+                priceConfigRepository.findBySeatTypeIdAndDayTypeAndTimeSlot(request.getSeatTypeId(), dayType, timeSlot);
 
         if (existingConfig.isPresent()) {
             PriceConfig priceConfig = existingConfig.get();

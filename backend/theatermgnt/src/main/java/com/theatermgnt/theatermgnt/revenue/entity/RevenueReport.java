@@ -6,10 +6,10 @@ import java.time.LocalDateTime;
 
 import jakarta.persistence.*;
 
+import com.theatermgnt.theatermgnt.revenue.enums.ReportType;
+
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-
-import com.theatermgnt.theatermgnt.revenue.enums.ReportType;
 
 @Getter
 @Setter

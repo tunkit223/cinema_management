@@ -3,6 +3,7 @@ package com.theatermgnt.theatermgnt.booking.service;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -10,6 +11,8 @@ import java.util.UUID;
 import jakarta.transaction.Transactional;
 
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -32,10 +35,14 @@ import com.theatermgnt.theatermgnt.common.enums.TimeSlot;
 import com.theatermgnt.theatermgnt.common.exception.AppException;
 import com.theatermgnt.theatermgnt.common.exception.ErrorCode;
 import com.theatermgnt.theatermgnt.customer.entity.Customer;
+import com.theatermgnt.theatermgnt.customer.event.CustomerCreatedEvent;
 import com.theatermgnt.theatermgnt.customer.repository.CustomerRepository;
 import com.theatermgnt.theatermgnt.customer.service.CustomerService;
 import com.theatermgnt.theatermgnt.movie.dto.response.MovieResponse;
 import com.theatermgnt.theatermgnt.movie.service.MovieService;
+import com.theatermgnt.theatermgnt.payment.dto.request.CreateInvoiceRequest;
+import com.theatermgnt.theatermgnt.payment.dto.response.InvoiceResponse;
+import com.theatermgnt.theatermgnt.payment.service.InvoiceService;
 import com.theatermgnt.theatermgnt.notification.listener.NotificationEventListener;
 import com.theatermgnt.theatermgnt.priceConfig.entity.PriceConfig;
 import com.theatermgnt.theatermgnt.priceConfig.repository.PriceConfigRepository;
@@ -70,8 +77,7 @@ public class BookingServiceImpl implements BookingService {
     private final CustomerService customerService;
     private final DiscountService discountService;
     private final TicketService ticketService;
-    private final NotificationEventListener eventPublisher;
-
+    private final ApplicationEventPublisher eventPublisher;
     private static final Duration HOLD_DURATION = Duration.ofMinutes(10);
 
     @Override
@@ -122,6 +128,16 @@ public class BookingServiceImpl implements BookingService {
                     .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
         }
 
+        populateNamesFromCustomerName(request);
+
+        if (request.getCustomerId() == null
+                && request.getCustomerName() == null
+                && request.getEmail() == null
+                && request.getFirstName() == null
+                && request.getLastName() == null) {
+            return null;
+        }
+
         // Kiểm tra Account tồn tại
         Optional<Account> existingAccount = accountRepository.findByEmail(request.getEmail());
         if (existingAccount.isPresent()) {
@@ -140,13 +156,40 @@ public class BookingServiceImpl implements BookingService {
         accountRepository.save(newAccount);
         Customer savedCustomer = createCustomerWithAccount(newAccount, request);
 
-        // 4. Bắn Event (Async) để gửi SMS/Email, không làm chậm quá trình đặt vé
-        //        eventPublisher.publishEvent(new CustomerCreatedEvent(savedCustomer, true));
+        eventPublisher.publishEvent(CustomerCreatedEvent.builder()
+                .customerId(savedCustomer.getId())
+                .rawPassword(rawPassword)
+                .build());
 
         return savedCustomer;
     }
 
+    private void populateNamesFromCustomerName(CreateBookingRequest request) {
+        if (!StringUtils.isBlank(request.getFirstName()) || !StringUtils.isBlank(request.getLastName())) {
+            return;
+        }
+        if (StringUtils.isBlank(request.getCustomerName())) {
+            return;
+        }
+
+        String[] parts = request.getCustomerName().trim().split("\\s+");
+        if (parts.length == 1) {
+            request.setFirstName(parts[0]);
+            request.setLastName("");
+            return;
+        }
+
+        String firstName = parts[parts.length - 1];
+        String lastName = String.join(" ", Arrays.copyOf(parts, parts.length - 1));
+        request.setFirstName(firstName);
+        request.setLastName(lastName);
+    }
+
     private Customer createCustomerWithAccount(Account account, CreateBookingRequest request) {
+        Optional<Customer> customer = customerRepository.findByAccountId(account.getId());
+        if (customer.isPresent()) {
+            return customer.get();
+        }
         Customer newCustomer = new Customer();
         newCustomer.setAccount(account);
         newCustomer.setFirstName(request.getFirstName());
@@ -262,12 +305,11 @@ public class BookingServiceImpl implements BookingService {
         booking.setStatus(BookingStatus.PAID);
         bookingRepository.save(booking);
 
-        int pointsEarned = discountService.calculateEarnedPoints(booking.getTotalAmount());
-        int pointDiscounted = discountService.caculateDiscountPoints(booking.getDiscount());
-
-        customerService.addLoyaltyPoints(
-                booking.getCustomer().getId(), pointsEarned - pointDiscounted);
-
+        if (booking.getCustomer() != null) {
+            int pointsEarned = discountService.calculateEarnedPoints(booking.getTotalAmount());
+            int pointDiscounted = discountService.caculateDiscountPoints(booking.getDiscount());
+            customerService.addLoyaltyPoints(booking.getCustomer().getId(), pointsEarned - pointDiscounted);
+        }
         ticketService.createTickets(UUID.fromString(bookingId));
 
         log.info("Booking {} confirmed", bookingId);

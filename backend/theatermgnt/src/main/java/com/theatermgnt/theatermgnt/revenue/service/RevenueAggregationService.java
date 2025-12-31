@@ -68,8 +68,7 @@ public class RevenueAggregationService {
 
             Booking booking = bookingRepository
                     .findById(UUID.fromString(invoice.getBookingId()))
-                    .orElseThrow(() ->
-                            new IllegalStateException("Booking not found: " + invoice.getBookingId()));
+                    .orElseThrow(() -> new IllegalStateException("Booking not found: " + invoice.getBookingId()));
 
             Screening screening = booking.getScreening();
             String cinemaId = screening.getRoom().getCinema().getId();
@@ -82,10 +81,10 @@ public class RevenueAggregationService {
                     .size();
 
             // Calculate ticket revenue (subtotal - combo)
-            List<BookingCombo> combos = bookingComboRepository.findByBookingId(booking.getId().toString());
-            BigDecimal comboRevenue = combos.stream()
-                    .map(BookingCombo::getSubtotal)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            List<BookingCombo> combos =
+                    bookingComboRepository.findByBookingId(booking.getId().toString());
+            BigDecimal comboRevenue =
+                    combos.stream().map(BookingCombo::getSubtotal).reduce(BigDecimal.ZERO, BigDecimal::add);
             BigDecimal ticketRevenue = booking.getSubtotal().subtract(comboRevenue);
 
             // Handle SUCCESS or REFUND
@@ -178,11 +177,7 @@ public class RevenueAggregationService {
     }
 
     private void upsertMovieRevenue(
-            String movieId,
-            String cinemaId,
-            LocalDate reportDate,
-            BigDecimal ticketRevenue,
-            int ticketsSoldIncrement) {
+            String movieId, String cinemaId, LocalDate reportDate, BigDecimal ticketRevenue, int ticketsSoldIncrement) {
 
         Optional<MovieRevenue> existing =
                 movieRevenueRepository.findByMovieIdAndCinemaIdAndReportDate(movieId, cinemaId, reportDate);

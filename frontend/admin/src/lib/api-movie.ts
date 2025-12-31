@@ -52,7 +52,7 @@ export function mapScreeningSeatToSeat(seat: any, index: number): Seat | null {
     type = "couple"
   }
 
-  const isAvailable = seat.status === "AVAILABLE" || seat.status === null || seat.status === undefined || !seat.bookingId
+  const isAvailable = seat.status === "AVAILABLE" 
   const price = seat.price ? Number(seat.price) : undefined
 
   return {
