@@ -32,8 +32,6 @@ public class Invoice {
     @Column(nullable = false)
     private InvoiceStatus status; // pending, paid, failed, refunded
 
-    private LocalDateTime dueDate;
-
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
