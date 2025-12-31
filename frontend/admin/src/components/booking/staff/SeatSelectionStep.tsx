@@ -10,8 +10,10 @@ interface SeatSelectionStepProps {
   error: string | null
   customerName: string
   customerEmail: string
+  checkoutMode: "guest" | "member"
   onCustomerNameChange: (value: string) => void
   onCustomerEmailChange: (value: string) => void
+  onCheckoutModeChange: (mode: "guest" | "member") => void
 }
 
 export default function SeatSelectionStep({
@@ -23,10 +25,15 @@ export default function SeatSelectionStep({
   error,
   customerName,
   customerEmail,
+  checkoutMode,
   onCustomerNameChange,
   onCustomerEmailChange,
+  onCheckoutModeChange,
 }: SeatSelectionStepProps) {
   const [groupedByRow, setGroupedByRow] = useState<Record<string, Seat[]>>({})
+  const [customerPhone, setCustomerPhone] = useState("")
+
+  const isGuestCheckout = checkoutMode === "guest"
 
   useEffect(() => {
     const grouped = seats.reduce((acc, seat) => {
@@ -60,22 +67,24 @@ export default function SeatSelectionStep({
     const isSelected = selectedSeats.some((s) => s.id === seat.id)
 
     if (!seat.isAvailable) {
-      return "bg-red-500 dark:bg-red-600 cursor-not-allowed opacity-60"
+      return "bg-red-500 text-white cursor-not-allowed"
     }
 
     if (isSelected) {
-      return "bg-blue-600 dark:bg-blue-500 text-white"
+      return "bg-blue-600 text-white shadow-md"
     }
 
     switch (seat.type) {
       case "vip":
-        return "bg-amber-400 dark:bg-amber-500 hover:bg-amber-500 dark:hover:bg-amber-600 text-gray-900 font-bold"
+        return "bg-amber-100 text-amber-900 hover:bg-amber-200"
       case "couple":
-        return "bg-pink-400 dark:bg-pink-500 hover:bg-pink-500 dark:hover:bg-pink-600 text-white font-bold"
+        return "bg-pink-100 text-pink-800 hover:bg-pink-200"
       default:
-        return "bg-gray-200 dark:bg-gray-400 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-900 font-bold"
+        return "bg-gray-100 text-gray-700 hover:bg-gray-200"
     }
   }
+
+  const seatTotal = selectedSeats.reduce((sum, seat) => sum + (seat.price || 0), 0)
 
   if (loading) {
     return (
@@ -98,113 +107,187 @@ export default function SeatSelectionStep({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-bold mb-2">Select Seats</h2>
-        <p className="text-gray-600 text-sm">
-          {showtime.roomName} • {new Date(showtime.time).toLocaleString()}
-        </p>
-      </div>
-
-      {/* Legend */}
-      <div className="bg-gray-50 rounded-lg p-4 flex flex-wrap gap-4 justify-center">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 bg-gray-200 rounded text-xs"></div>
-          <span className="text-sm">Standard</span>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div>
+          <p className="text-sm text-gray-500">Select Your Seats</p>
+          <h2 className="text-2xl font-bold text-gray-900">
+            {showtime.cinemaName} • {showtime.roomName}
+          </h2>
+          <p className="text-sm text-gray-600">
+            {new Date(showtime.time).toLocaleString()}
+          </p>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 bg-amber-400 rounded text-xs"></div>
-          <span className="text-sm">VIP</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 bg-pink-400 rounded text-xs"></div>
-          <span className="text-sm">Couple</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 bg-red-500 rounded text-xs"></div>
-          <span className="text-sm">Booked</span>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-gray-500">Selected</span>
+          <span className="px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-sm font-semibold">
+            {selectedSeats.length} seat{selectedSeats.length !== 1 ? "s" : ""}
+          </span>
         </div>
       </div>
 
-      {/* Screen */}
-      <div className="text-center">
-        <div className="inline-block bg-gray-800 text-white px-12 py-2 rounded-t-3xl text-sm font-semibold">
-          SCREEN
-        </div>
-      </div>
+      <div className="grid gap-6 xl:grid-cols-[1.6fr_1fr]">
+        <div className="border rounded-2xl bg-white shadow-sm p-4 xl:p-6">
+          <div className="flex flex-wrap items-center gap-4 mb-6 text-sm">
+            <div className="flex items-center gap-2 text-gray-600">
+              <span className="inline-block w-4 h-4 rounded border border-gray-300 bg-gray-50" />
+              Standard
+            </div>
+            <div className="flex items-center gap-2 text-gray-600">
+              <span className="inline-block w-4 h-4 rounded bg-blue-600" />
+              Selected
+            </div>
+            <div className="flex items-center gap-2 text-gray-600">
+              <span className="inline-block w-4 h-4 rounded bg-red-500" />
+              Taken
+            </div>
+            <div className="flex items-center gap-2 text-gray-600">
+              <span className="inline-block w-4 h-4 rounded bg-amber-200" />
+              VIP
+            </div>
+            <div className="flex items-center gap-2 text-gray-600">
+              <span className="inline-block w-4 h-4 rounded bg-pink-200" />
+              Couple
+            </div>
+          </div>
 
-      {/* Seats */}
-      <div className="flex justify-center overflow-x-auto pb-4">
-        <div className="inline-block space-y-3">
-          {Object.entries(groupedByRow).map(([row, rowSeats]) => (
-            <div key={row} className="flex items-center gap-3">
-              <div className="w-6 text-center font-bold text-gray-600 text-sm">{row}</div>
-              <div className="flex gap-2">
-                {rowSeats.map((seat) => (
-                  <button
-                    key={seat.id}
-                    onClick={() => handleSeatClick(seat)}
-                    className={`
-                      w-8 h-8 rounded text-xs font-bold transition-all
-                      ${getSeatColor(seat)}
-                      ${seat.isAvailable && !selectedSeats.some(s => s.id === seat.id) ? "cursor-pointer" : ""}
-                    `}
-                    disabled={!seat.isAvailable}
-                    title={`Seat ${seat.row}${seat.number}`}
-                  >
-                    {seat.number}
-                  </button>
+          <div className="bg-slate-50 border border-slate-100 rounded-xl p-4">
+            <div className="text-center mb-6">
+              <div className="inline-block px-10 py-2 rounded-full bg-slate-200 text-xs font-semibold text-slate-700 tracking-[0.2em] uppercase">
+                Screen
+              </div>
+            </div>
+
+            <div className="flex justify-center pb-4">
+              <div className="space-y-4">
+                {Object.entries(groupedByRow).map(([row, rowSeats]) => (
+                  <div key={row} className="flex items-center gap-3 justify-center">
+                    <div className="w-8 text-center font-bold text-gray-600 text-base">{row}</div>
+                    <div className="flex gap-2">
+                      {rowSeats.map((seat) => (
+                        <button
+                          key={seat.id}
+                          onClick={() => handleSeatClick(seat)}
+                          className={`h-12 rounded-lg text-xs font-bold transition shadow-sm flex items-center justify-center ${
+                            seat.type === "couple" ? "w-24" : "w-12"
+                          } ${getSeatColor(seat)} ${seat.isAvailable ? "cursor-pointer" : ""}`}
+                          disabled={!seat.isAvailable}
+                          title={`Seat ${seat.row}${seat.number}`}
+                        >
+                          {seat.row}{seat.number}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="w-8 text-center font-bold text-gray-600 text-base">{row}</div>
+                  </div>
                 ))}
               </div>
-              <div className="w-6 text-center font-bold text-gray-600 text-sm">{row}</div>
             </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Selected Seats Summary */}
-      {selectedSeats.length > 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <p className="text-sm font-semibold text-blue-900 mb-2">
-            Selected ({selectedSeats.length}):
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {selectedSeats
-              .sort((a, b) => {
-                if (a.row === b.row) {
-                  return a.number - b.number
-                }
-                return a.row.localeCompare(b.row)
-              })
-              .map((seat) => (
-                <span key={seat.id} className="inline-block bg-blue-600 text-white px-2 py-1 rounded text-sm">
-                  {seat.row}{seat.number}
-                </span>
-              ))}
           </div>
         </div>
-      )}
 
-      {/* Customer info */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 border border-gray-200 rounded-lg p-4">
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">Customer Name</label>
-          <input
-            type="text"
-            value={customerName}
-            onChange={(e) => onCustomerNameChange(e.target.value)}
-            placeholder="Enter customer full name"
-            className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">Customer Email</label>
-          <input
-            type="email"
-            value={customerEmail}
-            onChange={(e) => onCustomerEmailChange(e.target.value)}
-            placeholder="example@email.com"
-            className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+        <div className="space-y-4">
+          <div className="border rounded-2xl bg-white shadow-sm p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-gray-500">Selected Seats</p>
+                <h3 className="text-lg font-semibold text-gray-900">{selectedSeats.length} seat{selectedSeats.length !== 1 ? "s" : ""}</h3>
+              </div>
+              {selectedSeats.length > 0 && (
+                <button
+                  onClick={() => onSelectSeats([])}
+                  className="text-sm text-blue-600 hover:text-blue-700"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+
+            {selectedSeats.length === 0 ? (
+              <p className="text-sm text-gray-500">No seats selected yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {selectedSeats
+                  .slice()
+                  .sort((a, b) => {
+                    if (a.row === b.row) return a.number - b.number
+                    return a.row.localeCompare(b.row)
+                  })
+                  .map((seat) => (
+                    <div key={seat.id} className="flex items-center justify-between rounded-lg border border-slate-100 px-3 py-2">
+                      <div>
+                        <p className="font-semibold text-gray-900">{seat.row}{seat.number}</p>
+                        <p className="text-xs text-gray-500 capitalize">{seat.type || "regular"}</p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-semibold text-gray-800">{(seat.price || 0).toLocaleString()} VND</span>
+                        <button
+                          onClick={() => handleSeatClick(seat)}
+                          className="text-gray-400 hover:text-red-500"
+                          aria-label="Remove seat"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            )}
+
+            <div className="border-t mt-4 pt-3 flex items-center justify-between text-base">
+              <span className="text-gray-700 font-semibold">Subtotal</span>
+              <span className="text-xl font-bold text-blue-700">{seatTotal.toLocaleString()} VND</span>
+            </div>
+          </div>
+
+          <div className="border rounded-2xl bg-white shadow-sm p-4 space-y-4">
+            <div className="flex items-center gap-3">
+              <input
+                id="guest"
+                type="radio"
+                name="checkoutMode"
+                className="h-4 w-4 text-blue-600"
+                checked={checkoutMode === "guest"}
+                onChange={() => onCheckoutModeChange("guest")}
+              />
+              <label htmlFor="guest" className="text-sm font-semibold text-gray-900">Guest Checkout</label>
+            </div>
+            <div className="flex items-center gap-3">
+              <input
+                id="member"
+                type="radio"
+                name="checkoutMode"
+                className="h-4 w-4 text-blue-600"
+                checked={checkoutMode === "member"}
+                onChange={() => onCheckoutModeChange("member")}
+              />
+              <label htmlFor="member" className="text-sm text-gray-700">Member (Get discount & points)</label>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3">
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-700">Full name</label>
+                <input
+                  type="text"
+                  placeholder="Full name"
+                  className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  onChange={(e) => onCustomerNameChange(e.target.value)}
+                  value={customerName}
+                  disabled={isGuestCheckout}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-700">Email address</label>
+                <input
+                  type="email"
+                  placeholder="Email address"
+                  className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  onChange={(e) => onCustomerEmailChange(e.target.value)}
+                  value={customerEmail}
+                  disabled={isGuestCheckout}
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

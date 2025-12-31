@@ -12,14 +12,15 @@ import com.theatermgnt.theatermgnt.revenue.enums.ReportType;
 
 public interface RevenueReportRepository extends JpaRepository<RevenueReport, String> {
 
-    @Query("""
-        SELECT r FROM RevenueReport r
-        WHERE (:cinemaId IS NULL OR :cinemaId = '' OR r.cinemaId = :cinemaId)
-          AND r.reportType = COALESCE(:reportType, r.reportType)
-          AND r.startDate >= COALESCE(:fromDate, CAST('1900-01-01' AS date))
-          AND r.endDate <= COALESCE(:toDate, CAST('2099-12-31' AS date))
-        ORDER BY r.generatedAt DESC
-    """)
+    @Query(
+            """
+		SELECT r FROM RevenueReport r
+		WHERE (:cinemaId IS NULL OR :cinemaId = '' OR r.cinemaId = :cinemaId)
+		AND r.reportType = COALESCE(:reportType, r.reportType)
+		AND r.startDate >= COALESCE(:fromDate, CAST('1900-01-01' AS date))
+		AND r.endDate <= COALESCE(:toDate, CAST('2099-12-31' AS date))
+		ORDER BY r.generatedAt DESC
+	""")
     List<RevenueReport> findFiltered(
             @Param("cinemaId") String cinemaId,
             @Param("reportType") ReportType reportType,

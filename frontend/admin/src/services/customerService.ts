@@ -27,10 +27,10 @@ export const getMyInfo = async (): Promise<Customer> => {
 // Get customer loyalty points
 export const getCustomerLoyaltyPoints = async (customerId: string): Promise<number> => {
   try {
-    const response = await httpClient.get<ApiResponse<{ points: number }>>(
+    const response = await httpClient.get<ApiResponse<{ loyaltyPoints?: number }>>(
       `/customers/${customerId}/loyalty-points`
     )
-    return response.data.result?.points || 0
+    return response.data.result?.loyaltyPoints ?? 0
   } catch (error) {
     console.error("Failed to get loyalty points:", error)
     throw error

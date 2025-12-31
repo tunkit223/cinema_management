@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { CheckCircle2, ChevronLeft, ChevronRight } from "lucide-react"
 import { PageHeader } from "@/components/ui/PageHeader"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -36,6 +36,7 @@ import {
   getBookingSummary,
   updateBookingCombos,
   cancelBooking,
+  redeemBookingPoints,
 } from "@/services/bookingService"
 import { getMyInfo, getCustomerLoyaltyPoints } from "@/services/customerService"
 import type { Seat, ComboItem, Showtime } from "@/lib/types"
@@ -70,9 +71,11 @@ export const TicketBookingPage = () => {
   // Customer info
   const [customerName, setCustomerName] = useState("")
   const [customerEmail, setCustomerEmail] = useState("")
+  const [checkoutMode, setCheckoutMode] = useState<"guest" | "member">("guest")
 
   // Booking state
   const [bookingId, setBookingId] = useState<string | null>(null)
+  const [customerId, setCustomerId] = useState<string | null>(null)
 
   // Loyalty points
   const [customerPoints, setCustomerPoints] = useState(0)
@@ -86,9 +89,18 @@ export const TicketBookingPage = () => {
   const [combosLoading, setCombosLoading] = useState(false)
   const [isCreatingBooking, setIsCreatingBooking] = useState(false)
   const [isUpdatingCombos, setIsUpdatingCombos] = useState(false)
+  const [isRedeemingPoints, setIsRedeemingPoints] = useState(false)
   const [seatsError, setSeatsError] = useState<string | null>(null)
 
   const isCancellingBooking = useRef(false)
+
+  // Keep customer inputs blank when guest checkout is selected
+  useEffect(() => {
+    if (checkoutMode === "guest") {
+      setCustomerName("")
+      setCustomerEmail("")
+    }
+  }, [checkoutMode])
 
   // Fetch movies on mount
   useEffect(() => {
@@ -232,6 +244,7 @@ export const TicketBookingPage = () => {
   // Fetch booking summary when entering confirmation step
   useEffect(() => {
     if (currentStep === 5 && bookingId) {
+      console.log("Fetching booking summary for booking ID:", bookingId)
       const fetchSummary = async () => {
         try {
           const summary = await getBookingSummary(bookingId)
@@ -253,15 +266,12 @@ export const TicketBookingPage = () => {
 
   // Fetch customer points when entering confirmation
   useEffect(() => {
-    if (currentStep === 5) {
+    if (currentStep === 5 && customerId) {
+      console.log("Fetching loyalty points for customer ID:", customerId)
       const fetchPoints = async () => {
         try {
-          const userInfo = await getMyInfo()
-          const customerId = userInfo?.id
-          if (customerId) {
-            const points = await getCustomerLoyaltyPoints(customerId)
-            setCustomerPoints(points)
-          }
+          const points = await getCustomerLoyaltyPoints(customerId)
+          setCustomerPoints(points)
         } catch (error: any) {
           console.error("Error fetching loyalty points:", error)
         }
@@ -269,7 +279,7 @@ export const TicketBookingPage = () => {
 
       fetchPoints()
     }
-  }, [currentStep])
+  }, [currentStep, customerId])
 
   const handleCancelBooking = async (id: string) => {
     if (isCancellingBooking.current) return
@@ -285,6 +295,24 @@ export const TicketBookingPage = () => {
     }
   }
 
+  // Ensure booking is cancelled if user leaves the page (navigation away or tab close)
+  useEffect(() => {
+    const handleUnload = () => {
+      if (bookingId && !isCancellingBooking.current) {
+        void cancelBooking(bookingId)
+      }
+    }
+
+    window.addEventListener("beforeunload", handleUnload)
+
+    return () => {
+      window.removeEventListener("beforeunload", handleUnload)
+      if (bookingId && !isCancellingBooking.current) {
+        void handleCancelBooking(bookingId)
+      }
+    }
+  }, [bookingId])
+
   const handleSelectMovie = (movie: Movie) => {
     setSelectedMovie(movie)
     setCurrentStep(2)
@@ -293,6 +321,7 @@ export const TicketBookingPage = () => {
     setSelectedCombos([])
     setCustomerName("")
     setCustomerEmail("")
+    setCheckoutMode("guest")
   }
 
   const handleSelectShowtime = async (showtime: ShowtimeResponse) => {
@@ -311,6 +340,7 @@ export const TicketBookingPage = () => {
         setCurrentStep(3)
         setSelectedSeats([])
         setSelectedCombos([])
+        setCheckoutMode("guest")
       }
     } catch (error: any) {
       console.error("Error fetching showtime details:", error)
@@ -329,6 +359,7 @@ export const TicketBookingPage = () => {
     setSelectedSeats([])
     setSelectedCombos([])
     setBookingId(null)
+    setCustomerId(null)
   }
 
   const handleGoBackToShowtimes = async () => {
@@ -336,6 +367,7 @@ export const TicketBookingPage = () => {
     if (bookingId) {
       await handleCancelBooking(bookingId)
       setBookingId(null)
+      setCustomerId(null)
     }
     
     setCurrentStep(2)
@@ -344,6 +376,61 @@ export const TicketBookingPage = () => {
     setSelectedCombos([])
     setCustomerName("")
     setCustomerEmail("")
+    setCheckoutMode("guest")
+  }
+
+  const handleBack = async () => {
+    if (currentStep <= 1) return
+
+    const nextStep = currentStep - 1
+
+    // If booking was already created (from combo step onward) and user moves back before combo,
+    // cancel booking to release seats
+    if (currentStep >= 4 && nextStep < 4 && bookingId) {
+      await handleCancelBooking(bookingId)
+      setBookingId(null)
+      setCustomerId(null)
+    }
+
+    if (currentStep === 2) {
+      handleGoBackToMovies()
+    } else if (currentStep === 3) {
+      await handleGoBackToShowtimes()
+    } else if (currentStep === 4) {
+      // Returning from combo to seats: refresh seats to reflect any changes
+      setSelectedSeats([])
+      setCurrentStep(3)
+      if (selectedShowtime) {
+        try {
+          setSeatsLoading(true)
+          setSeatsError(null)
+          const seatData = await getScreeningSeatsByScreeningId(selectedShowtime.id)
+          if (seatData && Array.isArray(seatData)) {
+            const mappedSeats = seatData
+              .map((seat, idx) => mapScreeningSeatToSeat(seat, idx))
+              .filter((seat): seat is Seat => seat !== null)
+              .sort((a, b) => {
+                if (a.row === b.row) {
+                  return a.number - b.number
+                }
+                return a.row.localeCompare(b.row, undefined, { numeric: true, sensitivity: "base" })
+              })
+            setSeats(mappedSeats)
+          } else {
+            setSeatsError("Unable to load seats")
+            setSeats([])
+          }
+        } catch (error: any) {
+          console.error("Error reloading seats:", error)
+          setSeatsError(error?.response?.data?.message || "Failed to load seats")
+          setSeats([])
+        } finally {
+          setSeatsLoading(false)
+        }
+      }
+    } else {
+      setCurrentStep(nextStep)
+    }
   }
 
   const handleNextStep = async () => {
@@ -374,7 +461,7 @@ export const TicketBookingPage = () => {
       return
     }
 
-    if (currentStep === 3 && (!customerName.trim() || !customerEmail.trim())) {
+    if (currentStep === 3 && checkoutMode === "member" && (!customerName.trim() || !customerEmail.trim())) {
       addNotification({
         type: "error",
         title: "Missing info",
@@ -391,14 +478,19 @@ export const TicketBookingPage = () => {
         const bookingRequest = {
           screeningId: selectedShowtime!.id,
           screeningSeatIds: selectedSeats.map(seat => seat.id),
-          customerName: customerName.trim(),
-          email: customerEmail.trim(),
-          firstName: customerName.trim(),
-          lastName: customerName.trim(),
+          ...(checkoutMode === "member"
+            ? {
+                customerName: customerName.trim(),
+                email: customerEmail.trim()
+              }
+            : {}),
         }
 
         const response = await createBooking(bookingRequest)
         setBookingId(response.id)
+        setCustomerId(response.customerId || null)
+        console.log("Booking created with ID:", response.id)
+        console.log("Associated customer ID:", response.customerId)
         setCurrentStep(4)
       } catch (error: any) {
         console.error("Error creating booking:", error)
@@ -432,6 +524,28 @@ export const TicketBookingPage = () => {
       } finally {
         setIsUpdatingCombos(false)
       }
+    } else if (currentStep === 5 && bookingId) {
+      // Redeem points (or send 0) before payment if we know the customer
+      if (customerId) {
+        try {
+          setIsRedeemingPoints(true)
+          const summary = await redeemBookingPoints(bookingId, { pointsToRedeem: pointsUsed || 0 })
+          const discount = summary.discountAmount || 0
+          setPointsDiscount(discount)
+          setPointsUsed(discount > 0 ? Math.floor(discount / 1000) : 0)
+        } catch (error: any) {
+          console.error("Error redeeming points:", error)
+          addNotification({
+            type: "error",
+            title: "Error",
+            message: error?.response?.data?.message || "Failed to apply loyalty points"
+          })
+        } finally {
+          setIsRedeemingPoints(false)
+        }
+      }
+
+      setCurrentStep(6)
     } else {
       setCurrentStep(currentStep + 1)
     }
@@ -460,15 +574,55 @@ export const TicketBookingPage = () => {
   const discount = pointsDiscount > 0 ? pointsDiscount : 0
   const total = Math.max(0, subtotal - discount)
 
-  const steps = [
-    { number: 1, title: "Select Movie" },
-    { number: 2, title: "Select Showtime" },
-    { number: 3, title: "Select Seats" },
-    { number: 4, title: "Choose Combos" },
-    { number: 5, title: "Confirm" },
-    { number: 6, title: "Payment" },
-    { number: 7, title: "Success" },
+  const visualSteps = [
+    {
+      id: 1,
+      title: "Select Screening",
+      description: "Choose movie & time",
+      isDone: currentStep > 2,
+      isActive: currentStep <= 2,
+    },
+    {
+      id: 2,
+      title: "Select Seats",
+      description: "Pick your seats",
+      isDone: currentStep > 3,
+      isActive: currentStep === 3,
+    },
+    {
+      id: 3,
+      title: "Confirm booking",
+      description: "Summary details",
+      isDone: currentStep > 5,
+      isActive: currentStep === 4 || currentStep === 5,
+    },
+    {
+      id: 4,
+      title: "Payment",
+      description: "Complete booking",
+      isDone: currentStep >= 7,
+      isActive: currentStep >= 6 && currentStep < 7,
+    },
   ]
+
+  const primaryCtaLabel = (() => {
+    switch (currentStep) {
+      case 1:
+        return "Select showtime"
+      case 2:
+        return "Select seats"
+      case 3:
+        return "Choose combos"
+      case 4:
+        return "Review booking"
+      case 5:
+        return "Continue to payment"
+      case 6:
+        return "Complete booking"
+      default:
+        return "Next"
+    }
+  })()
 
   return (
     <div className="space-y-6">
@@ -477,23 +631,30 @@ export const TicketBookingPage = () => {
         description="Book tickets for customers"
       />
 
-      <Card>
+      <Card className="shadow-sm">
         {/* Progress Steps */}
-        <div className="px-6 py-4 border-b">
-          <div className="flex items-center gap-2 overflow-x-auto pb-2">
-            {steps.map((step, idx) => (
-              <div key={step.number} className="flex items-center gap-2 shrink-0">
+        <div className="px-6 py-5 border-b bg-gray-50">
+          <div className="flex items-center gap-4 pb-2">
+            {visualSteps.map((step, idx) => (
+              <div key={step.id} className="flex items-center gap-4 flex-1">
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
-                    currentStep >= step.number
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-200 text-gray-600"
+                  className={`w-10 h-10 rounded-full border-2 flex items-center justify-center text-sm font-bold flex-shrink-0 ${
+                    step.isDone
+                      ? "bg-emerald-50 border-emerald-500 text-emerald-600"
+                      : step.isActive
+                        ? "bg-blue-50 border-blue-500 text-blue-700"
+                        : "bg-white border-gray-300 text-gray-500"
                   }`}
                 >
-                  {step.number}
+                  {step.isDone ? <CheckCircle2 className="w-5 h-5" /> : step.id}
                 </div>
-                <span className="text-sm font-medium hidden md:block">{step.title}</span>
-                {idx < steps.length - 1 && <div className="w-4 h-px bg-gray-200" />}
+                <div className="hidden sm:block">
+                  <p className="text-sm font-semibold text-gray-900">{step.title}</p>
+                  <p className="text-xs text-gray-500">{step.description}</p>
+                </div>
+                {idx < visualSteps.length - 1 && (
+                  <div className={`h-[2px] flex-1 ${step.isDone ? "bg-emerald-500" : "bg-gray-200"}`} />
+                )}
               </div>
             ))}
           </div>
@@ -528,8 +689,10 @@ export const TicketBookingPage = () => {
               error={seatsError}
               customerName={customerName}
               customerEmail={customerEmail}
+              checkoutMode={checkoutMode}
               onCustomerNameChange={setCustomerName}
               onCustomerEmailChange={setCustomerEmail}
+              onCheckoutModeChange={setCheckoutMode}
             />
           )}
 
@@ -556,10 +719,16 @@ export const TicketBookingPage = () => {
             />
           )}
 
-          {currentStep === 6 && bookingId && (
+          {currentStep === 6 && bookingId && selectedShowtime && selectedMovie && (
             <PaymentStep
               bookingId={bookingId}
               total={total}
+              subtotal={subtotal}
+              discount={discount}
+              showtime={selectedShowtime}
+              movie={selectedMovie}
+              selectedSeats={selectedSeats}
+              selectedCombos={selectedCombos}
               onPaymentSuccess={() => setCurrentStep(7)}
             />
           )}
@@ -581,17 +750,7 @@ export const TicketBookingPage = () => {
         <div className="px-6 py-4 border-t bg-gray-50 dark:bg-gray-900 flex items-center justify-between">
           <Button
             variant="outline"
-            onClick={() => {
-              if (currentStep > 1) {
-                if (currentStep === 2) {
-                  handleGoBackToMovies()
-                } else if (currentStep === 3) {
-                  handleGoBackToShowtimes()
-                } else {
-                  setCurrentStep(currentStep - 1)
-                }
-              }
-            }}
+            onClick={handleBack}
             disabled={currentStep === 1}
           >
             <ChevronLeft className="w-4 h-4 mr-2" />
@@ -613,11 +772,12 @@ export const TicketBookingPage = () => {
               (currentStep === 3 && selectedSeats.length === 0) ||
               isCreatingBooking ||
               isUpdatingCombos ||
-              (currentStep === 7) // Success step, no next
+              isRedeemingPoints ||
+              (currentStep === 7)
             }
             className="bg-blue-600 hover:bg-blue-700"
           >
-            {currentStep === 7 ? "Done" : currentStep === 6 ? "Confirm" : "Next"}
+            {currentStep === 7 ? "Done" : primaryCtaLabel}
             {currentStep !== 7 && <ChevronRight className="w-4 h-4 ml-2" />}
           </Button>
         </div>

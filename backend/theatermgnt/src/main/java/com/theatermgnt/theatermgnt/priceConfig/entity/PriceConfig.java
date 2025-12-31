@@ -24,9 +24,7 @@ import lombok.experimental.FieldDefaults;
 @Entity
 @Table(
         name = "price_configs",
-        uniqueConstraints = {
-            @UniqueConstraint(columnNames = {"seat_type_id", "day_type", "time_slot"})
-        })
+        uniqueConstraints = {@UniqueConstraint(columnNames = {"seat_type_id", "day_type", "time_slot"})})
 @SQLDelete(sql = "UPDATE price_configs SET deleted = true WHERE id = ?")
 @Where(clause = "deleted = false")
 public class PriceConfig extends BaseEntity {

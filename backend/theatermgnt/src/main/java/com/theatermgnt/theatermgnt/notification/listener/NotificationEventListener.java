@@ -17,6 +17,9 @@ import com.theatermgnt.theatermgnt.account.repository.AccountRepository;
 import com.theatermgnt.theatermgnt.authentication.event.PasswordResetEvent;
 import com.theatermgnt.theatermgnt.booking.entity.Booking;
 import com.theatermgnt.theatermgnt.booking.repository.BookingRepository;
+import com.theatermgnt.theatermgnt.customer.entity.Customer;
+import com.theatermgnt.theatermgnt.customer.event.CustomerCreatedEvent;
+import com.theatermgnt.theatermgnt.customer.repository.CustomerRepository;
 import com.theatermgnt.theatermgnt.notification.dto.request.EmailBuilderRequest;
 import com.theatermgnt.theatermgnt.notification.enums.EmailType;
 import com.theatermgnt.theatermgnt.notification.service.EmailBuilderService;
@@ -45,6 +48,7 @@ public class NotificationEventListener {
     QrImageGenerator qrImageGenerator;
     BookingRepository bookingRepository;
     AccountRepository accountRepository;
+    CustomerRepository customerRepository;
     TicketRepository ticketRepository;
 
     @NonFinal
@@ -128,9 +132,7 @@ public class NotificationEventListener {
 
         List<SendSmtpEmailAttachment> attachments = tickets.stream()
                 .map(t -> {
-
-                    byte[] qrBytes = Base64.getDecoder()
-                            .decode(qrImageGenerator.generateBase64Qr(t.getQrContent()));
+                    byte[] qrBytes = Base64.getDecoder().decode(qrImageGenerator.generateBase64Qr(t.getQrContent()));
 
                     SendSmtpEmailAttachment attachment = new SendSmtpEmailAttachment();
                     attachment.setName("QR-" + t.getTicketCode() + ".png");
@@ -167,6 +169,38 @@ public class NotificationEventListener {
                 .htmlContent(htmlContent)
                 .attachments(attachments)
                 .emailTypeForLog("Ticket Issued")
+                .build());
+    }
+
+    @Async
+    @Transactional
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleCustomerCreatedEvent(CustomerCreatedEvent event) {
+
+        Customer customer = customerRepository.findById(event.getCustomerId()).orElseThrow();
+        log.info(
+                "Sending welcome email to new customer: {}",
+                customer.getAccount().getEmail());
+
+        Map<String, Object> variables = Map.of(
+                "subject",
+                "Welcome to Cifastar HCM!",
+                "name",
+                customer.getLastName() + " " + customer.getFirstName(),
+                "username",
+                customer.getAccount().getEmail(),
+                "password",
+                event.getRawPassword(),
+                "loginUrl",
+                "http://localhost:3000");
+
+        String htmlContent = emailTemplateFactory.buildTemplate(EmailType.WELCOME_CUSTOMER, variables);
+
+        emailBuilderService.buildAndSendEmail(EmailBuilderRequest.builder()
+                .account(customer.getAccount())
+                .subject("Welcome" + customer.getFirstName() + " to Cifastar HCM!")
+                .htmlContent(htmlContent)
+                .emailTypeForLog("Welcome New Customer")
                 .build());
     }
 }

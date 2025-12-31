@@ -26,7 +26,7 @@ public class Booking {
     UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "customer_id", nullable = false)
+    @JoinColumn(name = "customer_id")
     Customer customer;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -42,8 +42,4 @@ public class Booking {
 
     Instant createdAt;
     Instant expiredAt;
-
-    public void recalculateTotal(BigDecimal comboSubtotal) {
-        this.totalAmount = this.subtotal.add(comboSubtotal).subtract(discount != null ? discount : BigDecimal.ZERO);
-    }
 }

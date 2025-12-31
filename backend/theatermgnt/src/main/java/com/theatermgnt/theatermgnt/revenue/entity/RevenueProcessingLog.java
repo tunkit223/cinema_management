@@ -14,9 +14,9 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity
-@Table(name = "revenue_processing_log", indexes = {
-    @Index(name = "idx_payment_id", columnList = "paymentId", unique = true)
-})
+@Table(
+        name = "revenue_processing_log",
+        indexes = {@Index(name = "idx_payment_id", columnList = "paymentId", unique = true)})
 public class RevenueProcessingLog {
 
     @Id
