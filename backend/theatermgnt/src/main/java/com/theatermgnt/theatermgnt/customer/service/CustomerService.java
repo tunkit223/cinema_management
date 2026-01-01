@@ -85,4 +85,11 @@ public class CustomerService {
                 .loyaltyPoints(customer.getLoyaltyPoints() != null ? customer.getLoyaltyPoints() : 0)
                 .build();
     }
+
+    public void addLoyaltyPoints(String customerId, Integer points) {
+        Customer customer =
+                customerRepository.findById(customerId).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        customer.setLoyaltyPoints(customer.getLoyaltyPoints() + points);
+        customerRepository.save(customer);
+    }
 }

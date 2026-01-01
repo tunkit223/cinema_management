@@ -1,5 +1,10 @@
 package com.theatermgnt.theatermgnt.notification.service;
 
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
 import com.theatermgnt.theatermgnt.common.exception.AppException;
 import com.theatermgnt.theatermgnt.common.exception.ErrorCode;
 import com.theatermgnt.theatermgnt.notification.dto.request.EmailRequest;
@@ -7,15 +12,12 @@ import com.theatermgnt.theatermgnt.notification.dto.request.SendEmailRequest;
 import com.theatermgnt.theatermgnt.notification.dto.request.Sender;
 import com.theatermgnt.theatermgnt.notification.dto.response.EmailResponse;
 import com.theatermgnt.theatermgnt.notification.repository.httpClient.EmailClient;
+
 import feign.FeignException;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -28,15 +30,19 @@ public class EmailService {
     protected String apiKey;
 
     public EmailResponse sendEmail(SendEmailRequest request) {
-        EmailRequest emailRequest = EmailRequest.builder()
+        EmailRequest.EmailRequestBuilder builder = EmailRequest.builder()
                 .sender(Sender.builder()
                         .name("Cifastar")
                         .email("theonlytruth25012005@gmail.com")
                         .build())
                 .to(List.of(request.getTo()))
                 .subject(request.getSubject())
-                .htmlContent(request.getHtmlContent())
-                .build();
+                .htmlContent(request.getHtmlContent());
+
+        if (request.getAttachments() != null && !request.getAttachments().isEmpty()) {
+            builder.attachment(request.getAttachments());
+        }
+        EmailRequest emailRequest = builder.build();
         try {
             return emailClient.sendEmail(apiKey, emailRequest);
         } catch (FeignException e) {

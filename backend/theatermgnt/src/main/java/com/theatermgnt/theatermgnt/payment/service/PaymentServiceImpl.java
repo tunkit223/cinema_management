@@ -25,6 +25,7 @@ import com.theatermgnt.theatermgnt.payment.repository.InvoiceRepository;
 import com.theatermgnt.theatermgnt.payment.repository.PaymentMethodRepository;
 import com.theatermgnt.theatermgnt.payment.repository.PaymentRepository;
 import com.theatermgnt.theatermgnt.payment.util.VNPayUtil;
+import com.theatermgnt.theatermgnt.revenue.service.RevenueAggregationService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,6 +44,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final PaymentMapper paymentMapper;
     private final ObjectMapper objectMapper;
     private final BookingService bookingService;
+    private final RevenueAggregationService revenueAggregationService;
 
     @Override
     public PaymentDetailsResponse createVNPayPayment(String invoiceId, HttpServletRequest httpRequest) {
@@ -65,12 +67,10 @@ public class PaymentServiceImpl implements PaymentService {
             String orderInfo = "INV" + sanitized.substring(Math.max(0, sanitized.length() - 8));
 
             // Get VNPay payment method
-            var vnpayMethod = paymentMethodRepository
-                    .findByName("VNPay")
-                    .orElseThrow(() -> {
-                        log.error("VNPay payment method not found in database");
-                        return new AppException(ErrorCode.BOOKING_NOT_EXISTED);
-                    });
+            var vnpayMethod = paymentMethodRepository.findByName("VNPay").orElseThrow(() -> {
+                log.error("VNPay payment method not found in database");
+                return new AppException(ErrorCode.BOOKING_NOT_EXISTED);
+            });
 
             // Create payment record
             Payment payment = Payment.builder()
@@ -200,7 +200,7 @@ public class PaymentServiceImpl implements PaymentService {
                     invoice.setPaidAt(LocalDateTime.now());
                     invoiceRepository.save(invoice);
                     log.info("Invoice {} marked as PAID", invoice.getId());
-                    
+
                     // Update booking status to CONFIRMED
                     try {
                         bookingService.confirmBookingPayment(invoice.getBookingId());
@@ -210,15 +210,24 @@ public class PaymentServiceImpl implements PaymentService {
                     }
                 }
 
+                paymentRepository.save(payment);
+
+                // Aggregate revenue after successful payment
+                try {
+                    revenueAggregationService.processPaymentForRevenue(payment);
+                } catch (Exception e) {
+                    log.error("Error aggregating revenue for payment {}", payment.getId(), e);
+                    // Don't fail the callback, just log the error
+                }
+
                 response.put("code", "00");
                 response.put("message", "Payment successful");
             } else {
                 payment.setStatus(PaymentStatus.FAILED);
+                paymentRepository.save(payment);
                 response.put("code", responseCode);
                 response.put("message", "Payment failed with code: " + responseCode);
             }
-
-            paymentRepository.save(payment);
 
             response.put("paymentId", payment.getId());
             response.put("invoiceId", payment.getInvoiceId());
@@ -306,20 +315,29 @@ public class PaymentServiceImpl implements PaymentService {
                     } catch (Exception e) {
                         log.error("Error confirming booking {}", invoice.getBookingId(), e);
                     }
-                    
+
                     log.info("Invoice {} marked as PAID and payment success", invoice.getId());
                 }
-                
+
+                paymentRepository.save(payment);
+
+                // Aggregate revenue after successful payment
+                try {
+                    revenueAggregationService.processPaymentForRevenue(payment);
+                } catch (Exception e) {
+                    log.error("Error aggregating revenue for payment {}", payment.getId(), e);
+                    // Don't fail the IPN, just log the error
+                }
+
                 response.put("RspCode", "00");
                 response.put("Message", "Confirm success");
             } else {
                 payment.setStatus(PaymentStatus.FAILED);
+                paymentRepository.save(payment);
                 response.put("RspCode", "00");
                 response.put("Message", "Confirm success");
             }
 
-            paymentRepository.save(payment);
-            
         } catch (Exception e) {
             log.error("Error handling VNPay IPN", e);
             response.put("RspCode", "99");

@@ -272,6 +272,11 @@ export async function redeemBookingPoints(
   return response.data
 }
 
+export async function cancelBooking(bookingId: string) {
+  const response = await api.post(`/bookings/${bookingId}/cancel`)
+  return response.data
+}
+
 // ==================== MAPPER ====================
 
 export function mapComboForDisplay(combo: any) {

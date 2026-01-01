@@ -12,7 +12,7 @@ import com.theatermgnt.theatermgnt.booking.entity.Booking;
 public interface BookingRepository extends JpaRepository<Booking, UUID> {
     @Query("""
 		SELECT b FROM Booking b
-		WHERE b.status = 'PENDING'
+		WHERE b.status IN ('PENDING', 'CONFIRM')
 		AND b.expiredAt < :now
 		""")
     List<Booking> findExpiredPendingBookings(Instant now);

@@ -1,5 +1,15 @@
 package com.theatermgnt.theatermgnt.chatbotInternal.service;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.theatermgnt.theatermgnt.chatbotInternal.dto.request.AddDocumentRequest;
 import com.theatermgnt.theatermgnt.chatbotInternal.dto.request.SyncFileToVectorStoreRequest;
 import com.theatermgnt.theatermgnt.chatbotInternal.dto.response.ChatbotDocumentResponse;
@@ -13,19 +23,11 @@ import com.theatermgnt.theatermgnt.common.exception.ErrorCode;
 import com.theatermgnt.theatermgnt.file.entity.FileMgnt;
 import com.theatermgnt.theatermgnt.file.repository.FileMgntRepository;
 import com.theatermgnt.theatermgnt.staff.repository.StaffRepository;
+
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 @Service
@@ -36,8 +38,7 @@ public class ChatbotConfigService {
             "application/pdf",
             "text/plain",
             "application/msword",
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-    );
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
     ChatbotDocumentRepository chatbotDocumentRepository;
     FileMgntRepository fileMgntRepository;
     VectorStoreService vectorStoreService;
@@ -49,21 +50,23 @@ public class ChatbotConfigService {
     @Transactional
     public ChatbotDocumentResponse addDocumentToRag(AddDocumentRequest request) {
         // Validate file exists
-        FileMgnt file = fileMgntRepository.findById(request.getFileId())
+        FileMgnt file = fileMgntRepository
+                .findById(request.getFileId())
                 .orElseThrow(() -> new AppException(ErrorCode.FILE_NOT_FOUND));
 
         // Validate file type
-        if(!ALLOWED_FILE_TYPES.contains(file.getContentType())) {
+        if (!ALLOWED_FILE_TYPES.contains(file.getContentType())) {
             throw new AppException(ErrorCode.INVALID_FILE_TYPE);
         }
 
         // Check already added
-        if(chatbotDocumentRepository.existsByFileMgntId(file.getId())) {
+        if (chatbotDocumentRepository.existsByFileMgntId(file.getId())) {
             throw new AppException(ErrorCode.DOCUMENT_ALREADY_EXISTS);
         }
 
         // Create chatbot document
-        String accountId = SecurityContextHolder.getContext().getAuthentication().getName();
+        String accountId =
+                SecurityContextHolder.getContext().getAuthentication().getName();
         String syncedBy = buildSyncedBy(accountId);
 
         ChatbotDocument chatbotDocument = ChatbotDocument.builder()
@@ -77,24 +80,24 @@ public class ChatbotConfigService {
         chatbotDocument = chatbotDocumentRepository.save(chatbotDocument);
 
         // Sync immediately if requested
-        if(request.isSyncImmediately()){
+        if (request.isSyncImmediately()) {
             syncDocumentToVector(chatbotDocument.getId());
         }
         return chatbotDocumentMapper.toChatbotDocumentResponse(chatbotDocument);
     }
 
-
     // Sync document to vector store
     @Async
     @Transactional
     public CompletableFuture<Void> syncDocumentToVector(String documentId) {
-        try{
+        try {
             // Look document
-            ChatbotDocument doc = chatbotDocumentRepository.findById(documentId)
+            ChatbotDocument doc = chatbotDocumentRepository
+                    .findById(documentId)
                     .orElseThrow(() -> new AppException(ErrorCode.DOCUMENT_NOT_FOUND));
 
             // Check if already processing
-            if(doc.getDocumentStatus() == DocumentStatus.PROCESSING){
+            if (doc.getDocumentStatus() == DocumentStatus.PROCESSING) {
                 throw new AppException(ErrorCode.DOCUMENT_ALREADY_PROCESSING);
             }
 
@@ -105,11 +108,11 @@ public class ChatbotConfigService {
 
             // Sync to vector store
             int syncedChunks = vectorStoreService.syncFileToVectorStore(SyncFileToVectorStoreRequest.builder()
-                            .fileId(doc.getFileMgnt().getId())
-                            .fileUrl(doc.getFileMgnt().getUrl())
-                            .fileName(doc.getFileMgnt().getOriginalFileName())
-                            .documentType(doc.getDocumentType())
-                            .chatbotDocumentId(doc.getId())
+                    .fileId(doc.getFileMgnt().getId())
+                    .fileUrl(doc.getFileMgnt().getUrl())
+                    .fileName(doc.getFileMgnt().getOriginalFileName())
+                    .documentType(doc.getDocumentType())
+                    .chatbotDocumentId(doc.getId())
                     .build());
 
             // Update status to active
@@ -117,10 +120,10 @@ public class ChatbotConfigService {
             doc.setChunksCount(syncedChunks);
             doc.setLastSyncedAt(LocalDateTime.now());
             chatbotDocumentRepository.save(doc);
-        }catch(AppException e){
+        } catch (AppException e) {
             // Update status to FAILED
             ChatbotDocument doc = chatbotDocumentRepository.findById(documentId).orElse(null);
-            if(doc != null){
+            if (doc != null) {
                 doc.setDocumentStatus(DocumentStatus.FAILED);
                 doc.setSyncError(e.getMessage());
                 chatbotDocumentRepository.save(doc);
@@ -133,11 +136,12 @@ public class ChatbotConfigService {
     @Async
     @Transactional
     public CompletableFuture<Void> resyncDocument(String documentId) {
-        ChatbotDocument doc = chatbotDocumentRepository.findById(documentId)
+        ChatbotDocument doc = chatbotDocumentRepository
+                .findById(documentId)
                 .orElseThrow(() -> new AppException(ErrorCode.DOCUMENT_NOT_FOUND));
 
         // Remove old vectors
-        if(doc.getDocumentStatus() == DocumentStatus.ACTIVE){
+        if (doc.getDocumentStatus() == DocumentStatus.ACTIVE) {
             vectorStoreService.deleteFileFromVectorStore(doc.getFileMgnt().getId());
         }
 
@@ -148,11 +152,12 @@ public class ChatbotConfigService {
     // Remove document from RAG
     @Transactional
     public void removeDocumentFromRag(String documentId) {
-        ChatbotDocument doc = chatbotDocumentRepository.findById(documentId)
+        ChatbotDocument doc = chatbotDocumentRepository
+                .findById(documentId)
                 .orElseThrow(() -> new AppException(ErrorCode.DOCUMENT_NOT_FOUND));
 
         // Remove vectors if active
-        if(doc.getDocumentStatus() == DocumentStatus.ACTIVE){
+        if (doc.getDocumentStatus() == DocumentStatus.ACTIVE) {
             vectorStoreService.deleteFileFromVectorStore(doc.getFileMgnt().getId());
         }
 
@@ -163,15 +168,16 @@ public class ChatbotConfigService {
     // Toggle document status
     @Transactional
     public void toggleDocumentStatus(String documentId) {
-        ChatbotDocument doc = chatbotDocumentRepository.findById(documentId)
+        ChatbotDocument doc = chatbotDocumentRepository
+                .findById(documentId)
                 .orElseThrow(() -> new AppException(ErrorCode.DOCUMENT_NOT_FOUND));
 
-        if(doc.getDocumentStatus() == DocumentStatus.ACTIVE){
+        if (doc.getDocumentStatus() == DocumentStatus.ACTIVE) {
             // Deactivate
             vectorStoreService.deleteFileFromVectorStore(doc.getFileMgnt().getId());
             doc.setDocumentStatus(DocumentStatus.INACTIVE);
             chatbotDocumentRepository.save(doc);
-        } else{
+        } else {
             // Activate
             syncDocumentToVector(documentId);
         }
@@ -186,7 +192,8 @@ public class ChatbotConfigService {
 
     // Get RAG document by ID
     public ChatbotDocumentResponse getRagDocumentById(String documentId) {
-        ChatbotDocument doc = chatbotDocumentRepository.findById(documentId)
+        ChatbotDocument doc = chatbotDocumentRepository
+                .findById(documentId)
                 .orElseThrow(() -> new AppException(ErrorCode.DOCUMENT_NOT_FOUND));
         return chatbotDocumentMapper.toChatbotDocumentResponse(doc);
     }
@@ -199,10 +206,7 @@ public class ChatbotConfigService {
                 .mapToInt(doc -> doc.getChunksCount() != null ? doc.getChunksCount() : 0)
                 .sum();
 
-        Integer actualChunks = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM vector_store",
-                Integer.class
-        );
+        Integer actualChunks = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM vector_store", Integer.class);
         long totalDocs = chatbotDocumentRepository.count();
         boolean isConsistent = expectedChunks == (actualChunks != null ? actualChunks : 0);
         return HealthCheckResponse.builder()
@@ -214,8 +218,10 @@ public class ChatbotConfigService {
                 .message(isConsistent ? "System healthy" : "Isconsistency issue detected")
                 .build();
     }
+
     private String buildSyncedBy(String accountId) {
-        var staff = staffRepository.findByAccountId(accountId)
+        var staff = staffRepository
+                .findByAccountId(accountId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
         return staff.getFirstName() + " " + staff.getLastName();
     }

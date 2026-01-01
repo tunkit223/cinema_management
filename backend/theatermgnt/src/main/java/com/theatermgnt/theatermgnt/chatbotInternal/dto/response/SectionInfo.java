@@ -9,11 +9,11 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class SectionInfo {
-   String sectionNumber;
-   String sectionTitle;
-   Integer startPosition;
+    String sectionNumber;
+    String sectionTitle;
+    Integer startPosition;
 
-   public String getFullTitle() {
-      return sectionNumber + ". " + sectionTitle;
-   }
+    public String getFullTitle() {
+        return sectionNumber + ". " + sectionTitle;
+    }
 }

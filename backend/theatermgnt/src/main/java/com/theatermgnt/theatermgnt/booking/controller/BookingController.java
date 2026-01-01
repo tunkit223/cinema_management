@@ -12,7 +12,9 @@ import com.theatermgnt.theatermgnt.booking.dto.response.BookingSummaryResponse;
 import com.theatermgnt.theatermgnt.booking.dto.response.CreateBookingResponse;
 import com.theatermgnt.theatermgnt.booking.service.BookingService;
 import com.theatermgnt.theatermgnt.common.dto.response.ApiResponse;
+import com.theatermgnt.theatermgnt.payment.dto.request.CreateInvoiceRequest;
 import com.theatermgnt.theatermgnt.payment.dto.response.InvoiceResponse;
+import com.theatermgnt.theatermgnt.payment.service.InvoiceService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -21,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class BookingController {
     private final BookingService bookingService;
+    private final InvoiceService invoiceService;
 
     @PostMapping
     public ApiResponse<CreateBookingResponse> createBooking(@RequestBody @Valid CreateBookingRequest request) {
@@ -44,6 +47,14 @@ public class BookingController {
                 .build();
     }
 
+    @PostMapping("/{bookingId}/cancel")
+    public ApiResponse<String> cancelBooking(@PathVariable UUID bookingId) {
+        bookingService.cancelBooking(bookingId);
+        return ApiResponse.<String>builder()
+                .result("Booking cancel successfully")
+                .build();
+    }
+
     /**
      * Create invoice for booking (before payment)
      * POST /api/theater-mgnt/bookings/{bookingId}/create-invoice
@@ -51,7 +62,9 @@ public class BookingController {
     @PostMapping("/{bookingId}/create-invoice")
     public ApiResponse<InvoiceResponse> createInvoice(@PathVariable UUID bookingId) {
         return ApiResponse.<InvoiceResponse>builder()
-                .result(bookingService.createInvoiceForBooking(bookingId))
+                .result(invoiceService.createInvoice(CreateInvoiceRequest.builder()
+                        .bookingId(bookingId.toString())
+                        .build()))
                 .build();
     }
 }

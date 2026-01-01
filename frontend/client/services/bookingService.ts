@@ -3,6 +3,7 @@ import {
   getBookingSummary as apiGetBookingSummary,
   updateBookingCombos as apiUpdateBookingCombos,
   redeemBookingPoints as apiRedeemBookingPoints,
+  cancelBooking as apiCancelBooking,
 } from "@/lib/api-movie"
 
 export interface CreateBookingRequest {
@@ -106,6 +107,16 @@ export const redeemBookingPoints = async (
     return response
   } catch (error) {
     console.error("Failed to redeem booking points:", error)
+    throw error
+  }
+}
+
+export const cancelBooking = async (bookingId: string): Promise<string> => {
+  try {
+    const response = await apiCancelBooking(bookingId)
+    return response
+  } catch (error) {
+    console.error("Failed to cancel booking:", error)
     throw error
   }
 }

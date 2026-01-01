@@ -18,4 +18,5 @@ public class CreateBookingResponse {
     String id;
     Instant expiredAt;
     BigDecimal subtotal;
+    String customerId;
 }

@@ -20,5 +20,4 @@ public class InvoiceResponse {
     private String status;
     private LocalDateTime createdAt;
     private LocalDateTime paidAt;
-    private LocalDateTime dueDate;
 }

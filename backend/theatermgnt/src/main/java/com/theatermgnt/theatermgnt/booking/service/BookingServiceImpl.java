@@ -3,6 +3,7 @@ package com.theatermgnt.theatermgnt.booking.service;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -10,6 +11,8 @@ import java.util.UUID;
 import jakarta.transaction.Transactional;
 
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -32,6 +35,7 @@ import com.theatermgnt.theatermgnt.common.enums.TimeSlot;
 import com.theatermgnt.theatermgnt.common.exception.AppException;
 import com.theatermgnt.theatermgnt.common.exception.ErrorCode;
 import com.theatermgnt.theatermgnt.customer.entity.Customer;
+import com.theatermgnt.theatermgnt.customer.event.CustomerCreatedEvent;
 import com.theatermgnt.theatermgnt.customer.repository.CustomerRepository;
 import com.theatermgnt.theatermgnt.customer.service.CustomerService;
 import com.theatermgnt.theatermgnt.movie.dto.response.MovieResponse;
@@ -39,6 +43,7 @@ import com.theatermgnt.theatermgnt.movie.service.MovieService;
 import com.theatermgnt.theatermgnt.payment.dto.request.CreateInvoiceRequest;
 import com.theatermgnt.theatermgnt.payment.dto.response.InvoiceResponse;
 import com.theatermgnt.theatermgnt.payment.service.InvoiceService;
+import com.theatermgnt.theatermgnt.notification.listener.NotificationEventListener;
 import com.theatermgnt.theatermgnt.priceConfig.entity.PriceConfig;
 import com.theatermgnt.theatermgnt.priceConfig.repository.PriceConfigRepository;
 import com.theatermgnt.theatermgnt.screening.entity.Screening;
@@ -47,6 +52,7 @@ import com.theatermgnt.theatermgnt.screeningSeat.entity.ScreeningSeat;
 import com.theatermgnt.theatermgnt.screeningSeat.repository.ScreeningSeatRepository;
 import com.theatermgnt.theatermgnt.seat.entity.Seat;
 import com.theatermgnt.theatermgnt.seat.mapper.SeatMapper;
+import com.theatermgnt.theatermgnt.ticket.service.TicketService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -70,8 +76,8 @@ public class BookingServiceImpl implements BookingService {
     private final MovieService movieService;
     private final CustomerService customerService;
     private final DiscountService discountService;
-    private final InvoiceService invoiceService;
-
+    private final TicketService ticketService;
+    private final ApplicationEventPublisher eventPublisher;
     private static final Duration HOLD_DURATION = Duration.ofMinutes(10);
 
     @Override
@@ -86,7 +92,7 @@ public class BookingServiceImpl implements BookingService {
         int lockedCount = screeningSeatRepository.lockSeats(request.getScreeningSeatIds(), expiredAt);
 
         if (lockedCount != request.getScreeningSeatIds().size()) {
-            throw new AppException(ErrorCode.SCREENING_NOT_EXISTED);
+            throw new AppException(ErrorCode.SCREENING_SEATS_NOT_AVAILABLE);
         }
 
         List<ScreeningSeat> seats = screeningSeatRepository.findAllById(request.getScreeningSeatIds());
@@ -122,6 +128,16 @@ public class BookingServiceImpl implements BookingService {
                     .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
         }
 
+        populateNamesFromCustomerName(request);
+
+        if (request.getCustomerId() == null
+                && request.getCustomerName() == null
+                && request.getEmail() == null
+                && request.getFirstName() == null
+                && request.getLastName() == null) {
+            return null;
+        }
+
         // Kiểm tra Account tồn tại
         Optional<Account> existingAccount = accountRepository.findByEmail(request.getEmail());
         if (existingAccount.isPresent()) {
@@ -140,13 +156,40 @@ public class BookingServiceImpl implements BookingService {
         accountRepository.save(newAccount);
         Customer savedCustomer = createCustomerWithAccount(newAccount, request);
 
-        // 4. Bắn Event (Async) để gửi SMS/Email, không làm chậm quá trình đặt vé
-        //        eventPublisher.publishEvent(new CustomerCreatedEvent(savedCustomer, true));
+        eventPublisher.publishEvent(CustomerCreatedEvent.builder()
+                .customerId(savedCustomer.getId())
+                .rawPassword(rawPassword)
+                .build());
 
         return savedCustomer;
     }
 
+    private void populateNamesFromCustomerName(CreateBookingRequest request) {
+        if (!StringUtils.isBlank(request.getFirstName()) || !StringUtils.isBlank(request.getLastName())) {
+            return;
+        }
+        if (StringUtils.isBlank(request.getCustomerName())) {
+            return;
+        }
+
+        String[] parts = request.getCustomerName().trim().split("\\s+");
+        if (parts.length == 1) {
+            request.setFirstName(parts[0]);
+            request.setLastName("");
+            return;
+        }
+
+        String firstName = parts[parts.length - 1];
+        String lastName = String.join(" ", Arrays.copyOf(parts, parts.length - 1));
+        request.setFirstName(firstName);
+        request.setLastName(lastName);
+    }
+
     private Customer createCustomerWithAccount(Account account, CreateBookingRequest request) {
+        Optional<Customer> customer = customerRepository.findByAccountId(account.getId());
+        if (customer.isPresent()) {
+            return customer.get();
+        }
         Customer newCustomer = new Customer();
         newCustomer.setAccount(account);
         newCustomer.setFirstName(request.getFirstName());
@@ -179,7 +222,7 @@ public class BookingServiceImpl implements BookingService {
     public BookingSummaryResponse getBookingSummary(UUID bookingId) {
         Booking booking = bookingRepository
                 .findById(bookingId)
-                .orElseThrow(() -> new IllegalArgumentException("Booking not found"));
+                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_EXISTED));
 
         List<ScreeningSeat> screeningSeats = screeningSeatRepository.findByBooking(bookingId.toString());
         List<BookingCombo> combo = bookingComboRepository.findByBookingId(bookingId.toString());
@@ -234,18 +277,21 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-    public InvoiceResponse createInvoiceForBooking(UUID bookingId) {
-        log.info("Creating invoice for booking: {}", bookingId);
-
+    public void cancelBooking(UUID bookingId) {
         Booking booking = bookingRepository
                 .findById(bookingId)
                 .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_EXISTED));
 
-        CreateInvoiceRequest invoiceRequest =
-                CreateInvoiceRequest.builder().bookingId(bookingId.toString()).build();
+        if (booking.getStatus() != BookingStatus.PENDING) {
+            throw new IllegalStateException("Only pending bookings can be cancelled");
+        }
 
-        return invoiceService.createInvoice(invoiceRequest);
+        booking.setStatus(BookingStatus.CANCELLED);
+        bookingRepository.saveAndFlush(booking);
+
+        screeningSeatRepository.releaseSeatsByBooking(bookingId.toString());
     }
+
 
     @Override
     public void confirmBookingPayment(String bookingId) {
@@ -256,8 +302,15 @@ public class BookingServiceImpl implements BookingService {
                 .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_EXISTED));
 
         // Update booking status to CONFIRMED
-        booking.setStatus(BookingStatus.CONFIRM);
+        booking.setStatus(BookingStatus.PAID);
         bookingRepository.save(booking);
+
+        if (booking.getCustomer() != null) {
+            int pointsEarned = discountService.calculateEarnedPoints(booking.getTotalAmount());
+            int pointDiscounted = discountService.caculateDiscountPoints(booking.getDiscount());
+            customerService.addLoyaltyPoints(booking.getCustomer().getId(), pointsEarned - pointDiscounted);
+        }
+        ticketService.createTickets(UUID.fromString(bookingId));
 
         log.info("Booking {} confirmed", bookingId);
     }
