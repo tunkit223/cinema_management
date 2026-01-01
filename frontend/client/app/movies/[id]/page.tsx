@@ -1,43 +1,48 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import Link from "next/link"
-import { use } from "react"
-import { ChevronLeft, Clock } from "lucide-react"
-import { showtimes } from "@/lib/mock-data"
-import type { Showtime } from "@/lib/types"
-import { getMovieById, mapMovieForDisplay } from "@/lib/api-movie"
-import { ReviewsSection } from "./reviews-section"
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { use } from "react";
+import { ChevronLeft, Clock } from "lucide-react";
+import { showtimes } from "@/lib/mock-data";
+import type { Showtime } from "@/lib/types";
+import { getMovieById, mapMovieForDisplay } from "@/lib/api-movie";
+import { ReviewsSection } from "./reviews-section";
 
-export default function MovieDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params)
-  const [movie, setMovie] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const movieShowtimes = showtimes[id] || []
-  const [selectedShowtime, setSelectedShowtime] = useState<Showtime | null>(null)
+export default function MovieDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = use(params);
+  const [movie, setMovie] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const movieShowtimes = showtimes[id] || [];
+  const [selectedShowtime, setSelectedShowtime] = useState<Showtime | null>(
+    null
+  );
 
-  // Fetch movie khi component mount
   useEffect(() => {
     const fetchMovie = async () => {
       try {
-        setLoading(true)
-        const data = await getMovieById(id)
+        setLoading(true);
+        const data = await getMovieById(id);
 
         if (data) {
-          const mappedMovie = mapMovieForDisplay(data)
-          setMovie(mappedMovie)
+          const mappedMovie = mapMovieForDisplay(data);
+          setMovie(mappedMovie);
         } else {
-          console.error('❌ No data returned')
+          console.error("❌ No data returned");
         }
       } catch (error) {
-        console.error('❌ Error fetching movie:', error)
+        console.error("❌ Error fetching movie:", error);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchMovie()
-  }, [id])
+    fetchMovie();
+  }, [id]);
 
   // Loading state
   if (loading) {
@@ -54,7 +59,7 @@ export default function MovieDetailPage({ params }: { params: Promise<{ id: stri
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   // Movie not found
@@ -64,12 +69,15 @@ export default function MovieDetailPage({ params }: { params: Promise<{ id: stri
         <div className="text-center">
           <h1 className="text-3xl font-bold mb-4">Movie Not Found</h1>
           <p className="text-muted-foreground mb-6">ID: {id}</p>
-          <Link href="/" className="text-purple-600 hover:text-purple-700 font-semibold">
+          <Link
+            href="/"
+            className="text-purple-600 hover:text-purple-700 font-semibold"
+          >
             Back to Home
           </Link>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -80,7 +88,9 @@ export default function MovieDetailPage({ params }: { params: Promise<{ id: stri
           src={movie.poster || "/placeholder.svg"}
           alt={movie.title}
           className="w-full h-full object-cover opacity-40"
-          onError={(e) => { e.currentTarget.src = "/placeholder.svg" }}
+          onError={(e) => {
+            e.currentTarget.src = "/placeholder.svg";
+          }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background dark:from-slate-950 via-transparent" />
 
@@ -105,14 +115,18 @@ export default function MovieDetailPage({ params }: { params: Promise<{ id: stri
               src={movie.poster || "/placeholder.svg"}
               alt={movie.title}
               className="w-48 h-72 rounded-xl shadow-2xl object-cover"
-              onError={(e) => { e.currentTarget.src = "/placeholder.svg" }}
+              onError={(e) => {
+                e.currentTarget.src = "/placeholder.svg";
+              }}
             />
           </div>
 
           {/* Details */}
           <div className="md:col-span-2 space-y-6">
             <div>
-              <h1 className="text-4xl md:text-5xl font-bold mb-4">{movie.title}</h1>
+              <h1 className="text-4xl md:text-5xl font-bold mb-4">
+                {movie.title}
+              </h1>
               <div className="flex flex-wrap gap-2 mb-4">
                 {movie.genre && movie.genre.length > 0 ? (
                   movie.genre.map((g: string) => (
@@ -124,7 +138,9 @@ export default function MovieDetailPage({ params }: { params: Promise<{ id: stri
                     </span>
                   ))
                 ) : (
-                  <span className="text-muted-foreground text-sm">No genres</span>
+                  <span className="text-muted-foreground text-sm">
+                    No genres
+                  </span>
                 )}
               </div>
             </div>
@@ -132,7 +148,7 @@ export default function MovieDetailPage({ params }: { params: Promise<{ id: stri
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-card dark:bg-slate-900 rounded-lg p-4 border border-border dark:border-slate-800">
                 <p className="text-muted-foreground text-sm mb-1">Rating</p>
-                <p className="text-2xl font-bold">{movie.rating || 'NR'}</p>
+                <p className="text-2xl font-bold">{movie.rating || "NR"}</p>
               </div>
               <div className="bg-card dark:bg-slate-900 rounded-lg p-4 border border-border dark:border-slate-800">
                 <p className="text-muted-foreground text-sm mb-1">Duration</p>
@@ -144,12 +160,16 @@ export default function MovieDetailPage({ params }: { params: Promise<{ id: stri
               <div className="bg-card dark:bg-slate-900 rounded-lg p-4 border border-border dark:border-slate-800">
                 <p className="text-muted-foreground text-sm mb-1">Release</p>
                 <p className="text-lg font-bold">
-                  {movie.releaseDate ? new Date(movie.releaseDate).toLocaleDateString() : 'TBA'}
+                  {movie.releaseDate
+                    ? new Date(movie.releaseDate).toLocaleDateString()
+                    : "TBA"}
                 </p>
               </div>
               <div className="bg-card dark:bg-slate-900 rounded-lg p-4 border border-border dark:border-slate-800">
                 <p className="text-muted-foreground text-sm mb-1">Director</p>
-                <p className="text-lg font-bold">{movie.director || 'Unknown'}</p>
+                <p className="text-lg font-bold">
+                  {movie.director || "Unknown"}
+                </p>
               </div>
             </div>
 
@@ -158,7 +178,9 @@ export default function MovieDetailPage({ params }: { params: Promise<{ id: stri
               <div>
                 <h3 className="text-lg font-bold mb-2">Cast</h3>
                 <p className="text-muted-foreground">
-                  {Array.isArray(movie.cast) ? movie.cast.join(", ") : movie.cast}
+                  {Array.isArray(movie.cast)
+                    ? movie.cast.join(", ")
+                    : movie.cast}
                 </p>
               </div>
             )}
@@ -166,7 +188,7 @@ export default function MovieDetailPage({ params }: { params: Promise<{ id: stri
             <div>
               <h3 className="text-lg font-bold mb-2">Synopsis</h3>
               <p className="text-muted-foreground leading-relaxed">
-                {movie.description || 'No description available.'}
+                {movie.description || "No description available."}
               </p>
             </div>
 
@@ -179,7 +201,11 @@ export default function MovieDetailPage({ params }: { params: Promise<{ id: stri
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors"
                 >
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <svg
+                    className="w-5 h-5"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                     <path d="M8 5v14l11-7z" />
                   </svg>
                   Watch Trailer
@@ -208,7 +234,9 @@ export default function MovieDetailPage({ params }: { params: Promise<{ id: stri
                   }`}
                 >
                   <p className="text-2xl font-bold mb-2">{showtime.time}</p>
-                  <p className="text-sm text-muted-foreground mb-3">{showtime.format}</p>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    {showtime.format}
+                  </p>
                   <p className="text-lg font-semibold text-purple-600 mb-3">
                     {showtime.price.toLocaleString()} VND
                   </p>
@@ -244,17 +272,5 @@ export default function MovieDetailPage({ params }: { params: Promise<{ id: stri
         <ReviewsSection movieId={id} movieStatus={movie.status} />
       </div>
     </div>
-  )
+  );
 }
-
-
-
-
-
-
-
-
-
-
-
-
