@@ -22,6 +22,7 @@ public class MovieSimpleResponse {
     String id;
     String title;
     String posterUrl;
+    String trailerUrl;
     Integer durationMinutes;
 
     @JsonFormat(pattern = "yyyy-MM-dd")
