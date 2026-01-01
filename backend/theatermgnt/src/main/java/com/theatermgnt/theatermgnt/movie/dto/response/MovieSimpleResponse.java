@@ -1,6 +1,7 @@
 package com.theatermgnt.theatermgnt.movie.dto.response;
 
 import java.time.LocalDate;
+import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.theatermgnt.theatermgnt.common.enums.MovieStatus;
@@ -22,6 +23,9 @@ public class MovieSimpleResponse {
     String id;
     String title;
     String posterUrl;
+    String trailerUrl;
+    Set<MovieResponse.GenreInfo> genres;
+
     Integer durationMinutes;
 
     @JsonFormat(pattern = "yyyy-MM-dd")
