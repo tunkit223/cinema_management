@@ -4,6 +4,7 @@ import { getRoutePath } from "@/config/app.config";
 const ROUTE_PATHS = {
   HOME: "",
   LOGIN: "login",
+  FORGOT_PASSWORD: "forgot-password",
   DASHBOARD: "dashboard",
   MOVIES: "movies",
   MOVIES_CREATE: "movies/create",
@@ -40,6 +41,7 @@ const ROUTE_PATHS = {
 export const ROUTES = {
   HOME: getRoutePath(ROUTE_PATHS.HOME),
   LOGIN: getRoutePath(ROUTE_PATHS.LOGIN),
+  FORGOT_PASSWORD: getRoutePath(ROUTE_PATHS.FORGOT_PASSWORD),
   DASHBOARD: getRoutePath(ROUTE_PATHS.DASHBOARD),
   MOVIES: getRoutePath(ROUTE_PATHS.MOVIES),
   MOVIES_CREATE: getRoutePath(ROUTE_PATHS.MOVIES_CREATE),

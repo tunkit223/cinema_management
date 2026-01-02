@@ -122,7 +122,7 @@ export function Login() {
               </div>
               <div className="flex justify-end">
                 <Link
-                  to="/auth/forgot-password"
+                  to={ROUTES.FORGOT_PASSWORD}
                   className="text-xs text-primary hover:underline"
                 >
                   Forget password?
