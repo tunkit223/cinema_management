@@ -1,11 +1,13 @@
 package com.theatermgnt.theatermgnt.staff.service;
 
 import com.theatermgnt.theatermgnt.account.entity.Account;
+import com.theatermgnt.theatermgnt.account.service.AccountService;
 import com.theatermgnt.theatermgnt.authorization.entity.Role;
 import com.theatermgnt.theatermgnt.authorization.repository.RoleRepository;
 import com.theatermgnt.theatermgnt.common.exception.AppException;
 import com.theatermgnt.theatermgnt.common.exception.ErrorCode;
 import com.theatermgnt.theatermgnt.constant.PredefinedRole;
+import com.theatermgnt.theatermgnt.customer.entity.Customer;
 import com.theatermgnt.theatermgnt.staff.dto.request.SearchStaffRequest;
 import com.theatermgnt.theatermgnt.staff.dto.request.StaffAccountCreationRequest;
 import com.theatermgnt.theatermgnt.staff.dto.request.StaffProfileUpdateRequest;
@@ -33,6 +35,7 @@ public class StaffService {
     StaffRepository staffRepository;
     StaffMapper staffMapper;
     RoleRepository roleRepository;
+    AccountService accountService;
 
     /// CREATE STAFF PROFILE
     @Transactional
@@ -100,7 +103,13 @@ public class StaffService {
     }
     /// DELETE STAFF
     public void deleteStaff(String staffId) {
-        staffRepository.deleteById(staffId);
+        Staff staff =
+                staffRepository.findById(staffId).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        if(staff.getAccount() != null) {
+            accountService.deleteAccount(staff.getAccount().getId());
+        }
+        staffRepository.delete(staff);
     }
 
     /// GET STAFF BY CINEMA WITH ROLE STAFF

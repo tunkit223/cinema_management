@@ -8,7 +8,6 @@ import org.mapstruct.*;
 
 @Mapper(componentModel = "spring")
 public interface StaffMapper {
-    @Mapping(target = "id", ignore = true)
     @Mapping(target = "account", ignore = true)
     Staff toStaff(StaffAccountCreationRequest request);
 

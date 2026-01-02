@@ -118,7 +118,19 @@ public class RegistrationService {
     @Transactional
     public StaffResponse registerStaffAccount(StaffAccountCreationRequest request) {
         Set<Role> roles = new HashSet<>();
-        roleRepository.findById(PredefinedRole.STAFF_ROLE).ifPresent(roles::add);
+        
+        // If roles are provided in the request, use them
+        if (request.getRoles() != null && !request.getRoles().isEmpty()) {
+            // Validate and add roles from request
+            for (String roleName : request.getRoles()) {
+                roleRepository.findById(roleName)
+                    .ifPresent(roles::add);
+            }
+        } else {
+            // Default to STAFF role if no roles are provided
+            roleRepository.findById(PredefinedRole.STAFF_ROLE).ifPresent(roles::add);
+        }
+        
         return internalCreateStaff(request, roles);
     }
 
