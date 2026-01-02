@@ -7,6 +7,7 @@ import { Footer } from "@/components/footer";
 import { RouteGuard } from "@/components/route-guard";
 import { ProtectedRouteNotification } from "@/components/protected-route-notification";
 import { StoreInitializer } from "@/components/store-initializer";
+import { Toaster } from "@/components/ui/toaster";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -43,6 +44,7 @@ export default function RootLayout({
               <Footer />
             </RouteGuard>
           </StoreInitializer>
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>
