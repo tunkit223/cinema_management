@@ -10,6 +10,8 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
 
+import java.util.List;
+
 @Data
 @NoArgsConstructor
 @SuperBuilder(toBuilder = true)
@@ -21,4 +23,6 @@ public class StaffAccountCreationRequest extends BaseAccountCreationRequest {
 
     @NotBlank(message = "CINEMA_ID_REQUIRED")
     String cinemaId;
+
+    List<String> roles;
 }
