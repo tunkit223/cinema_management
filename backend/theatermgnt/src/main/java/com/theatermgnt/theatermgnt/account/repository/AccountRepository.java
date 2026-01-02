@@ -10,11 +10,9 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface AccountRepository extends JpaRepository<Account, String> {
-    boolean existsByUsername(String username);
+    boolean existsByUsernameAndDeletedFalse(String username);
 
-
-    boolean existsByEmail(String email);
-
+    boolean existsByEmailAndDeletedFalse(String email);
     Optional<Account> findByUsername(String username);
 
     Optional<Account> findByEmail(String email);

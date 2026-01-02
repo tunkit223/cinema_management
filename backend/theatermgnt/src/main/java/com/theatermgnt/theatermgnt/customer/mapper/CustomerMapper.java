@@ -10,7 +10,6 @@ import com.theatermgnt.theatermgnt.customer.entity.Customer;
 @Mapper(componentModel = "spring")
 public interface CustomerMapper {
 
-    @Mapping(target = "id", ignore = true)
     @Mapping(target = "account", ignore = true)
     Customer toCustomer(CustomerAccountCreationRequest request);
 

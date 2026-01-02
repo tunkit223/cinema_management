@@ -73,4 +73,10 @@ public class CustomerController {
                 .result(customerService.getLoyaltyPoints(customerId))
                 .build();
     }
+
+    @DeleteMapping("/{customerId}" )
+    ApiResponse<Void> deleteCustomerProfile(@PathVariable String customerId) {
+        customerService.deleteCustomer(customerId);
+        return ApiResponse.<Void>builder().build();
+    }
 }
