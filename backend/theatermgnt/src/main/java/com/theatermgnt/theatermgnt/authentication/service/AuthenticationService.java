@@ -6,6 +6,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 
+import com.theatermgnt.theatermgnt.authentication.enums.AccountType;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -71,8 +72,10 @@ public class AuthenticationService {
         }
         return IntrospectResponse.builder().valid(isValid).build();
     }
-    /// AUTHENTICATE
-    public AuthenticationResponse authenticate(AuthenticationRequest request) {
+
+
+    /// AUTHENTICATE WITH ACCOUNT TYPE VALIDATION
+    public AuthenticationResponse authenticate(AuthenticationRequest request, AccountType requiredAccountType) {
         PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
 
         var account = accountRepository
@@ -82,6 +85,13 @@ public class AuthenticationService {
 
         boolean authenticated = passwordEncoder.matches(request.getPassword(), account.getPassword());
         if (!authenticated) throw new AppException(ErrorCode.UNAUTHENTICATED);
+
+        // Validate account type
+        if (account.getAccountType() != requiredAccountType) {
+            log.warn("Account type mismatch: {} tried to login with {} account type", 
+                    account.getUsername(), requiredAccountType);
+            throw new AppException(ErrorCode.WRONG_ACCOUNT_TYPE);
+        }
 
         var token = tokenService.generateToken(account);
         return AuthenticationResponse.builder().authenticated(true).token(token).build();

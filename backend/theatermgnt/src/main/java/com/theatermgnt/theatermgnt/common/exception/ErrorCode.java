@@ -32,6 +32,7 @@ public enum ErrorCode {
     ACCOUNT_NOT_FOUND(1022, "Account not found", HttpStatus.NOT_FOUND),
     PASSWORDS_DO_NOT_MATCH(1023, "Password and Confirm password do not match", HttpStatus.BAD_REQUEST),
     CONFIRM_PASSWORD_REQUIRED(1024, "Confirm password is required", HttpStatus.BAD_REQUEST),
+    WRONG_ACCOUNT_TYPE(1025, "This account type is not allowed to login here", HttpStatus.UNAUTHORIZED),
     // ----
     CINEMA_EXISTED(2001, "Cinema existed", HttpStatus.BAD_REQUEST),
     CINEMA_NOT_EXISTED(2002, "Cinema not existed", HttpStatus.BAD_REQUEST),
