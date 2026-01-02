@@ -3,24 +3,28 @@ import { API } from "../configurations/configuration";
 import { getToken } from "./localStorageService";
 
 export interface CustomerInfo {
-  id: string;
-  fullName: string;
+  customerId: string;
+  accountId: string;
+  accountType: string;
+  username: string;
   email: string;
   phoneNumber?: string;
+  firstName: string;
+  lastName: string;
   address?: string;
-  avatarUrl?: string;
-  dateOfBirth?: string;
   gender?: string;
+  dob?: string;
+  loyaltyPoints?: number;
   noPassword?: boolean;
 }
 
 export interface UpdateCustomerRequest {
-  fullName?: string;
+  firstName?: string;
+  lastName?: string;
   phoneNumber?: string;
   address?: string;
-  dateOfBirth?: string;
+  dob?: string;
   gender?: string;
-  avatarUrl?: string;
 }
 
 // Get customer info

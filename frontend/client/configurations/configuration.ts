@@ -4,8 +4,8 @@ export const CONFIG = {
 
 export const API = {
   // Auth endpoints
-  LOGIN: "/auth/token",
-  REGISTER: "/auth/register",
+  LOGIN: "/auth/customer/login",
+  REGISTER: "/register",
   GOOGLE_AUTH: "/auth/outbound/authenticate",
   CREATE_PASSWORD: "/auth/accounts/create-password",
   MY_INFO: "/customers/myInfo",
