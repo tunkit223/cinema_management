@@ -2,7 +2,11 @@ package com.theatermgnt.theatermgnt.account.service;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
+import com.theatermgnt.theatermgnt.customer.dto.request.StaffCreateCustomerAccountRequest;
+import com.theatermgnt.theatermgnt.customer.event.CustomerCreatedEvent;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -54,6 +58,36 @@ public class RegistrationService {
         savedAccount.setAccountType(AccountType.CUSTOMER);
 
         Customer savedCustomer = customerService.createCustomerProfile(request, savedAccount);
+
+        return customerMapper.toCustomerResponse(savedCustomer);
+    }
+
+    @Transactional
+    public CustomerResponse StaffCreateCustomerAccount(StaffCreateCustomerAccountRequest request) {
+        String randomPassword = UUID.randomUUID().toString().substring(0, 8);
+
+        CustomerAccountCreationRequest customerRequest = CustomerAccountCreationRequest.builder()
+                .firstName(request.getFirstName())
+                .lastName(request.getLastName())
+                .email(request.getEmail())
+                .address(request.getAddress())
+                .phoneNumber(request.getPhoneNumber())
+                .gender(request.getGender())
+                .dob(request.getDob())
+                .username(request.getEmail())
+                .password(randomPassword)
+                .build();
+
+
+        Account savedAccount = accountService.createAccount(customerRequest);
+        savedAccount.setAccountType(AccountType.CUSTOMER);
+
+        Customer savedCustomer = customerService.createCustomerProfile(customerRequest, savedAccount);
+        eventPublisher.publishEvent(new CustomerCreatedEvent(
+                savedCustomer.getId(),
+                randomPassword
+        ));
+
         return customerMapper.toCustomerResponse(savedCustomer);
     }
 

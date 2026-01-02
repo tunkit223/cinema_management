@@ -31,6 +31,7 @@ public class Customer {
     String lastName;
     String address;
     String avatarUrl;
+    String phoneNumber;
 
     @Builder.Default
     @Column(name = "loyalty_points", nullable = false)

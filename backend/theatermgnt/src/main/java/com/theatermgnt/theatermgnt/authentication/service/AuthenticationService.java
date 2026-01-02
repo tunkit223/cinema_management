@@ -76,8 +76,8 @@ public class AuthenticationService {
         PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
 
         var account = accountRepository
-                .findByUsernameOrEmailOrPhoneNumber(
-                        request.getLoginIdentifier(), request.getLoginIdentifier(), request.getLoginIdentifier())
+                .findByUsernameOrEmail(
+                        request.getLoginIdentifier(), request.getLoginIdentifier())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
         boolean authenticated = passwordEncoder.matches(request.getPassword(), account.getPassword());
@@ -126,8 +126,8 @@ public class AuthenticationService {
 
     /// FORGOT PASSWORD
     public void forgotPassword(ForgotPasswordRequest request) {
-        var account = accountRepository.findByUsernameOrEmailOrPhoneNumber(
-                request.getLoginIdentifier(), request.getLoginIdentifier(), request.getLoginIdentifier());
+        var account = accountRepository.findByUsernameOrEmail(
+                request.getLoginIdentifier(), request.getLoginIdentifier());
 
         // Does not throw exception if not found
         if (account.isEmpty()) {
@@ -165,8 +165,8 @@ public class AuthenticationService {
         PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
 
         var account = accountRepository
-                .findByUsernameOrEmailOrPhoneNumber(
-                        request.getLoginIdentifier(), request.getLoginIdentifier(), request.getLoginIdentifier())
+                .findByUsernameOrEmail(
+                        request.getLoginIdentifier(), request.getLoginIdentifier())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
         // Get saved OTP from database

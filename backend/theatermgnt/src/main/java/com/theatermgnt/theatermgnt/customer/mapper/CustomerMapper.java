@@ -17,7 +17,6 @@ public interface CustomerMapper {
     @Mapping(source = "account.id", target = "accountId")
     @Mapping(source = "account.email", target = "email")
     @Mapping(source = "account.username", target = "username")
-    @Mapping(source = "account.phoneNumber", target = "phoneNumber")
     @Mapping(source = "account.accountType", target = "accountType")
     @Mapping(source = "id", target = "customerId")
     CustomerResponse toCustomerResponse(Customer customer);

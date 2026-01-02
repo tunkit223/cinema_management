@@ -31,6 +31,7 @@ public class Staff {
 
     String firstName;
     String lastName;
+    String phoneNumber;
     String jobTitle;
     String address;
     String avatarUrl;
