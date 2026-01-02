@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/Modal";
 import type { StaffProfile } from "@/types/StaffType/StaffProfile";
 import type { StaffRequest } from "@/services/staffService";
+import { getAllCinemas, type Cinema } from "@/services/cinemaService";
 
 interface StaffFormDialogProps {
   isOpen: boolean;
@@ -32,12 +33,43 @@ export function StaffFormDialog({
     username: "",
     password: "",
     cinemaId: "",
+    roles: [],
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+  const [cinemas, setCinemas] = useState<Cinema[]>([]);
+  const [loadingCinemas, setLoadingCinemas] = useState(false);
+
+  // Available roles
+  const availableRoles = [
+    { value: "STAFF", label: "Staff" },
+    { value: "MANAGER", label: "Manager" },
+    { value: "ADMIN", label: "Admin" },
+  ];
+
+  // Load cinemas when dialog opens
+  useEffect(() => {
+    const loadCinemas = async () => {
+      if (isOpen) {
+        try {
+          setLoadingCinemas(true);
+          const cinemasData = await getAllCinemas();
+          setCinemas(cinemasData);
+        } catch (error) {
+          console.error("Failed to load cinemas:", error);
+        } finally {
+          setLoadingCinemas(false);
+        }
+      }
+    };
+    loadCinemas();
+  }, [isOpen]);
 
   useEffect(() => {
     if (staff) {
+      const staffRoleNames = staff.roles?.map((r) => r.name) || [];
+      setSelectedRoles(staffRoleNames);
       setFormData({
         firstName: staff.firstName,
         lastName: staff.lastName,
@@ -50,8 +82,10 @@ export function StaffFormDialog({
         username: staff.username,
         password: "", // Reset password when editing
         cinemaId: staff.cinemaId || "",
+        roles: staffRoleNames,
       });
     } else {
+      setSelectedRoles(["STAFF"]); // Default to STAFF role
       setFormData({
         firstName: "",
         lastName: "",
@@ -64,6 +98,7 @@ export function StaffFormDialog({
         username: "",
         password: "",
         cinemaId: "",
+        roles: ["STAFF"],
       });
     }
     setErrors({});
@@ -121,6 +156,22 @@ export function StaffFormDialog({
         return newErrors;
       });
     }
+  };
+
+  const handleRoleToggle = (roleName: string) => {
+    setSelectedRoles((prev) => {
+      const newRoles = prev.includes(roleName)
+        ? prev.filter((r) => r !== roleName)
+        : [...prev, roleName];
+
+      // Update formData with new roles
+      setFormData((prevData) => ({
+        ...prevData,
+        roles: newRoles,
+      }));
+
+      return newRoles;
+    });
   };
 
   return (
@@ -256,17 +307,26 @@ export function StaffFormDialog({
 
           <div>
             <label className="block text-sm font-medium mb-1.5 text-foreground">
-              Cinema ID
+              Cinema
             </label>
-            <Input
-              type="text"
+            <select
               name="cinemaId"
               value={formData.cinemaId || ""}
               onChange={handleChange}
-              placeholder="Enter cinema ID"
-              disabled={saving}
-              className={errors.cinemaId ? "border-destructive" : ""}
-            />
+              disabled={saving || loadingCinemas}
+              className={`w-full px-3 py-2 border border-input rounded-md bg-background text-foreground ${
+                errors.cinemaId ? "border-destructive" : ""
+              }`}
+            >
+              <option value="">
+                {loadingCinemas ? "Loading cinemas..." : "Select a cinema"}
+              </option>
+              {cinemas.map((cinema) => (
+                <option key={cinema.id} value={cinema.id}>
+                  {cinema.name} - {cinema.city}
+                </option>
+              ))}
+            </select>
             {errors.cinemaId && (
               <p className="text-xs text-destructive mt-1">{errors.cinemaId}</p>
             )}
@@ -353,6 +413,41 @@ export function StaffFormDialog({
             </div>
           </div>
         )}
+
+        {/* Role Selection */}
+        <div>
+          <label className="block text-sm font-medium mb-2 text-foreground">
+            Role(s)
+            {!staff && (
+              <span className="text-xs text-muted-foreground ml-2">
+                (Default: Staff)
+              </span>
+            )}
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {availableRoles.map((role) => (
+              <button
+                key={role.value}
+                type="button"
+                onClick={() => handleRoleToggle(role.value)}
+                disabled={saving}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  selectedRoles.includes(role.value)
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                {role.label}
+              </button>
+            ))}
+          </div>
+          {selectedRoles.length === 0 && (
+            <p className="text-xs text-muted-foreground mt-2">
+              At least one role is recommended. If no role is selected, STAFF
+              role will be assigned by default.
+            </p>
+          )}
+        </div>
 
         {/* Actions */}
         <div className="flex justify-end gap-3 pt-6 border-t">

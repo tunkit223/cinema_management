@@ -1,77 +1,70 @@
-import httpClient from "@/configurations/httpClient"
-import type { ApiResponse } from "@/utils/apiResponse"
+import httpClient from "@/configurations/httpClient";
+import type { CustomerProfile } from "@/types/CustomerType/CustomerProfile";
+import { handleApiResponse } from "@/utils/apiResponse";
+import type { ApiResponse } from "@/utils/apiResponse";
 
-export interface Customer {
-  id: string
-  email: string
-  firstName?: string
-  lastName?: string
-  phone?: string
-  loyaltyPoints?: number
-  customerId?: string
+const BASE_URL = "/customers";
+
+export interface CustomerRequest {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber: string;
+  address: string;
+  gender: "MALE" | "FEMALE" | "OTHER";
+  dob: string;
+  username: string;
+  password: string;
 }
 
 // Get current user info
-export const getMyInfo = async (): Promise<Customer> => {
-  try {
-    const response = await httpClient.get<ApiResponse<Customer>>(
-      "/customers/me"
-    )
-    return response.data.result
-  } catch (error) {
-    console.error("Failed to get user info:", error)
-    throw error
-  }
-}
+export const getMyInfo = async (): Promise<CustomerProfile> => {
+  return handleApiResponse<CustomerProfile>(
+    httpClient.get<ApiResponse<CustomerProfile>>(`${BASE_URL}/myInfo`)
+  );
+};
+
+// Customer Management APIs
+
+export const getAllCustomers = async (): Promise<CustomerProfile[]> => {
+  return handleApiResponse<CustomerProfile[]>(
+    httpClient.get<ApiResponse<CustomerProfile[]>>(BASE_URL)
+  );
+};
+
+export const createCustomer = async (
+  request: CustomerRequest
+): Promise<CustomerProfile> => {
+  return handleApiResponse<CustomerProfile>(
+    httpClient.post<ApiResponse<CustomerProfile>>(`${BASE_URL}`, request)
+  );
+};
+
+export const getCustomerById = async (customerId: string): Promise<CustomerProfile> => {
+  return handleApiResponse<CustomerProfile>(
+    httpClient.get<ApiResponse<CustomerProfile>>(`${BASE_URL}/${customerId}`)
+  );
+};
+
+export const updateCustomer = async (
+  customerId: string,
+  request: Partial<CustomerRequest>
+): Promise<CustomerProfile> => {
+  return handleApiResponse<CustomerProfile>(
+    httpClient.put<ApiResponse<CustomerProfile>>(`${BASE_URL}/${customerId}`, request)
+  );
+};
+
+export const deleteCustomer = async (customerId: string): Promise<void> => {
+  await httpClient.delete(`${BASE_URL}/${customerId}`);
+};
 
 // Get customer loyalty points
 export const getCustomerLoyaltyPoints = async (customerId: string): Promise<number> => {
-  try {
-    const response = await httpClient.get<ApiResponse<{ loyaltyPoints?: number }>>(
-      `/customers/${customerId}/loyalty-points`
+  const response = await handleApiResponse<{ loyaltyPoints?: number }>(
+    httpClient.get<ApiResponse<{ loyaltyPoints?: number }>>(
+      `${BASE_URL}/${customerId}/loyalty-points`
     )
-    return response.data.result?.loyaltyPoints ?? 0
-  } catch (error) {
-    console.error("Failed to get loyalty points:", error)
-    throw error
-  }
-}
-
-// Get customer by ID
-export const getCustomerById = async (customerId: string): Promise<Customer> => {
-  try {
-    const response = await httpClient.get<ApiResponse<Customer>>(
-      `/customers/${customerId}`
-    )
-    return response.data.result
-  } catch (error) {
-    console.error("Failed to get customer:", error)
-    throw error
-  }
-}
-
-// Get all customers
-export const getAllCustomers = async (): Promise<Customer[]> => {
-  try {
-    const response = await httpClient.get<ApiResponse<Customer[]>>(
-      "/customers"
-    )
-    return response.data.result || []
-  } catch (error) {
-    console.error("Failed to get customers:", error)
-    throw error
-  }
-}
-
-// Search customers
-export const searchCustomers = async (query: string): Promise<Customer[]> => {
-  try {
-    const response = await httpClient.get<ApiResponse<Customer[]>>(
-      `/customers/search?query=${encodeURIComponent(query)}`
-    )
-    return response.data.result || []
-  } catch (error) {
-    console.error("Failed to search customers:", error)
-    throw error
-  }
-}
+  );
+  return response?.loyaltyPoints ?? 0;
+};
