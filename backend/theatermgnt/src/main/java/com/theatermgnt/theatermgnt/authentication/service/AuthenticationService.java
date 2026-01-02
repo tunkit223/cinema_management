@@ -12,6 +12,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.MACVerifier;
@@ -135,7 +136,9 @@ public class AuthenticationService {
     }
 
     /// FORGOT PASSWORD
+    @Transactional
     public void forgotPassword(ForgotPasswordRequest request) {
+
         var account = accountRepository.findByUsernameOrEmail(
                 request.getLoginIdentifier(), request.getLoginIdentifier());
 
@@ -146,11 +149,17 @@ public class AuthenticationService {
         }
 
         Account acc = account.get();
-        otpTokenRepository.findByAccount(acc).ifPresent(otpTokenRepository::delete);
+
+        // Delete old OTP and flush immediately to avoid constraint violation
+        otpTokenRepository.findByAccount(acc).ifPresent(oldToken -> {
+            otpTokenRepository.delete(oldToken);
+            otpTokenRepository.flush(); // Force immediate delete
+        });
 
         // Generate otp code
         String otpCode = generateOtpCode();
         Instant expiryTime = Instant.now().plus(OTP_VALID_DURATION, ChronoUnit.MINUTES);
+        
 
         // Save OTP into database
         OtpToken newOtpToken = OtpToken.builder()
@@ -159,15 +168,16 @@ public class AuthenticationService {
                 .expiryTime(expiryTime)
                 .build();
         otpTokenRepository.save(newOtpToken);
+        otpTokenRepository.flush(); // Force immediate save
 
         // Publish event to send email
         try {
             eventPublisher.publishEvent(new PasswordResetEvent(account.get(), otpCode));
-            log.info("Password reset requested for account: {}", account.get().getEmail());
         } catch (Exception e) {
             // Log error but do not throw to avoid user enumeration
-            log.error("Error publishing password reset event: {}", e.getMessage());
+            log.error("Error publishing password reset event: {}", e.getMessage(), e);
         }
+        
     }
 
     /// RESET PASSWORD

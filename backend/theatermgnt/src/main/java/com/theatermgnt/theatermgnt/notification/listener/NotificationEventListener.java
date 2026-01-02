@@ -73,12 +73,17 @@ public class NotificationEventListener {
 
         String htmlContent = emailTemplateFactory.buildTemplate(EmailType.RESET_PASSWORD, variables);
 
-        emailBuilderService.buildAndSendEmail(EmailBuilderRequest.builder()
-                .account(event.getAccount())
-                .subject(subject)
-                .htmlContent(htmlContent)
-                .emailTypeForLog("Password Reset OTP")
-                .build());
+        try {
+            emailBuilderService.buildAndSendEmail(EmailBuilderRequest.builder()
+                    .account(event.getAccount())
+                    .subject(subject)
+                    .htmlContent(htmlContent)
+                    .emailTypeForLog("Password Reset OTP")
+                    .build());
+        } catch (Exception e) {
+            log.error("=== FAILED TO SEND PASSWORD RESET EMAIL ===", e);
+            throw e;
+        }
     }
 
     @Async
@@ -99,7 +104,7 @@ public class NotificationEventListener {
 
         emailBuilderService.buildAndSendEmail(EmailBuilderRequest.builder()
                 .account(event.getStaff().getAccount())
-                .subject("Welcome" + event.getStaff().getFirstName() + " to Our Team!")
+                .subject("Welcome " + event.getStaff().getFirstName() + " to Our Team!")
                 .htmlContent(htmlContent)
                 .emailTypeForLog("Welcome New Staff")
                 .build());
@@ -198,7 +203,7 @@ public class NotificationEventListener {
 
         emailBuilderService.buildAndSendEmail(EmailBuilderRequest.builder()
                 .account(customer.getAccount())
-                .subject("Welcome" + customer.getFirstName() + " to Cifastar HCM!")
+                .subject("Welcome " + customer.getFirstName() + " to Cifastar HCM!")
                 .htmlContent(htmlContent)
                 .emailTypeForLog("Welcome New Customer")
                 .build());
