@@ -138,19 +138,19 @@ public class TicketServiceImpl implements TicketService {
                     .build();
         }).toList();
         List<Ticket> savedTickets = ticketRepository.saveAll(tickets);
-
-        eventPublisher.publishEvent(
-                TicketCreatedEvent.builder()
-                        .accountId(UUID.fromString(booking.getCustomer().getAccount().getId()))
-                        .bookingId(booking.getId())
-                        .ticketIds(
-                                savedTickets.stream()
-                                        .map(Ticket::getId)
-                                        .toList()
-                        )
-                        .build()
-        );
-
+        if(booking.getCustomer() != null){
+            eventPublisher.publishEvent(
+                    TicketCreatedEvent.builder()
+                            .accountId(UUID.fromString(booking.getCustomer().getAccount().getId()))
+                            .bookingId(booking.getId())
+                            .ticketIds(
+                                    savedTickets.stream()
+                                            .map(Ticket::getId)
+                                            .toList()
+                            )
+                            .build()
+            );
+        }
         return savedTickets;
     }
 
