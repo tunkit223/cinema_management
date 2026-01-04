@@ -2,14 +2,13 @@ package com.theatermgnt.theatermgnt.customer.service;
 
 import java.util.List;
 
-import com.theatermgnt.theatermgnt.account.repository.AccountRepository;
-import com.theatermgnt.theatermgnt.account.service.AccountService;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import com.theatermgnt.theatermgnt.account.entity.Account;
+import com.theatermgnt.theatermgnt.account.service.AccountService;
 import com.theatermgnt.theatermgnt.common.exception.AppException;
 import com.theatermgnt.theatermgnt.common.exception.ErrorCode;
 import com.theatermgnt.theatermgnt.customer.dto.request.CustomerAccountCreationRequest;
@@ -33,7 +32,6 @@ public class CustomerService {
     CustomerRepository customerRepository;
     CustomerMapper customerMapper;
     AccountService accountService;
-
 
     /// CREATE CUSTOMER PROFILE
     @Transactional
@@ -86,7 +84,7 @@ public class CustomerService {
         Customer customer =
                 customerRepository.findById(customerId).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        if(customer.getAccount() != null) {
+        if (customer.getAccount() != null) {
             accountService.deleteAccount(customer.getAccount().getId());
         }
         customerRepository.delete(customer);

@@ -30,20 +30,17 @@ public interface InvoiceRepository extends JpaRepository<Invoice, String> {
     Page<Invoice> findByStatusAndCreatedAtBetweenOrderByCreatedAtDesc(
             InvoiceStatus status, LocalDateTime startDate, LocalDateTime endDate, Pageable pageable);
 
-    @Query("SELECT i FROM Invoice i WHERE " +
-            "(LOWER(i.id) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-            "LOWER(i.bookingId) LIKE LOWER(CONCAT('%', :search, '%'))) " +
-            "ORDER BY i.createdAt DESC")
+    @Query("SELECT i FROM Invoice i WHERE " + "(LOWER(i.id) LIKE LOWER(CONCAT('%', :search, '%')) OR "
+            + "LOWER(i.bookingId) LIKE LOWER(CONCAT('%', :search, '%'))) "
+            + "ORDER BY i.createdAt DESC")
     Page<Invoice> searchInvoices(@Param("search") String search, Pageable pageable);
 
-    @Query("SELECT i FROM Invoice i WHERE " +
-            "(LOWER(i.id) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-            "LOWER(i.bookingId) LIKE LOWER(CONCAT('%', :search, '%'))) " +
-            "AND i.status = :status " +
-            "ORDER BY i.createdAt DESC")
-    Page<Invoice> searchInvoicesByStatus(@Param("search") String search, 
-                                         @Param("status") InvoiceStatus status, 
-                                         Pageable pageable);
+    @Query("SELECT i FROM Invoice i WHERE " + "(LOWER(i.id) LIKE LOWER(CONCAT('%', :search, '%')) OR "
+            + "LOWER(i.bookingId) LIKE LOWER(CONCAT('%', :search, '%'))) "
+            + "AND i.status = :status "
+            + "ORDER BY i.createdAt DESC")
+    Page<Invoice> searchInvoicesByStatus(
+            @Param("search") String search, @Param("status") InvoiceStatus status, Pageable pageable);
 
     @Query("SELECT COUNT(i) FROM Invoice i WHERE i.status = :status")
     Long countByStatus(@Param("status") InvoiceStatus status);

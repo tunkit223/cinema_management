@@ -1,5 +1,7 @@
 package com.theatermgnt.theatermgnt.review.mapper;
 
+import org.mapstruct.*;
+
 import com.theatermgnt.theatermgnt.customer.entity.Customer;
 import com.theatermgnt.theatermgnt.movie.entity.Movie;
 import com.theatermgnt.theatermgnt.review.dto.request.CreateReviewRequest;
@@ -7,7 +9,6 @@ import com.theatermgnt.theatermgnt.review.dto.request.UpdateReviewRequest;
 import com.theatermgnt.theatermgnt.review.dto.response.ReviewResponse;
 import com.theatermgnt.theatermgnt.review.entity.MovieReview;
 import com.theatermgnt.theatermgnt.screening.entity.Screening;
-import org.mapstruct.*;
 
 @Mapper(
         componentModel = "spring",

@@ -51,9 +51,7 @@ public class InvoiceController {
             result = invoiceService.searchInvoices(query, page, size);
         }
 
-        return ApiResponse.<Page<InvoiceResponse>>builder()
-                .result(result)
-                .build();
+        return ApiResponse.<Page<InvoiceResponse>>builder().result(result).build();
     }
 
     @GetMapping("/status/{status}")

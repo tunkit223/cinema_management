@@ -1,17 +1,13 @@
 package com.theatermgnt.theatermgnt.account.entity;
 
-import java.time.Instant;
-
-import com.theatermgnt.theatermgnt.common.entity.BaseEntity;
 import jakarta.persistence.*;
 
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import com.theatermgnt.theatermgnt.authentication.enums.AccountType;
+import com.theatermgnt.theatermgnt.common.entity.BaseEntity;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -41,5 +37,4 @@ public class Account extends BaseEntity {
     AccountType accountType;
 
     Boolean isActive;
-
 }

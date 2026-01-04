@@ -13,7 +13,6 @@ import org.springframework.stereotype.Component;
 import com.theatermgnt.theatermgnt.booking.entity.Booking;
 import com.theatermgnt.theatermgnt.booking.enums.BookingStatus;
 import com.theatermgnt.theatermgnt.booking.repository.BookingRepository;
-import com.theatermgnt.theatermgnt.payment.entity.Invoice;
 import com.theatermgnt.theatermgnt.payment.entity.InvoiceStatus;
 import com.theatermgnt.theatermgnt.payment.entity.Payment;
 import com.theatermgnt.theatermgnt.payment.enums.PaymentStatus;
@@ -27,7 +26,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class BookingExpirationService {
     private static final Logger logger = LoggerFactory.getLogger(BookingExpirationService.class);
-    
+
     private final BookingRepository bookingRepository;
     private final ScreeningSeatRepository screeningSeatRepository;
     private final InvoiceRepository invoiceRepository;
@@ -60,8 +59,8 @@ public class BookingExpirationService {
                 if (invoice.getStatus() == InvoiceStatus.PENDING) {
                     invoice.setStatus(InvoiceStatus.FAILED);
                     invoiceRepository.save(invoice);
-                    logger.info("Updated invoice {} to FAILED for expired booking {}", 
-                                invoice.getId(), booking.getId());
+                    logger.info(
+                            "Updated invoice {} to FAILED for expired booking {}", invoice.getId(), booking.getId());
 
                     // 4. Update payment status to FAILED
                     List<Payment> payments = paymentRepository.findByInvoiceId(invoice.getId());
@@ -69,8 +68,10 @@ public class BookingExpirationService {
                         if (payment.getStatus() == PaymentStatus.PENDING) {
                             payment.setStatus(PaymentStatus.FAILED);
                             paymentRepository.save(payment);
-                            logger.info("Updated payment {} to FAILED for expired booking {}", 
-                                        payment.getId(), booking.getId());
+                            logger.info(
+                                    "Updated payment {} to FAILED for expired booking {}",
+                                    payment.getId(),
+                                    booking.getId());
                         }
                     }
                 }

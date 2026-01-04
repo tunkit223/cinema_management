@@ -1,22 +1,23 @@
 package com.theatermgnt.theatermgnt.customer.dto.request;
 
+import java.time.LocalDate;
+
+import jakarta.validation.constraints.*;
+
 import com.theatermgnt.theatermgnt.common.enums.Gender;
 import com.theatermgnt.theatermgnt.validator.DobConstraint;
-import jakarta.validation.constraints.*;
+
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
 
-import java.time.LocalDate;
-
 @Data
 @NoArgsConstructor
 @SuperBuilder(toBuilder = true)
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class StaffCreateCustomerAccountRequest {
-
 
     @NotBlank(message = "EMAIL_REQUIRED")
     @Email(message = "INVALID_EMAIL")
