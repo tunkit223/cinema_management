@@ -52,3 +52,23 @@ export const logOut = () => {
 export const isAuthenticated = () => {
   return getToken();
 };
+
+export const forgotPassword = async (loginIdentifier: string) => {
+  const response = await httpClient.post(API.FORGOT_PASSWORD, {
+    loginIdentifier: loginIdentifier,
+  });
+  return response.data;
+};
+
+export const resetPassword = async (
+  loginIdentifier: string,
+  otpCode: string,
+  newPassword: string
+) => {
+  const response = await httpClient.post(API.RESET_PASSWORD, {
+    loginIdentifier: loginIdentifier,
+    otpCode: otpCode,
+    newPassword: newPassword,
+  });
+  return response.data;
+};

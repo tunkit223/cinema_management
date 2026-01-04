@@ -8,14 +8,13 @@ import org.mapstruct.*;
 
 @Mapper(componentModel = "spring")
 public interface StaffMapper {
-    @Mapping(target = "id", ignore = true)
     @Mapping(target = "account", ignore = true)
+    @Mapping(target = "roles", ignore = true)
     Staff toStaff(StaffAccountCreationRequest request);
 
     @Mapping(source = "account.id", target = "accountId")
     @Mapping(source = "account.email", target = "email")
     @Mapping(source = "account.username", target = "username")
-    @Mapping(source = "account.phoneNumber", target = "phoneNumber")
     @Mapping(source = "account.accountType", target = "accountType")
     @Mapping(source = "id", target = "staffId")
     StaffResponse toStaffResponse(Staff staff);

@@ -34,11 +34,16 @@ import { EquipmentList } from "@/pages/Equipment/EquipmentList";
 import { ReviewList } from "@/pages/Reviews";
 import MediaLibrary from "@/pages/Medias/MediaLibrary";
 import { ChatbotConfig } from "@/pages/ChatbotConfig";
+import { ForgotPassword } from "@/pages/ForgotPassword";
 
 export const routes = [
   {
     path: ROUTES.LOGIN,
     element: <Login />,
+  },
+  {
+    path: ROUTES.FORGOT_PASSWORD,
+    element: <ForgotPassword />,
   },
   {
     path: `${ROUTES.FORBIDDEN}`,

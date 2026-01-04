@@ -17,6 +17,7 @@ export interface StaffRequest {
   username: string;
   password?: string;
   cinemaId?: string;
+  roles?: string[];
 }
 
 // export const getMyInfo = async () => {

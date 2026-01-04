@@ -2,6 +2,8 @@ package com.theatermgnt.theatermgnt.customer.service;
 
 import java.util.List;
 
+import com.theatermgnt.theatermgnt.account.repository.AccountRepository;
+import com.theatermgnt.theatermgnt.account.service.AccountService;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +32,8 @@ import lombok.extern.slf4j.Slf4j;
 public class CustomerService {
     CustomerRepository customerRepository;
     CustomerMapper customerMapper;
+    AccountService accountService;
+
 
     /// CREATE CUSTOMER PROFILE
     @Transactional
@@ -75,6 +79,17 @@ public class CustomerService {
                 customerRepository.findById(customerId).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
         customerMapper.updateCustomerProfile(customerToUpdate, request);
         return customerMapper.toCustomerResponse(customerRepository.save(customerToUpdate));
+    }
+
+    ///  DELETE CUSTOMER
+    public void deleteCustomer(String customerId) {
+        Customer customer =
+                customerRepository.findById(customerId).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        if(customer.getAccount() != null) {
+            accountService.deleteAccount(customer.getAccount().getId());
+        }
+        customerRepository.delete(customer);
     }
 
     public CustomerLoyaltyPointsResponse getLoyaltyPoints(String customerId) {

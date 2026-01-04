@@ -16,6 +16,8 @@ export interface RegisterRequest {
   firstName: string;
   lastName: string;
   dob: string;
+  gender: string;
+  address?: string;
 }
 
 export interface AuthResponse {
@@ -51,6 +53,7 @@ export const login = async (data: LoginRequest): Promise<AuthResponse> => {
 export const register = async (data: RegisterRequest): Promise<AuthResponse> => {
   try {
     const response = await httpClient.post<AuthResponse>(API.REGISTER, data);
+    console.log("Registration Response:", response);
     
     if (response.data.result?.token) {
       setToken(response.data.result.token);
