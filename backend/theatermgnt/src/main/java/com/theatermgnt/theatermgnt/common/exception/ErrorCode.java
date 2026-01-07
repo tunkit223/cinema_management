@@ -126,6 +126,8 @@ public enum ErrorCode {
 
     // ticket
     TICKET_NOT_EXISTED(2063, "Ticket not existed", HttpStatus.NOT_FOUND),
+    TICKET_NOT_ACTIVE(2068, "Ticket not active", HttpStatus.BAD_REQUEST),
+    TICKET_EXPIRED(2069, "Ticket has expired", HttpStatus.BAD_REQUEST),
 
     // -----
     CANNOT_SEND_EMAIL(3001, "Cannot send email", HttpStatus.BAD_REQUEST),

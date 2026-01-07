@@ -6,6 +6,13 @@ import { use } from "react";
 import { ChevronLeft, Clock, MapPin, Calendar } from "lucide-react";
 import type { Showtime } from "@/lib/types";
 import { getMovieById, mapMovieForDisplay, getScreeningsByMovieId, mapScreeningToShowtime, getAllCinemas } from "@/lib/api-movie";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ReviewsSection } from "./reviews-section";
 
 export default function MovieDetailPage({
@@ -311,57 +318,74 @@ export default function MovieDetailPage({
           </div>
         ) : allShowtimes.length > 0 ? (
           <>
-            {/* Cinema Filter */}
-            {availableCinemas.length > 0 && (
-              <div className="mb-8">
-                <label className="block text-sm font-semibold mb-3 flex items-center gap-2">
-                  <MapPin size={18} className="text-purple-600" />
-                  Select Cinema
-                </label>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {availableCinemas.map((cinema) => (
-                    <button
-                      key={cinema.id}
-                      onClick={() => {
-                        setSelectedCinema(cinema.id);
-                        setSelectedShowtime(null);
-                      }}
-                      className={`p-4 rounded-lg border-2 transition-all text-left ${
-                        selectedCinema === cinema.id
-                          ? "border-purple-600 bg-purple-500/10 dark:bg-purple-900/20"
-                          : "border-border dark:border-slate-800 bg-card dark:bg-slate-900 hover:border-purple-600"
-                      }`}
-                    >
-                      <p className="font-semibold">{cinema.name}</p>
-                      {cinema.location && (
-                        <p className="text-xs text-muted-foreground mt-1">{cinema.location}</p>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+            {/* Cinema & Date Filter - Same Row */}
+            <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Cinema Filter */}
+              {availableCinemas.length > 0 && (
+                <div>
+                  <label className="block text-sm font-semibold mb-3 flex items-center gap-2">
+                    <MapPin size={18} className="text-purple-600" />
+                    Select Cinema
+                  </label>
+                  <Select
+                    value={selectedCinema}
+                    onValueChange={(value) => {
+                      setSelectedCinema(value);
+                      setSelectedShowtime(null);
+                    }}
+                  >
+                    <div className="w-full h-12 rounded-lg border border-border bg-card px-4 flex items-center">
+                      <SelectTrigger
+                        className="
+                          w-full border-0 p-0
+                          text-base font-semibold leading-normal
+                          focus:outline-none
+                          focus:ring-0
+                          focus:ring-offset-0
+                          shadow-none
+                        "
+                      >
+                        <SelectValue className="text-base font-semibold" />
+                      </SelectTrigger>
+                    </div>
 
-            {/* Date Filter (Calendar) */}
-            {availableDates.length > 0 && (
-              <div className="mb-8">
-                <label className="block text-sm font-semibold mb-3 flex items-center gap-2">
-                  <Calendar size={18} className="text-purple-600" />
-                  Select Date
-                </label>
-                <input
-                  type="date"
-                  value={selectedDate}
-                  min={availableDates[0]}
-                  max={availableDates[availableDates.length - 1]}
-                  onChange={(e) => {
-                    setSelectedDate(e.target.value);
-                    setSelectedShowtime(null);
-                  }}
-                  className="w-full md:w-64 rounded-lg border border-border dark:border-slate-800 bg-card dark:bg-slate-900 px-3 py-2 text-sm"
-                />
-              </div>
-            )}
+                    <SelectContent className="bg-card dark:bg-slate-900 border-border dark:border-slate-800">
+                      {availableCinemas.map((cinema) => (
+                        <SelectItem key={cinema.id} value={cinema.id} className="cursor-pointer hover:bg-purple-500/10 py-3">
+                          <div className="flex flex-col">
+                            <span className="font-semibold text-base">{cinema.name}</span>
+                            {cinema.location && (
+                              <span className="text-sm text-muted-foreground">{cinema.location}</span>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Date Filter (Calendar) */}
+              {availableDates.length > 0 && (
+                <div>
+                  <label className="block text-sm font-semibold mb-3 flex items-center gap-2">
+                    <Calendar size={18} className="text-purple-600" />
+                    Select Date
+                  </label>
+                  <input
+                    type="date"
+                    value={selectedDate}
+                    min={availableDates[0]}
+                    max={availableDates[availableDates.length - 1]}
+                    onChange={(e) => {
+                      setSelectedDate(e.target.value);
+                      setSelectedShowtime(null);
+                    }}
+                    className="w-full h-12 rounded-lg border border-border dark:border-slate-800 bg-card dark:bg-slate-900 px-4 py-2 text-base"
+                  />
+                </div>
+              )}
+            </div>
 
             {/* Showtimes */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -371,23 +395,36 @@ export default function MovieDetailPage({
                   onClick={() => setSelectedShowtime(showtime)}
                   className={`p-6 rounded-xl border-2 transition-all ${
                     selectedShowtime?.id === showtime.id
-                      ? "border-purple-600 bg-purple-500/10 dark:bg-purple-900/20"
-                      : "border-border dark:border-slate-800 bg-card dark:bg-slate-900 hover:border-purple-600"
+                      ? "border-purple-500 bg-gradient-to-br from-purple-500/20 to-purple-600/20 dark:from-purple-600/20 dark:to-purple-700/20 shadow-lg shadow-purple-500/20"
+                      : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 hover:border-purple-400 hover:shadow-md hover:shadow-purple-500/10"
                   }`}
                 >
-                  <p className="text-2xl font-bold mb-3 text-left">{showtime.time}</p>
-                  <div className="text-sm text-muted-foreground space-y-1 mb-4 text-left">
-                    <p>{showtime.roomName ? `Room: ${showtime.roomName}` : "Room: N/A"}</p>
-                    <p>{showtime.cinemaName ? `Cinema: ${showtime.cinemaName}` : "Cinema: N/A"}</p>
+                  <p className="text-2xl font-bold mb-3 text-left bg-gradient-to-r from-purple-600 to-purple-400 bg-clip-text text-transparent">
+                    {showtime.time}
+                  </p>
+                  <div className="text-sm text-slate-600 dark:text-slate-400 space-y-1 mb-4 text-left">
+                    <p className="flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+                      {showtime.roomName ? `${showtime.roomName}` : "N/A"}
+                    </p>
+                    <p className="flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-purple-400"></span>
+                      {showtime.cinemaName ? `${showtime.cinemaName}` : "N/A"}
+                    </p>
                   </div>
                   {showtime.price !== undefined && (
-                    <p className="text-lg font-semibold text-purple-600 mb-2 text-left">
-                      {showtime.price.toLocaleString()} VND
-                    </p>
+                    <div className="mb-3 text-left">
+                      <p className="text-lg font-bold text-purple-600 dark:text-purple-400">
+                        {showtime.price.toLocaleString()} VND
+                      </p>
+                    </div>
                   )}
                   {showtime.availableSeats !== undefined && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground text-left">
-                      <span>{showtime.availableSeats} seats available</span>
+                    <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 text-left">
+                      <svg className="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                      <span>{showtime.availableSeats} available</span>
                     </div>
                   )}
                 </button>

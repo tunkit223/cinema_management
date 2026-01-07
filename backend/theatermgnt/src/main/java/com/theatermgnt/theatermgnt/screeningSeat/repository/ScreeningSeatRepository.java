@@ -37,7 +37,7 @@ public interface ScreeningSeatRepository extends JpaRepository<ScreeningSeat, St
 	""")
     void lockAvailableSeatsByScreening(String screeningId);
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(
             """
 		UPDATE ScreeningSeat s

@@ -839,11 +839,7 @@ export default function BookingPage({
             </div>
             <div className="flex-1">
               <h1 className="text-3xl font-bold mb-2">{movie?.title}</h1>
-              <p className="text-muted-foreground mb-2">{movie?.genre}</p>
-              <p className="text-sm text-muted-foreground">
-                {showtime?.time} • {showtime?.format ?? "Format TBD"}
-                {showtime?.price !== undefined && ` • ${showtime.price.toLocaleString()} VND`}
-              </p>
+              <p className="text-muted-foreground mb-2">{movie?.genre} • {showtime?.time}</p>
             </div>
           </div>
         </div>
