@@ -37,7 +37,7 @@ public interface ScreeningSeatRepository extends JpaRepository<ScreeningSeat, St
 	""")
     void lockAvailableSeatsByScreening(String screeningId);
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(
             """
 		UPDATE ScreeningSeat s
@@ -60,4 +60,14 @@ public interface ScreeningSeatRepository extends JpaRepository<ScreeningSeat, St
 		WHERE s.booking = :bookingId
 	""")
     void releaseSeatsByBooking(String bookingId);
+
+    @Modifying
+    @Query(
+            """
+		UPDATE ScreeningSeat s
+		SET s.status = 'SOLD',
+			s.lockUntil = null
+		WHERE s.booking = :bookingId
+	""")
+    void markSeatsAsSoldByBooking(String bookingId);
 }

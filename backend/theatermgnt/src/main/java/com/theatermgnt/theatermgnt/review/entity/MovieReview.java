@@ -1,16 +1,19 @@
 package com.theatermgnt.theatermgnt.review.entity;
 
+import java.math.BigDecimal;
+
+import jakarta.persistence.*;
+
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Where;
+
 import com.theatermgnt.theatermgnt.common.entity.BaseEntity;
 import com.theatermgnt.theatermgnt.customer.entity.Customer;
 import com.theatermgnt.theatermgnt.movie.entity.Movie;
 import com.theatermgnt.theatermgnt.screening.entity.Screening;
-import jakarta.persistence.*;
+
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.Where;
-
-import java.math.BigDecimal;
 
 @Getter
 @Setter

@@ -1,14 +1,15 @@
 package com.theatermgnt.theatermgnt.review.repository;
 
-import com.theatermgnt.theatermgnt.review.entity.ReviewVote;
-import com.theatermgnt.theatermgnt.review.entity.VoteType;
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
-import java.util.Optional;
+import com.theatermgnt.theatermgnt.review.entity.ReviewVote;
+import com.theatermgnt.theatermgnt.review.entity.VoteType;
 
 @Repository
 public interface ReviewVoteRepository extends JpaRepository<ReviewVote, String> {

@@ -19,22 +19,30 @@ public class TicketController {
     private final TicketMapper ticketMapper;
 
     @GetMapping("/by-booking/{bookingId}")
-    public List<TicketResponse> getTicketsByBooking(@PathVariable UUID bookingId) {
+    public ApiResponse<List<TicketResponse>> getTicketsByBooking(@PathVariable UUID bookingId) {
 
-        return ticketService.getTicketsByBooking(bookingId);
+        return ApiResponse.<List<TicketResponse>>builder()
+                .result(ticketService.getTicketsByBooking(bookingId)).build();
     }
 
     @GetMapping("/{ticketCode}")
-    public TicketResponse getTicketByCode(@PathVariable String ticketCode) {
+    public ApiResponse<TicketResponse> getTicketByCode(@PathVariable String ticketCode) {
 
         Ticket ticket = ticketService.getTicketByCode(ticketCode);
 
-        return ticketMapper.toResponse(ticket);
+        return ApiResponse.<TicketResponse>builder()
+                .result(ticketMapper.toResponse(ticket)).build();
     }
 
     @GetMapping("/my-tickets/{customerId}")
     public List<TicketResponse> getTicketsByCustomer(@PathVariable String customerId) {
         List<Ticket> tickets = ticketService.getTicketsByCustomerId(customerId);
         return tickets.stream().map(ticketMapper::toResponse).toList();
+    }
+
+    @PostMapping("/check-in/{ticketCode}")
+    public ApiResponse<String> checkInTicket(@PathVariable String ticketCode) {
+        ticketService.checkInTicket(ticketCode);
+        return ApiResponse.<String>builder().result("Ticket checked in successfully").build();
     }
 }

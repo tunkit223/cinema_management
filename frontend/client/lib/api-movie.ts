@@ -100,6 +100,13 @@ export async function getScreeningsByMovieId(movieId: string) {
   return response.data
 }
 
+// ==================== CINEMA APIs ====================
+
+export async function getAllCinemas() {
+  const response = await api.get('/cinemas')
+  return response.data
+}
+
 export async function getScreeningById(screeningId: string) {
   const response = await api.get(`/screenings/${screeningId}`)
   return response.data
@@ -147,9 +154,10 @@ export function mapScreeningToShowtime(screening: any) {
     movieId: screening.movieId,
     time: timeStr,
     date: dateStr,
-    format: '2D', // Default format, có thể lấy từ room hoặc screening nếu có
-    price: 75000, // Default price, nên thêm vào backend
-    availableSeats: 96, // Default, nên tính từ bookings
+    startDateTime: screening.startTime,
+    format: screening.format || undefined,
+    price: screening.price ? Number(screening.price) : undefined,
+    availableSeats: screening.availableSeats !== undefined ? Number(screening.availableSeats) : undefined,
     roomId: screening.roomId,
     cinemaId: screening.cinemaId,
     roomName: screening.roomName,

@@ -3,10 +3,8 @@ package com.theatermgnt.theatermgnt.booking.service;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import jakarta.transaction.Transactional;
 
@@ -30,7 +28,9 @@ import com.theatermgnt.theatermgnt.booking.mapper.BookingSummaryMapper;
 import com.theatermgnt.theatermgnt.booking.repository.BookingRepository;
 import com.theatermgnt.theatermgnt.bookingCombo.entity.BookingCombo;
 import com.theatermgnt.theatermgnt.bookingCombo.repository.BookingComboRepository;
+import com.theatermgnt.theatermgnt.common.entity.BaseEntity;
 import com.theatermgnt.theatermgnt.common.enums.DayType;
+import com.theatermgnt.theatermgnt.common.enums.MovieStatus;
 import com.theatermgnt.theatermgnt.common.enums.TimeSlot;
 import com.theatermgnt.theatermgnt.common.exception.AppException;
 import com.theatermgnt.theatermgnt.common.exception.ErrorCode;
@@ -40,15 +40,12 @@ import com.theatermgnt.theatermgnt.customer.repository.CustomerRepository;
 import com.theatermgnt.theatermgnt.customer.service.CustomerService;
 import com.theatermgnt.theatermgnt.movie.dto.response.MovieResponse;
 import com.theatermgnt.theatermgnt.movie.service.MovieService;
-import com.theatermgnt.theatermgnt.payment.dto.request.CreateInvoiceRequest;
-import com.theatermgnt.theatermgnt.payment.dto.response.InvoiceResponse;
-import com.theatermgnt.theatermgnt.payment.service.InvoiceService;
-import com.theatermgnt.theatermgnt.notification.listener.NotificationEventListener;
 import com.theatermgnt.theatermgnt.priceConfig.entity.PriceConfig;
 import com.theatermgnt.theatermgnt.priceConfig.repository.PriceConfigRepository;
 import com.theatermgnt.theatermgnt.screening.entity.Screening;
 import com.theatermgnt.theatermgnt.screening.repository.ScreeningRepository;
 import com.theatermgnt.theatermgnt.screeningSeat.entity.ScreeningSeat;
+import com.theatermgnt.theatermgnt.screeningSeat.enums.ScreeningSeatStatus;
 import com.theatermgnt.theatermgnt.screeningSeat.repository.ScreeningSeatRepository;
 import com.theatermgnt.theatermgnt.seat.entity.Seat;
 import com.theatermgnt.theatermgnt.seat.mapper.SeatMapper;
@@ -85,6 +82,17 @@ public class BookingServiceImpl implements BookingService {
         if (request.getScreeningSeatIds().isEmpty()) {
             throw new IllegalArgumentException("No seats selected for booking");
         }
+        if (request.getScreeningSeatIds().size() > 8) {
+            throw new AppException(ErrorCode.BOOKING_EXCEED_SEAT_LIMIT);
+        }
+        Screening screening = screeningRepository
+                .findById(request.getScreeningId())
+                .orElseThrow(() -> new AppException(ErrorCode.SCREENING_NOT_EXISTED));
+        if (screening.getMovie().getStatus() == MovieStatus.archived) {
+            throw new AppException(ErrorCode.MOVIE_ALREADY_ENDED);
+        }
+
+        validateScreeningSeat(screening, request.getScreeningSeatIds());
 
         Instant now = Instant.now();
         Instant expiredAt = now.plus(HOLD_DURATION);
@@ -97,9 +105,6 @@ public class BookingServiceImpl implements BookingService {
 
         List<ScreeningSeat> seats = screeningSeatRepository.findAllById(request.getScreeningSeatIds());
         Customer customer = resolveCustomer(request);
-        Screening screening = screeningRepository
-                .findById(request.getScreeningId())
-                .orElseThrow(() -> new AppException(ErrorCode.SCREENING_NOT_EXISTED));
 
         // 3. Tạo booking
         Booking booking = new Booking();
@@ -292,7 +297,6 @@ public class BookingServiceImpl implements BookingService {
         screeningSeatRepository.releaseSeatsByBooking(bookingId.toString());
     }
 
-
     @Override
     public void confirmBookingPayment(String bookingId) {
         log.info("Confirming booking payment for: {}", bookingId);
@@ -301,9 +305,11 @@ public class BookingServiceImpl implements BookingService {
                 .findById(UUID.fromString(bookingId))
                 .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_EXISTED));
 
-        // Update booking status to CONFIRMED
+        // Update booking status to PAID
         booking.setStatus(BookingStatus.PAID);
         bookingRepository.save(booking);
+
+        screeningSeatRepository.markSeatsAsSoldByBooking(bookingId);
 
         if (booking.getCustomer() != null) {
             int pointsEarned = discountService.calculateEarnedPoints(booking.getTotalAmount());
@@ -318,5 +324,106 @@ public class BookingServiceImpl implements BookingService {
         }
 
         log.info("Booking {} confirmed", bookingId);
+    }
+
+    private void validateScreeningSeat(Screening screening, List<String> screeningSeatIds) {
+        List<ScreeningSeat> seats = screeningSeatRepository.findByScreeningId(screening.getId());
+
+        Map<String, ScreeningSeat> seatMap = seats.stream().collect(Collectors.toMap(BaseEntity::getId, s -> s));
+        List<ScreeningSeat> selectedSeats = new ArrayList<>();
+        for (String seatId : screeningSeatIds) {
+            ScreeningSeat seat = seatMap.get(seatId);
+            if (seat == null) {
+                throw new AppException(ErrorCode.SCREENING_SEAT_NOT_EXISTED);
+            }
+            selectedSeats.add(seat);
+        }
+
+        // gom theo hàng
+        Map<String, List<ScreeningSeat>> seatsByRow =
+                seats.stream().collect(Collectors.groupingBy(s -> s.getSeat().getRowChair()));
+
+        // những hàng có ghế chọn
+        Set<String> affectedRows =
+                selectedSeats.stream().map(s -> s.getSeat().getRowChair()).collect(Collectors.toSet());
+
+        for (String row : affectedRows) {
+            List<ScreeningSeat> rowSeats = seatsByRow.get(row);
+            rowSeats.sort(Comparator.comparingInt(s -> s.getSeat().getSeatNumber()));
+            checkOrphanSeatInRow(rowSeats, screeningSeatIds);
+        }
+    }
+
+    private void checkOrphanSeatInRow(List<ScreeningSeat> rowSeats, List<String> selectedSeatIds) {
+        rowSeats.sort(Comparator.comparingInt(s -> s.getSeat().getSeatNumber()));
+
+        int size = rowSeats.size();
+        int[] statusMap = new int[size];
+        List<Integer> selectedIndices = new ArrayList<>();
+
+        for (int i = 0; i < size; i++) {
+            ScreeningSeat s = rowSeats.get(i);
+            if (selectedSeatIds.contains(s.getId())) {
+                statusMap[i] = 2; // Selected (checked)
+                selectedIndices.add(i);
+            } else if (s.getStatus() != ScreeningSeatStatus.AVAILABLE) {
+                statusMap[i] = 1; // Occupied (disable)
+            } else {
+                statusMap[i] = 0; // Available (active)
+            }
+        }
+
+        int checkCount = 0;
+        int checkLeft = 0;
+        int checkRight = 0;
+        int checkEmpty = 0;
+
+        for (int currentIndex : selectedIndices) {
+
+            // Check giữa 2 ghế đặt
+            if (getStatus(statusMap, currentIndex - 1) == 0 && getStatus(statusMap, currentIndex - 2) == 2) {
+                throw new AppException(ErrorCode.ORPHAN_SEAT_VIOLATION);
+            }
+            if (getStatus(statusMap, currentIndex + 1) == 0 && getStatus(statusMap, currentIndex + 2) == 2) {
+                throw new AppException(ErrorCode.ORPHAN_SEAT_VIOLATION);
+            }
+
+            // Check có orphan bên phải
+            if (getStatus(statusMap, currentIndex + 1) == 0 && getStatus(statusMap, currentIndex + 2) == 1) {
+                checkCount++;
+                checkRight++;
+            }
+
+            // Check có orphan bên trái
+            if (getStatus(statusMap, currentIndex - 1) == 0 && getStatus(statusMap, currentIndex - 2) == 1) {
+                checkCount++;
+                checkLeft++;
+            }
+
+            // Check Khoảng trống an toàn (Safe Gap / Check Empty) ---
+
+            // Bên phải
+            if (getStatus(statusMap, currentIndex + 1) == 0 && getStatus(statusMap, currentIndex + 2) == 0) {
+                checkEmpty++;
+            }
+
+            // Bên trái
+            if (getStatus(statusMap, currentIndex - 1) == 0 && getStatus(statusMap, currentIndex - 2) == 0) {
+                checkEmpty++;
+            }
+        }
+        if (checkCount >= 2) {
+            throw new AppException(ErrorCode.ORPHAN_SEAT_VIOLATION);
+        }
+        if (checkEmpty > 0 && (checkLeft > 0 || checkRight > 0)) {
+            throw new AppException(ErrorCode.ORPHAN_SEAT_VIOLATION);
+        }
+    }
+
+    private int getStatus(int[] map, int index) {
+        if (index < 0 || index >= map.length) {
+            return 1; // ra khỏi dãy ghế
+        }
+        return map[index];
     }
 }

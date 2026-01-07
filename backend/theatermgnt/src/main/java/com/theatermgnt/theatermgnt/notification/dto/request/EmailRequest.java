@@ -6,8 +6,6 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 import sibModel.SendSmtpEmailAttachment;
 
-import sibModel.SendSmtpEmailAttachment;
-
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

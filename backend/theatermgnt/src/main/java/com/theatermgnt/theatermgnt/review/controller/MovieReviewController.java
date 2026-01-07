@@ -1,5 +1,13 @@
 package com.theatermgnt.theatermgnt.review.controller;
 
+import java.util.List;
+import java.util.Map;
+
+import jakarta.validation.Valid;
+
+import org.springframework.data.domain.Page;
+import org.springframework.web.bind.annotation.*;
+
 import com.theatermgnt.theatermgnt.common.dto.response.ApiResponse;
 import com.theatermgnt.theatermgnt.review.dto.request.CreateReviewRequest;
 import com.theatermgnt.theatermgnt.review.dto.request.UpdateReviewRequest;
@@ -7,16 +15,11 @@ import com.theatermgnt.theatermgnt.review.dto.response.MovieRatingStatsResponse;
 import com.theatermgnt.theatermgnt.review.dto.response.ReviewResponse;
 import com.theatermgnt.theatermgnt.review.entity.VoteType;
 import com.theatermgnt.theatermgnt.review.service.MovieReviewService;
-import jakarta.validation.Valid;
+
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/reviews")

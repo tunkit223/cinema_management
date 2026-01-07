@@ -186,7 +186,7 @@ public class InvoiceServiceImpl implements InvoiceService {
         try {
             UUID bookingUuid = UUID.fromString(invoice.getBookingId());
             log.info("Fetching booking summary for UUID: {}", bookingUuid);
-            
+
             InvoiceDetailResponse response = InvoiceDetailResponse.builder()
                     .id(invoice.getId())
                     .bookingId(invoice.getBookingId())
@@ -203,8 +203,11 @@ public class InvoiceServiceImpl implements InvoiceService {
             log.error("Invalid UUID format for bookingId: {}", invoice.getBookingId(), e);
             throw new AppException(ErrorCode.INVALID_KEY);
         } catch (Exception e) {
-            log.error("Error fetching booking details for invoice: {} with bookingId: {}", 
-                      invoiceId, invoice.getBookingId(), e);
+            log.error(
+                    "Error fetching booking details for invoice: {} with bookingId: {}",
+                    invoiceId,
+                    invoice.getBookingId(),
+                    e);
             throw new AppException(ErrorCode.BOOKING_NOT_EXISTED);
         }
     }

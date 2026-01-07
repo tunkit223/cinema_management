@@ -1,12 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { use } from "react";
-import { ChevronLeft, Clock } from "lucide-react";
-import { showtimes } from "@/lib/mock-data";
+import { ChevronLeft, Clock, MapPin, Calendar } from "lucide-react";
 import type { Showtime } from "@/lib/types";
-import { getMovieById, mapMovieForDisplay } from "@/lib/api-movie";
+import { getMovieById, mapMovieForDisplay, getScreeningsByMovieId, mapScreeningToShowtime, getAllCinemas } from "@/lib/api-movie";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ReviewsSection } from "./reviews-section";
 
 export default function MovieDetailPage({
@@ -17,10 +23,96 @@ export default function MovieDetailPage({
   const { id } = use(params);
   const [movie, setMovie] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const movieShowtimes = showtimes[id] || [];
-  const [selectedShowtime, setSelectedShowtime] = useState<Showtime | null>(
-    null
-  );
+  const [selectedCinema, setSelectedCinema] = useState<string>("");
+  const [selectedDate, setSelectedDate] = useState<string>("");
+  const [selectedShowtime, setSelectedShowtime] = useState<Showtime | null>(null);
+  const [allShowtimes, setAllShowtimes] = useState<Showtime[]>([]);
+  const [cinemas, setCinemas] = useState<Array<{ id: string; name: string; location?: string }>>([]);
+  const [showtimeLoading, setShowtimeLoading] = useState(false);
+  const [cinemaLoading, setCinemaLoading] = useState(false);
+
+  // Load cinemas once
+  useEffect(() => {
+    const fetchCinemas = async () => {
+      try {
+        setCinemaLoading(true);
+        const data = await getAllCinemas();
+        setCinemas(data || []);
+      } catch (error) {
+        console.error("Error fetching cinemas", error);
+        setCinemas([]);
+      } finally {
+        setCinemaLoading(false);
+      }
+    };
+    fetchCinemas();
+  }, []);
+
+  // Load screenings for this movie
+  useEffect(() => {
+    const fetchScreenings = async () => {
+      if (!id) return;
+      try {
+        setShowtimeLoading(true);
+        const data = await getScreeningsByMovieId(id);
+        const mapped = (data || [])
+          .map(mapScreeningToShowtime)
+          .filter(Boolean) as Showtime[];
+        setAllShowtimes(mapped);
+
+        // Default selection
+        if (mapped.length > 0) {
+          const firstDate = mapped
+            .map((st) => st.date)
+            .filter(Boolean)
+            .sort()[0];
+          const firstCinema = mapped[0].cinemaId;
+          if (firstDate) setSelectedDate((prev) => prev || firstDate);
+          if (firstCinema) setSelectedCinema((prev) => prev || firstCinema);
+        }
+      } catch (error) {
+        console.error("Error fetching screenings", error);
+        setAllShowtimes([]);
+      } finally {
+        setShowtimeLoading(false);
+      }
+    };
+
+    fetchScreenings();
+  }, [id]);
+
+  // Derived data
+  const availableCinemas = useMemo(() => {
+    const cinemaMap = new Map(cinemas.map((c) => [c.id, c]));
+    const ids = Array.from(new Set(allShowtimes.map((st) => st.cinemaId).filter(Boolean)));
+    return ids.map((cid) => cinemaMap.get(cid)).filter(Boolean) as typeof cinemas;
+  }, [cinemas, allShowtimes]);
+
+  const availableDates = useMemo(() => {
+    const now = new Date();
+    const futureDates = allShowtimes
+      .filter((st) => {
+        const start = st.startDateTime ? new Date(st.startDateTime) : new Date(`${st.date}T${st.time}`);
+        return start.getTime() > now.getTime();
+      })
+      .map((st) => st.date)
+      .filter(Boolean);
+    return Array.from(new Set(futureDates)).sort();
+  }, [allShowtimes]);
+
+  const filteredShowtimes = useMemo(() => {
+    const now = new Date();
+    return allShowtimes
+      .filter((st) => {
+        // filter by cinema/date
+        if (selectedCinema && st.cinemaId !== selectedCinema) return false;
+        if (selectedDate && st.date !== selectedDate) return false;
+
+        // remove past showtimes (including same-day already ended)
+        const start = st.startDateTime ? new Date(st.startDateTime) : new Date(`${st.date}T${st.time}`);
+        return start.getTime() > now.getTime();
+      });
+  }, [allShowtimes, selectedCinema, selectedDate]);
 
   useEffect(() => {
     const fetchMovie = async () => {
@@ -220,32 +312,132 @@ export default function MovieDetailPage({
       <div className="container-max px-4 md:px-8 py-12">
         <h2 className="text-3xl font-bold mb-8">Select Showtime</h2>
 
-        {movieShowtimes.length > 0 ? (
+        {showtimeLoading ? (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">Loading showtimes...</p>
+          </div>
+        ) : allShowtimes.length > 0 ? (
           <>
+            {/* Cinema & Date Filter - Same Row */}
+            <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Cinema Filter */}
+              {availableCinemas.length > 0 && (
+                <div>
+                  <label className="block text-sm font-semibold mb-3 flex items-center gap-2">
+                    <MapPin size={18} className="text-purple-600" />
+                    Select Cinema
+                  </label>
+                  <Select
+                    value={selectedCinema}
+                    onValueChange={(value) => {
+                      setSelectedCinema(value);
+                      setSelectedShowtime(null);
+                    }}
+                  >
+                    <div className="w-full h-12 rounded-lg border border-border bg-card px-4 flex items-center">
+                      <SelectTrigger
+                        className="
+                          w-full border-0 p-0
+                          text-base font-semibold leading-normal
+                          focus:outline-none
+                          focus:ring-0
+                          focus:ring-offset-0
+                          shadow-none
+                        "
+                      >
+                        <SelectValue className="text-base font-semibold" />
+                      </SelectTrigger>
+                    </div>
+
+                    <SelectContent className="bg-card dark:bg-slate-900 border-border dark:border-slate-800">
+                      {availableCinemas.map((cinema) => (
+                        <SelectItem key={cinema.id} value={cinema.id} className="cursor-pointer hover:bg-purple-500/10 py-3">
+                          <div className="flex flex-col">
+                            <span className="font-semibold text-base">{cinema.name}</span>
+                            {cinema.location && (
+                              <span className="text-sm text-muted-foreground">{cinema.location}</span>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Date Filter (Calendar) */}
+              {availableDates.length > 0 && (
+                <div>
+                  <label className="block text-sm font-semibold mb-3 flex items-center gap-2">
+                    <Calendar size={18} className="text-purple-600" />
+                    Select Date
+                  </label>
+                  <input
+                    type="date"
+                    value={selectedDate}
+                    min={availableDates[0]}
+                    max={availableDates[availableDates.length - 1]}
+                    onChange={(e) => {
+                      setSelectedDate(e.target.value);
+                      setSelectedShowtime(null);
+                    }}
+                    className="w-full h-12 rounded-lg border border-border dark:border-slate-800 bg-card dark:bg-slate-900 px-4 py-2 text-base"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Showtimes */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {movieShowtimes.map((showtime) => (
+              {filteredShowtimes.map((showtime) => (
                 <button
                   key={showtime.id}
                   onClick={() => setSelectedShowtime(showtime)}
                   className={`p-6 rounded-xl border-2 transition-all ${
                     selectedShowtime?.id === showtime.id
-                      ? "border-purple-600 bg-purple-500/10 dark:bg-purple-900/20"
-                      : "border-border dark:border-slate-800 bg-card dark:bg-slate-900 hover:border-purple-600"
+                      ? "border-purple-500 bg-gradient-to-br from-purple-500/20 to-purple-600/20 dark:from-purple-600/20 dark:to-purple-700/20 shadow-lg shadow-purple-500/20"
+                      : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 hover:border-purple-400 hover:shadow-md hover:shadow-purple-500/10"
                   }`}
                 >
-                  <p className="text-2xl font-bold mb-2">{showtime.time}</p>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    {showtime.format}
+                  <p className="text-2xl font-bold mb-3 text-left bg-gradient-to-r from-purple-600 to-purple-400 bg-clip-text text-transparent">
+                    {showtime.time}
                   </p>
-                  <p className="text-lg font-semibold text-purple-600 mb-3">
-                    {showtime.price.toLocaleString()} VND
-                  </p>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <span>{showtime.availableSeats} seats available</span>
+                  <div className="text-sm text-slate-600 dark:text-slate-400 space-y-1 mb-4 text-left">
+                    <p className="flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+                      {showtime.roomName ? `${showtime.roomName}` : "N/A"}
+                    </p>
+                    <p className="flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-purple-400"></span>
+                      {showtime.cinemaName ? `${showtime.cinemaName}` : "N/A"}
+                    </p>
                   </div>
+                  {showtime.price !== undefined && (
+                    <div className="mb-3 text-left">
+                      <p className="text-lg font-bold text-purple-600 dark:text-purple-400">
+                        {showtime.price.toLocaleString()} VND
+                      </p>
+                    </div>
+                  )}
+                  {showtime.availableSeats !== undefined && (
+                    <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 text-left">
+                      <svg className="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                      <span>{showtime.availableSeats} available</span>
+                    </div>
+                  )}
                 </button>
               ))}
             </div>
+
+            {filteredShowtimes.length === 0 && (
+              <div className="text-center py-12 bg-slate-800/50 rounded-xl">
+                <p className="text-muted-foreground text-lg">
+                  No showtimes available for selected cinema and date
+                </p>
+              </div>
+            )}
 
             {selectedShowtime && (
               <div className="mt-8 flex justify-center">

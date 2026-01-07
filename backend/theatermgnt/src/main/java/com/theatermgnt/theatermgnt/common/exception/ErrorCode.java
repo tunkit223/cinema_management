@@ -113,12 +113,21 @@ public enum ErrorCode {
     BOOKING_NOT_EXISTED(2060, "Booking not existed", HttpStatus.NOT_FOUND),
     INSUFFICIENT_LOYALTY_POINTS(2061, "Insufficient loyalty points", HttpStatus.BAD_REQUEST),
     SCREENING_SEATS_NOT_AVAILABLE(2062, "One or more selected seats are not available", HttpStatus.BAD_REQUEST),
-
+    BOOKING_EXCEED_SEAT_LIMIT(2064, "Booking exceeds the maximum seat limit per customer", HttpStatus.BAD_REQUEST),
+    MOVIE_ALREADY_ENDED(2065, "Cannot book tickets for a movie that has already ended", HttpStatus.BAD_REQUEST),
+    SCREENING_SEAT_NOT_BELONG_TO_SCREENING(
+            2066, "One or more selected seats do not belong to the specified screening", HttpStatus.BAD_REQUEST),
+    ORPHAN_SEAT_VIOLATION(
+            2067,
+            "Selecting this seat would create orphan seats. Please choose different seats.",
+            HttpStatus.BAD_REQUEST),
     // Reporting
     INVALID_DATE_RANGE(5001, "End date must be greater than or equal start date", HttpStatus.BAD_REQUEST),
 
     // ticket
     TICKET_NOT_EXISTED(2063, "Ticket not existed", HttpStatus.NOT_FOUND),
+    TICKET_NOT_ACTIVE(2068, "Ticket not active", HttpStatus.BAD_REQUEST),
+    TICKET_EXPIRED(2069, "Ticket has expired", HttpStatus.BAD_REQUEST),
 
     // -----
     CANNOT_SEND_EMAIL(3001, "Cannot send email", HttpStatus.BAD_REQUEST),

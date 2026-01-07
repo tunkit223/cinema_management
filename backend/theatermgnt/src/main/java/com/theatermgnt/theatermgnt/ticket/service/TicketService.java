@@ -19,4 +19,5 @@ public interface TicketService {
     List<Ticket> getTicketsByCustomerId(String customerId);
 
     void expireTickets();
+    void checkInTicket(String ticketCode);
 }

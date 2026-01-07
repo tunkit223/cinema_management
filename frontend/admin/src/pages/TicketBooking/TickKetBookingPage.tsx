@@ -44,6 +44,7 @@ import {
 import { getMyInfo, getCustomerLoyaltyPoints } from "@/services/customerService"
 import type { Seat, ComboItem, Showtime } from "@/lib/types"
 import { useNotificationStore } from "@/stores"
+import { validateOrphanSeats } from "@/utils/seatValidation"
 
 interface ExtendedShowtime extends Showtime {
   roomId: string
@@ -118,8 +119,11 @@ export const TicketBookingPage = () => {
       try {
         setMoviesLoading(true)
         const data = await getAllMovies()
-        // Filter movies that have showtimes
-        setMovies(data)
+        // Only show active titles (now showing or coming soon)
+        const filtered = data.filter((movie) =>
+          movie.status === "now_showing" || movie.status === "coming_soon"
+        )
+        setMovies(filtered)
       } catch (error: any) {
         console.error("Error fetching movies:", error)
         addNotification({
@@ -523,6 +527,21 @@ export const TicketBookingPage = () => {
     // Create booking when moving from seats to combos
     if (currentStep === 3 && !bookingId && selectedSeats.length > 0) {
       try {
+        // Validate orphan seats before creating booking
+        const validation = validateOrphanSeats(
+          seats,
+          selectedSeats.map(seat => seat.id)
+        )
+
+        if (!validation.isValid) {
+          addNotification({
+            type: "error",
+            title: "Invalid Seat Selection",
+            message: validation.message || "Cách chọn ghế không hợp lệ"
+          })
+          return
+        }
+
         setIsCreatingBooking(true)
 
         const bookingRequest = {

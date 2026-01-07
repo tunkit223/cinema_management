@@ -20,6 +20,7 @@ import com.theatermgnt.theatermgnt.ticket.repository.TicketRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -138,19 +139,19 @@ public class TicketServiceImpl implements TicketService {
                     .build();
         }).toList();
         List<Ticket> savedTickets = ticketRepository.saveAll(tickets);
-
-        eventPublisher.publishEvent(
-                TicketCreatedEvent.builder()
-                        .accountId(UUID.fromString(booking.getCustomer().getAccount().getId()))
-                        .bookingId(booking.getId())
-                        .ticketIds(
-                                savedTickets.stream()
-                                        .map(Ticket::getId)
-                                        .toList()
-                        )
-                        .build()
-        );
-
+        if(booking.getCustomer() != null){
+            eventPublisher.publishEvent(
+                    TicketCreatedEvent.builder()
+                            .accountId(UUID.fromString(booking.getCustomer().getAccount().getId()))
+                            .bookingId(booking.getId())
+                            .ticketIds(
+                                    savedTickets.stream()
+                                            .map(Ticket::getId)
+                                            .toList()
+                            )
+                            .build()
+            );
+        }
         return savedTickets;
     }
 
@@ -194,5 +195,26 @@ public class TicketServiceImpl implements TicketService {
         );
 
         ticketRepository.saveAll(expiredTickets);
+    }
+
+    @Override
+    @PreAuthorize("hasRole('ADMIN') || hasRole('STAFF')")
+    public void checkInTicket(String ticketCode) {
+        Ticket ticket = ticketRepository.findByTicketCode(ticketCode)
+                .orElseThrow(() -> new AppException(ErrorCode.TICKET_NOT_EXISTED));
+
+        if (ticket.getStatus() != TicketStatus.ACTIVE) {
+            throw new AppException(ErrorCode.TICKET_NOT_ACTIVE);
+        }
+
+        if (Instant.now().isAfter(ticket.getExpiresAt())) {
+            ticket.setStatus(TicketStatus.EXPIRED);
+            ticketRepository.save(ticket);
+            throw new AppException(ErrorCode.TICKET_EXPIRED);
+        }
+
+        ticket.setStatus(TicketStatus.USED);
+        ticket.setUsedAt(Instant.now());
+        ticketRepository.save(ticket);
     }
 }
