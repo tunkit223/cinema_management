@@ -33,7 +33,6 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@Transactional
 public class PaymentServiceImpl implements PaymentService {
 
     private final VNPayConfig vnPayConfig;
@@ -47,7 +46,8 @@ public class PaymentServiceImpl implements PaymentService {
     private final RevenueAggregationService revenueAggregationService;
 
     @Override
-    public PaymentDetailsResponse createVNPayPayment(String invoiceId, HttpServletRequest httpRequest) {
+    @Transactional
+    public PaymentDetailsResponse createVNPayPayment(String invoiceId, HttpServletRequest httpRequest, String returnUrlOverride) {
         try {
             // Get invoice
             Invoice invoice = invoiceRepository
@@ -97,7 +97,11 @@ public class PaymentServiceImpl implements PaymentService {
             vnpParams.put("vnp_OrderInfo", orderInfo);
             vnpParams.put("vnp_OrderType", vnPayConfig.getOrderType());
             vnpParams.put("vnp_Locale", "vn");
-            vnpParams.put("vnp_ReturnUrl", vnPayConfig.getReturnUrl());
+                // Allow runtime override of return URL (e.g., different frontend ports)
+                String effectiveReturnUrl = (returnUrlOverride != null && !returnUrlOverride.isBlank())
+                    ? returnUrlOverride
+                    : vnPayConfig.getReturnUrl();
+                vnpParams.put("vnp_ReturnUrl", effectiveReturnUrl);
             vnpParams.put("vnp_IpAddr", VNPayUtil.getIpAddress(httpRequest));
 
             // Add timestamp (VNPay requires GMT+7)
@@ -201,18 +205,20 @@ public class PaymentServiceImpl implements PaymentService {
                     invoiceRepository.save(invoice);
                     log.info("Invoice {} marked as PAID", invoice.getId());
 
-                    // Update booking status to CONFIRMED
+                    // Update booking status to CONFIRMED (in separate transaction)
                     try {
+                        log.info("Attempting to confirm booking {} for invoice {}", invoice.getBookingId(), invoice.getId());
                         bookingService.confirmBookingPayment(invoice.getBookingId());
-                        log.info("Booking {} confirmed after successful payment", invoice.getBookingId());
+                        log.info("Booking {} confirmed successfully after payment", invoice.getBookingId());
                     } catch (Exception e) {
-                        log.error("Error confirming booking {}", invoice.getBookingId(), e);
+                        log.error("Error confirming booking {} for invoice {}: {}", invoice.getBookingId(), invoice.getId(), e.getMessage(), e);
+                        // Don't fail callback if booking confirmation fails
                     }
                 }
 
                 paymentRepository.save(payment);
 
-                // Aggregate revenue after successful payment
+                // Aggregate revenue after successful payment (in separate transaction)
                 try {
                     revenueAggregationService.processPaymentForRevenue(payment);
                 } catch (Exception e) {
@@ -231,8 +237,20 @@ public class PaymentServiceImpl implements PaymentService {
 
             response.put("paymentId", payment.getId());
             response.put("invoiceId", payment.getInvoiceId());
+            // Include bookingId for frontend navigation
+            invoiceRepository.findById(payment.getInvoiceId())
+                    .ifPresent(inv -> response.put("bookingId", inv.getBookingId()));
             response.put("txnRef", txnRef);
-            response.put("amount", Long.parseLong(params.get("vnp_Amount")) / 100);
+
+            String amountParam = params.get("vnp_Amount");
+            if (amountParam != null) {
+                response.put("amount", Long.parseLong(amountParam) / 100);
+            }
+            // Echo order info if present for UI display
+            String orderInfo = params.get("vnp_OrderInfo");
+            if (orderInfo != null) {
+                response.put("orderInfo", orderInfo);
+            }
 
         } catch (Exception e) {
             log.error("Error handling VNPay callback", e);

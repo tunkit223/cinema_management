@@ -11,7 +11,7 @@ public interface PaymentService {
     /**
      * Create VNPay payment URL for invoice
      */
-    PaymentDetailsResponse createVNPayPayment(String invoiceId, HttpServletRequest httpRequest);
+    PaymentDetailsResponse createVNPayPayment(String invoiceId, HttpServletRequest httpRequest, String returnUrlOverride);
 
     /**
      * Handle VNPay return URL callback
