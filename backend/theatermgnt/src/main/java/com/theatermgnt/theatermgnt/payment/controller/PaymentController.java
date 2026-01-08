@@ -28,9 +28,11 @@ public class PaymentController {
      */
     @PostMapping("/vnpay/{invoiceId}")
     public ApiResponse<PaymentDetailsResponse> createVNPayPayment(
-            @PathVariable String invoiceId, HttpServletRequest httpRequest) {
-        log.info("Creating VNPay payment for invoice: {}", invoiceId);
-        PaymentDetailsResponse response = paymentService.createVNPayPayment(invoiceId, httpRequest);
+            @PathVariable String invoiceId,
+            @RequestParam(value = "returnUrl", required = false) String returnUrl,
+            HttpServletRequest httpRequest) {
+        log.info("Creating VNPay payment for invoice: {}, returnUrl: {}", invoiceId, returnUrl);
+        PaymentDetailsResponse response = paymentService.createVNPayPayment(invoiceId, httpRequest, returnUrl);
         return ApiResponse.<PaymentDetailsResponse>builder().result(response).build();
     }
 

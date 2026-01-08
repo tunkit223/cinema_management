@@ -14,7 +14,7 @@ interface PaymentResult {
   txnRef?: string;
   amount?: number;
   orderInfo?: string;
-  bookingId?: string;
+  bookingId?: string; // Align bookingId field
 }
 
 export default function VNPayReturnPage() {

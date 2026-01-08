@@ -5,6 +5,8 @@ import { CheckCircle2, ChevronLeft, ChevronRight } from "lucide-react"
 import { PageHeader } from "@/components/ui/PageHeader"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { CheckCircle, Loader2, XCircle } from "lucide-react"
 import MovieSelectionStep from "@/components/booking/staff/MovieSelectionStep"
 import ShowtimeSelectionStep from "@/components/booking/staff/ShowtimeSelectionStep"
 import SeatSelectionStep from "@/components/booking/staff/SeatSelectionStep"
@@ -13,6 +15,7 @@ import ConfirmationStep from "@/components/booking/staff/ConfirmationStep"
 import PaymentStep from "@/components/booking/staff/PaymentStep"
 import SuccessStep from "@/components/booking/staff/SuccessStep"
 import { useAuthStore } from "@/stores/useAuthStore"
+import httpClient from "@/configurations/httpClient"
 import { 
   getAllMovies, 
   type Movie 
@@ -92,6 +95,13 @@ export const TicketBookingPage = () => {
   const [isUpdatingCombos, setIsUpdatingCombos] = useState(false)
   const [isRedeemingPoints, setIsRedeemingPoints] = useState(false)
   const [seatsError, setSeatsError] = useState<string | null>(null)
+  const [skipCancelOnUnload, setSkipCancelOnUnload] = useState(false)
+  const skipCancelOnUnloadRef = useRef(false)
+
+  // VNPay return handling
+  const [isVerifyingVnp, setIsVerifyingVnp] = useState(false)
+  const [vnpReturnResult, setVnpReturnResult] = useState<{ code?: string; message?: string; bookingId?: string; txnRef?: string; amount?: number; orderInfo?: string } | null>(null)
+  const [vnpReturnError, setVnpReturnError] = useState<string | null>(null)
 
   const isCancellingBooking = useRef(false)
 
@@ -127,6 +137,44 @@ export const TicketBookingPage = () => {
     }
 
     fetchMovies()
+  }, [])
+
+  // Detect VNPay return (when redirected back to admin with vnp_ params)
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const search = window.location.search || ""
+    if (!search.includes("vnp_")) return
+
+    const queryString = search.startsWith("?") ? search.slice(1) : search
+
+    const verifyReturn = async () => {
+      try {
+        skipCancelOnUnloadRef.current = true
+        setSkipCancelOnUnload(true)
+        setIsVerifyingVnp(true)
+        setVnpReturnError(null)
+
+        const response = await httpClient.get(`/payment/vnpay-return?${queryString}`)
+        const data = response.data?.result || response.data || {}
+        setVnpReturnResult(data)
+
+        if (data?.code === "00") {
+          setCurrentStep(7)
+        }
+
+        // Clean URL params after verification (replace history)
+        if (typeof window !== "undefined") {
+          window.history.replaceState(null, "", window.location.pathname)
+        }
+      } catch (error: any) {
+        console.error("Error verifying VNPay return (admin):", error)
+        setVnpReturnError(error?.response?.data?.message || error?.message || "Failed to verify payment")
+      } finally {
+        setIsVerifyingVnp(false)
+      }
+    }
+
+    verifyReturn()
   }, [])
 
   // Fetch combos on mount
@@ -302,7 +350,8 @@ export const TicketBookingPage = () => {
   // Ensure booking is cancelled if user leaves the page (navigation away or tab close)
   useEffect(() => {
     const handleUnload = () => {
-      if (bookingId && !isCancellingBooking.current) {
+      const shouldSkip = skipCancelOnUnloadRef.current
+      if (bookingId && !isCancellingBooking.current && !shouldSkip) {
         void cancelBooking(bookingId)
       }
     }
@@ -311,7 +360,8 @@ export const TicketBookingPage = () => {
 
     return () => {
       window.removeEventListener("beforeunload", handleUnload)
-      if (bookingId && !isCancellingBooking.current) {
+      const shouldSkip = skipCancelOnUnloadRef.current
+      if (bookingId && !isCancellingBooking.current && !shouldSkip) {
         void handleCancelBooking(bookingId)
       }
     }
@@ -642,9 +692,9 @@ export const TicketBookingPage = () => {
         return "Next"
     }
   })()
-
   return (
     <div className="space-y-6">
+      
       <PageHeader
         title="Staff Ticket Booking"
         description="Book tickets for customers"
@@ -677,94 +727,168 @@ export const TicketBookingPage = () => {
               </div>
             ))}
           </div>
+          {(isVerifyingVnp || vnpReturnResult || vnpReturnError) ? (
+            <div className="min-h-[40vh] flex items-center justify-center">
+              <div className="w-full max-w-md">
+                {isVerifyingVnp ? (
+                  <div className="flex flex-col items-center gap-3 text-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                    <div className="text-lg font-semibold">Verifying VNPay payment...</div>
+                    <div className="text-sm text-gray-600">Please wait a moment</div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Badge variant={(vnpReturnResult?.code === "00") ? "default" : "destructive"} className="uppercase">
+                          {(vnpReturnResult?.code === "00") ? "Success" : "Failed"}
+                        </Badge>
+                        <span className="text-sm text-gray-500">VNPay</span>
+                      </div>
+                    </div>
+
+                    <div className="text-center space-y-2">
+                      {(vnpReturnResult?.code === "00") ? (
+                        <>
+                          <CheckCircle className="w-12 h-12 text-emerald-600 mx-auto" />
+                          <div className="text-xl font-bold text-emerald-700">Payment successful</div>
+                          <div className="text-gray-600 text-sm">{vnpReturnResult?.message}</div>
+                        </>
+                      ) : (
+                        <>
+                          <XCircle className="w-12 h-12 text-red-600 mx-auto" />
+                          <div className="text-xl font-bold text-red-700">Payment failed</div>
+                          <div className="text-gray-600 text-sm">{vnpReturnError || vnpReturnResult?.message || "Transaction unsuccessful"}</div>
+                        </>
+                      )}
+                    </div>
+
+                    <div className="grid gap-2 text-sm text-left bg-gray-50 rounded-md p-3">
+                      {vnpReturnResult?.txnRef && (
+                        <div className="flex justify-between"><span className="text-gray-600">Txn Ref</span><span className="font-semibold text-xs">{vnpReturnResult.txnRef}</span></div>
+                      )}
+                      {typeof vnpReturnResult?.amount === "number" && (
+                        <div className="flex justify-between"><span className="text-gray-600">Amount</span><span className="font-semibold">{vnpReturnResult.amount.toLocaleString()} VND</span></div>
+                      )}
+                      {vnpReturnResult?.orderInfo && (
+                        <div className="flex justify-between"><span className="text-gray-600">Order Info</span><span className="font-semibold text-xs">{vnpReturnResult.orderInfo}</span></div>
+                      )}
+                      {vnpReturnResult?.bookingId && (
+                        <div className="flex justify-between"><span className="text-gray-600">Booking ID</span><span className="font-semibold text-xs">{vnpReturnResult.bookingId}</span></div>
+                      )}
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 pt-2">
+                      <Button
+                        className="bg-blue-600 hover:bg-blue-700 flex-1"
+                        onClick={() => {
+                          setCurrentStep(vnpReturnResult?.code === "00" ? 7 : 1)
+                          if (vnpReturnResult?.code !== "00") {
+                            handleGoBackToMovies()
+                          }
+                        }}
+                      >
+                        Continue
+                      </Button>
+                      <Button variant="outline" className="flex-1" onClick={() => handleGoBackToMovies()}>
+                        Back to booking
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <>
+              {currentStep === 1 && (
+                <MovieSelectionStep
+                  movies={movies}
+                  loading={moviesLoading}
+                  onSelectMovie={handleSelectMovie}
+                />
+              )}
+
+              {currentStep === 2 && selectedMovie && (
+                <ShowtimeSelectionStep
+                  movie={selectedMovie}
+                  showtimes={showtimes}
+                  loading={showtimesLoading}
+                  onSelectShowtime={handleSelectShowtime}
+                />
+              )}
+
+              {currentStep === 3 && selectedShowtime && (
+                <SeatSelectionStep
+                  seats={seats}
+                  selectedSeats={selectedSeats}
+                  onSelectSeats={setSelectedSeats}
+                  showtime={selectedShowtime}
+                  loading={seatsLoading}
+                  error={seatsError}
+                  customerName={customerName}
+                  customerEmail={customerEmail}
+                  checkoutMode={checkoutMode}
+                  onCustomerNameChange={setCustomerName}
+                  onCustomerEmailChange={setCustomerEmail}
+                  onCheckoutModeChange={setCheckoutMode}
+                />
+              )}
+
+              {currentStep === 4 && (
+                <ComboSelectionStep
+                  combos={combos}
+                  selectedCombos={selectedCombos}
+                  onSelectCombos={setSelectedCombos}
+                  loading={combosLoading}
+                />
+              )}
+
+              {currentStep === 5 && selectedShowtime && (
+                <ConfirmationStep
+                  selectedSeats={selectedSeats}
+                  selectedCombos={selectedCombos}
+                  showtime={selectedShowtime}
+                  movie={selectedMovie!}
+                  subtotal={subtotal}
+                  customerPoints={customerPoints}
+                  pointsUsed={pointsUsed}
+                  pointsDiscount={pointsDiscount}
+                  onApplyPoints={handleApplyPoints}
+                />
+              )}
+
+              {currentStep === 6 && bookingId && selectedShowtime && selectedMovie && (
+                <PaymentStep
+                  bookingId={bookingId}
+                  total={total}
+                  subtotal={subtotal}
+                  discount={discount}
+                  showtime={selectedShowtime}
+                  movie={selectedMovie}
+                  selectedSeats={selectedSeats}
+                  selectedCombos={selectedCombos}
+                  onPaymentSuccess={() => setCurrentStep(7)}
+                  onExternalPaymentStart={() => {
+                    skipCancelOnUnloadRef.current = true
+                    setSkipCancelOnUnload(true)
+                  }}
+                />
+              )}
+
+              {currentStep === 7 && bookingId && (
+                <SuccessStep
+                  bookingId={bookingId}
+                  selectedSeats={selectedSeats}
+                  selectedCombos={selectedCombos}
+                  total={total}
+                  onNewBooking={() => {
+                    handleGoBackToMovies()
+                  }}
+                />
+              )}
+            </>
+          )}
         </div>
-
-        {/* Content */}
-        <div className="p-6">
-          {currentStep === 1 && (
-            <MovieSelectionStep
-              movies={movies}
-              loading={moviesLoading}
-              onSelectMovie={handleSelectMovie}
-            />
-          )}
-
-          {currentStep === 2 && selectedMovie && (
-            <ShowtimeSelectionStep
-              movie={selectedMovie}
-              showtimes={showtimes}
-              loading={showtimesLoading}
-              onSelectShowtime={handleSelectShowtime}
-            />
-          )}
-
-          {currentStep === 3 && selectedShowtime && (
-            <SeatSelectionStep
-              seats={seats}
-              selectedSeats={selectedSeats}
-              onSelectSeats={setSelectedSeats}
-              showtime={selectedShowtime}
-              loading={seatsLoading}
-              error={seatsError}
-              customerName={customerName}
-              customerEmail={customerEmail}
-              checkoutMode={checkoutMode}
-              onCustomerNameChange={setCustomerName}
-              onCustomerEmailChange={setCustomerEmail}
-              onCheckoutModeChange={setCheckoutMode}
-            />
-          )}
-
-          {currentStep === 4 && (
-            <ComboSelectionStep
-              combos={combos}
-              selectedCombos={selectedCombos}
-              onSelectCombos={setSelectedCombos}
-              loading={combosLoading}
-            />
-          )}
-
-          {currentStep === 5 && selectedShowtime && (
-            <ConfirmationStep
-              selectedSeats={selectedSeats}
-              selectedCombos={selectedCombos}
-              showtime={selectedShowtime}
-              movie={selectedMovie!}
-              subtotal={subtotal}
-              customerPoints={customerPoints}
-              pointsUsed={pointsUsed}
-              pointsDiscount={pointsDiscount}
-              onApplyPoints={handleApplyPoints}
-            />
-          )}
-
-          {currentStep === 6 && bookingId && selectedShowtime && selectedMovie && (
-            <PaymentStep
-              bookingId={bookingId}
-              total={total}
-              subtotal={subtotal}
-              discount={discount}
-              showtime={selectedShowtime}
-              movie={selectedMovie}
-              selectedSeats={selectedSeats}
-              selectedCombos={selectedCombos}
-              onPaymentSuccess={() => setCurrentStep(7)}
-            />
-          )}
-
-          {currentStep === 7 && bookingId && (
-            <SuccessStep
-              bookingId={bookingId}
-              selectedSeats={selectedSeats}
-              selectedCombos={selectedCombos}
-              total={total}
-              onNewBooking={() => {
-                handleGoBackToMovies()
-              }}
-            />
-          )}
-        </div>
-
         {/* Navigation & Summary */}
         <div className="px-6 py-4 border-t bg-gray-50 dark:bg-gray-900 flex items-center justify-between">
           <Button
@@ -792,7 +916,8 @@ export const TicketBookingPage = () => {
               isCreatingBooking ||
               isUpdatingCombos ||
               isRedeemingPoints ||
-              (currentStep === 7)
+              currentStep === 6 ||
+              currentStep === 7
             }
             className="bg-blue-600 hover:bg-blue-700"
           >
