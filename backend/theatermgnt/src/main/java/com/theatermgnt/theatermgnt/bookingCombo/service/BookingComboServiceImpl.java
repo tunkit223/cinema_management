@@ -2,8 +2,10 @@ package com.theatermgnt.theatermgnt.bookingCombo.service;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
+import com.theatermgnt.theatermgnt.bookingCombo.dto.response.ComboSummaryResponse;
 import jakarta.transaction.Transactional;
 
 import org.springframework.stereotype.Service;
@@ -58,6 +60,7 @@ public class BookingComboServiceImpl implements BookingComboService {
                     item.getComboId(),
                     combo.getName(),
                     item.getQuantity(),
+                    item.getQuantity(),
                     unitPrice,
                     subtotal);
 
@@ -84,5 +87,22 @@ public class BookingComboServiceImpl implements BookingComboService {
         }
 
         return booking;
+    }
+
+    @Override
+    public List<ComboSummaryResponse> getCombos(UUID bookingId) {
+        List<BookingCombo> combos = bookingComboRepository.findByBookingId(bookingId.toString());
+        return combos.stream()
+                .map(combo -> {
+                    ComboSummaryResponse cs = new ComboSummaryResponse();
+                    cs.setComboId(combo.getComboId());
+                    cs.setComboName(combo.getComboName());
+                    cs.setQuantity(combo.getQuantity());
+                    cs.setRemain(combo.getRemain());
+                    cs.setUnitPrice(combo.getUnitPrice());
+                    cs.setSubtotal(combo.getSubtotal());
+                    return cs;
+                })
+                .toList();
     }
 }

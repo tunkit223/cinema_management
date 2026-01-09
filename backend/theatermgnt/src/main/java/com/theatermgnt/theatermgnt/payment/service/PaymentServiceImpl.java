@@ -47,7 +47,8 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     @Transactional
-    public PaymentDetailsResponse createVNPayPayment(String invoiceId, HttpServletRequest httpRequest, String returnUrlOverride) {
+    public PaymentDetailsResponse createVNPayPayment(
+            String invoiceId, HttpServletRequest httpRequest, String returnUrlOverride) {
         try {
             // Get invoice
             Invoice invoice = invoiceRepository
@@ -97,11 +98,11 @@ public class PaymentServiceImpl implements PaymentService {
             vnpParams.put("vnp_OrderInfo", orderInfo);
             vnpParams.put("vnp_OrderType", vnPayConfig.getOrderType());
             vnpParams.put("vnp_Locale", "vn");
-                // Allow runtime override of return URL (e.g., different frontend ports)
-                String effectiveReturnUrl = (returnUrlOverride != null && !returnUrlOverride.isBlank())
+            // Allow runtime override of return URL (e.g., different frontend ports)
+            String effectiveReturnUrl = (returnUrlOverride != null && !returnUrlOverride.isBlank())
                     ? returnUrlOverride
                     : vnPayConfig.getReturnUrl();
-                vnpParams.put("vnp_ReturnUrl", effectiveReturnUrl);
+            vnpParams.put("vnp_ReturnUrl", effectiveReturnUrl);
             vnpParams.put("vnp_IpAddr", VNPayUtil.getIpAddress(httpRequest));
 
             // Add timestamp (VNPay requires GMT+7)
@@ -207,11 +208,19 @@ public class PaymentServiceImpl implements PaymentService {
 
                     // Update booking status to CONFIRMED (in separate transaction)
                     try {
-                        log.info("Attempting to confirm booking {} for invoice {}", invoice.getBookingId(), invoice.getId());
+                        log.info(
+                                "Attempting to confirm booking {} for invoice {}",
+                                invoice.getBookingId(),
+                                invoice.getId());
                         bookingService.confirmBookingPayment(invoice.getBookingId());
                         log.info("Booking {} confirmed successfully after payment", invoice.getBookingId());
                     } catch (Exception e) {
-                        log.error("Error confirming booking {} for invoice {}: {}", invoice.getBookingId(), invoice.getId(), e.getMessage(), e);
+                        log.error(
+                                "Error confirming booking {} for invoice {}: {}",
+                                invoice.getBookingId(),
+                                invoice.getId(),
+                                e.getMessage(),
+                                e);
                         // Don't fail callback if booking confirmation fails
                     }
                 }
@@ -238,7 +247,8 @@ public class PaymentServiceImpl implements PaymentService {
             response.put("paymentId", payment.getId());
             response.put("invoiceId", payment.getInvoiceId());
             // Include bookingId for frontend navigation
-            invoiceRepository.findById(payment.getInvoiceId())
+            invoiceRepository
+                    .findById(payment.getInvoiceId())
                     .ifPresent(inv -> response.put("bookingId", inv.getBookingId()));
             response.put("txnRef", txnRef);
 

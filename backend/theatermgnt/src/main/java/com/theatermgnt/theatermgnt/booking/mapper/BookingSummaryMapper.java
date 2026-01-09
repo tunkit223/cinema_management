@@ -50,6 +50,7 @@ public interface BookingSummaryMapper {
                     cs.setComboId(combo.getComboId());
                     cs.setComboName(combo.getComboName());
                     cs.setQuantity(combo.getQuantity());
+                    cs.setRemain(combo.getRemain());
                     cs.setUnitPrice(combo.getUnitPrice());
                     cs.setSubtotal(combo.getSubtotal());
                     return cs;

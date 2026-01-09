@@ -121,6 +121,8 @@ public enum ErrorCode {
             2067,
             "Selecting this seat would create orphan seats. Please choose different seats.",
             HttpStatus.BAD_REQUEST),
+    BOOKING_COMBO_NOT_EXISTED(2070, "Booking combo not existed", HttpStatus.NOT_FOUND),
+    INSUFFICIENT_COMBO_QUANTITY(2071, "Insufficient combo quantity available", HttpStatus.BAD_REQUEST),
     // Reporting
     INVALID_DATE_RANGE(5001, "End date must be greater than or equal start date", HttpStatus.BAD_REQUEST),
 

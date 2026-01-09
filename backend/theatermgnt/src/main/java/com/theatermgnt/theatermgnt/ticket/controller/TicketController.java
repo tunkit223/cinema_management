@@ -1,6 +1,7 @@
 package com.theatermgnt.theatermgnt.ticket.controller;
 
 import com.theatermgnt.theatermgnt.common.dto.response.ApiResponse;
+import com.theatermgnt.theatermgnt.ticket.dto.request.TicketCheckInRequest;
 import com.theatermgnt.theatermgnt.ticket.dto.response.TicketResponse;
 import com.theatermgnt.theatermgnt.ticket.entity.Ticket;
 import com.theatermgnt.theatermgnt.ticket.mapper.TicketMapper;
@@ -41,8 +42,8 @@ public class TicketController {
     }
 
     @PostMapping("/check-in/{ticketCode}")
-    public ApiResponse<String> checkInTicket(@PathVariable String ticketCode) {
-        ticketService.checkInTicket(ticketCode);
+    public ApiResponse<String> checkInTicket(@PathVariable TicketCheckInRequest request) {
+        ticketService.checkInTicket(request);
         return ApiResponse.<String>builder().result("Ticket checked in successfully").build();
     }
 }

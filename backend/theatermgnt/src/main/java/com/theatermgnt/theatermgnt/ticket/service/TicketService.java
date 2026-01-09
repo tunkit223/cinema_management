@@ -1,5 +1,6 @@
 package com.theatermgnt.theatermgnt.ticket.service;
 
+import com.theatermgnt.theatermgnt.ticket.dto.request.TicketCheckInRequest;
 import com.theatermgnt.theatermgnt.ticket.dto.response.TicketCheckInResponse;
 import com.theatermgnt.theatermgnt.ticket.dto.response.TicketResponse;
 import com.theatermgnt.theatermgnt.ticket.entity.Ticket;
@@ -19,5 +20,5 @@ public interface TicketService {
     List<Ticket> getTicketsByCustomerId(String customerId);
 
     void expireTickets();
-    void checkInTicket(String ticketCode);
+    void checkInTicket(TicketCheckInRequest request);
 }
