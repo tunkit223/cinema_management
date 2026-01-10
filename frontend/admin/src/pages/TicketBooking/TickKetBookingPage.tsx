@@ -938,7 +938,8 @@ export const TicketBookingPage = () => {
           )}
         </div>
         {/* Navigation & Summary */}
-        <div className="px-6 py-4 border-t bg-gray-50 dark:bg-gray-900 flex items-center justify-between">
+        {currentStep !== 7 && (
+          <div className="px-6 py-4 border-t bg-gray-50 dark:bg-gray-900 flex items-center justify-between">
           <Button
             variant="outline"
             onClick={handleBack}
@@ -973,6 +974,7 @@ export const TicketBookingPage = () => {
             {currentStep !== 7 && <ChevronRight className="w-4 h-4 ml-2" />}
           </Button>
         </div>
+        )}
       </Card>
     </div>
   )
