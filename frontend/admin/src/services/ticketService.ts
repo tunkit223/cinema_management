@@ -21,9 +21,46 @@ export interface TicketResponse {
   price: number;
   status: TicketStatus;
   expiresAt: string;
+  createdAt: string;
+  bookingId: string;
+}
+
+export interface ComboItemResponse {
+  id: string;
+  comboName: string;
+  name: string;
+  quantity: number;
+}
+
+export interface ComboResponse {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  imageUrl: string;
+}
+
+export interface ComboCheckInResponse {
+  bookingComboId: string;
+  quantity: number;
+  remain: number;
+  combo: ComboResponse;
+  comboItemResponseList: ComboItemResponse[];
+}
+
+export interface TicketCheckInViewResponse {
+  ticket: TicketResponse;
+  comboCheckIn: ComboCheckInResponse[];
 }
 
 export const ticketService = {
+  getTicketCheckInView: async (ticketCode: string): Promise<TicketCheckInViewResponse> => {
+    const response = await httpClient.get<ApiResponse<TicketCheckInViewResponse>>(
+      `/tickets/check-in/${ticketCode}`
+    );
+    return response.data.result;
+  },
+
   getTicketByCode: async (ticketCode: string): Promise<TicketResponse> => {
     const response = await httpClient.get<ApiResponse<TicketResponse>>(
       `/tickets/${ticketCode}`
@@ -31,9 +68,14 @@ export const ticketService = {
     return response.data.result;
   },
 
-  checkInTicket: async (ticketCode: string): Promise<string> => {
+  checkInTicket: async (ticketCode: string, comboUseList?: any[]): Promise<string> => {
+    const request = {
+      ticketCode,
+      comboUseList: comboUseList || []
+    };
     const response = await httpClient.post<ApiResponse<string>>(
-      `/tickets/check-in/${ticketCode}`
+      `/tickets/check-in/${ticketCode}`,
+      request
     );
     return response.data.result;
   },
@@ -50,5 +92,12 @@ export const ticketService = {
       `/tickets/my-tickets/${customerId}`
     );
     return response.data;
+  },
+
+  getCombosByBooking: async (bookingId: string): Promise<ComboCheckInResponse[]> => {
+    const response = await httpClient.get<ApiResponse<ComboCheckInResponse[]>>(
+      `/bookings/${bookingId}/combos`
+    );
+    return response.data.result;
   },
 };

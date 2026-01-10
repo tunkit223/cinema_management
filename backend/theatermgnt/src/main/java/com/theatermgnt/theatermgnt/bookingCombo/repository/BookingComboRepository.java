@@ -2,7 +2,6 @@ package com.theatermgnt.theatermgnt.bookingCombo.repository;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -10,7 +9,7 @@ import org.springframework.data.repository.query.Param;
 
 import com.theatermgnt.theatermgnt.bookingCombo.entity.BookingCombo;
 
-public interface BookingComboRepository extends JpaRepository<BookingCombo, UUID> {
+public interface BookingComboRepository extends JpaRepository<BookingCombo, String> {
     void deleteByBookingId(String bookingId);
 
     @Query("""

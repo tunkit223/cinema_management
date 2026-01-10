@@ -31,6 +31,7 @@ export default function ShowtimeSelectionStep({
 
   const sortedDates = useMemo(() => Object.keys(groupedByDate).sort(), [groupedByDate])
   const [selectedDate, setSelectedDate] = useState<string>("")
+  const [tempSelectedShowtime, setTempSelectedShowtime] = useState<ShowtimeResponse | null>(null)
 
   useEffect(() => {
     if (sortedDates.length > 0 && !selectedDate) {
@@ -71,7 +72,7 @@ export default function ShowtimeSelectionStep({
         <div>
           <h2 className="text-2xl font-bold mb-2">{movie.title}</h2>
           <p className="text-gray-600 text-sm mb-2">{movie.description}</p>
-          <p className="text-gray-500 text-sm">Duration: {movie.duration} minutes</p>
+          <p className="text-gray-500 text-sm">Duration: {movie.durationMinutes} minutes</p>
         </div>
       </div>
 
@@ -105,8 +106,15 @@ export default function ShowtimeSelectionStep({
               {visibleShowtimes.map((showtime) => (
                 <Card
                   key={showtime.id}
-                  className="p-3 cursor-pointer hover:shadow-lg transition-shadow"
-                  onClick={() => onSelectShowtime(showtime)}
+                  className={`p-3 cursor-pointer hover:shadow-lg transition-all ${
+                    tempSelectedShowtime?.id === showtime.id
+                      ? "ring-2 ring-blue-600 shadow-lg bg-blue-50"
+                      : ""
+                  }`}
+                  onClick={() => {
+                    setTempSelectedShowtime(showtime)
+                    onSelectShowtime(showtime)
+                  }}
                 >
                   <div className="space-y-2">
                     <div className="flex items-center gap-1 text-sm font-semibold">
@@ -128,6 +136,25 @@ export default function ShowtimeSelectionStep({
               ))}
             </div>
           </div>
+
+          {tempSelectedShowtime && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="space-y-2">
+                <h4 className="font-semibold text-gray-900">Selected Showtime</h4>
+                <div className="flex items-center gap-4 text-sm">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-gray-600" />
+                    <span className="font-semibold">{format(new Date(tempSelectedShowtime.startTime), "HH:mm")}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-gray-600" />
+                    <span>{tempSelectedShowtime.roomName}</span>
+                  </div>
+                  <span className="text-gray-600">{tempSelectedShowtime.cinemaName}</span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

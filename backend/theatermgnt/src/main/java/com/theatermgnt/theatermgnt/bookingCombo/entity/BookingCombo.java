@@ -30,6 +30,8 @@ public class BookingCombo {
 
     Integer quantity;
 
+    Integer remain;
+
     @Column(nullable = false)
     BigDecimal unitPrice;
 

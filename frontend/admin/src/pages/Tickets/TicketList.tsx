@@ -6,15 +6,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Ticket, Search, CheckCircle2, XCircle, Clock, Calendar, MapPin, DollarSign } from "lucide-react";
+import { Ticket, Search, CheckCircle2, XCircle, Clock, Calendar, MapPin, DollarSign, ShoppingCart, Plus, Minus } from "lucide-react";
 import { ticketService, TicketStatus } from "@/services/ticketService";
-import type { TicketResponse } from "@/services/ticketService";
+import type { TicketResponse, ComboCheckInResponse } from "@/services/ticketService";
 import { useNotificationStore } from "@/stores/useNotificationStore";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
 export function TicketList() {
   const [ticketCode, setTicketCode] = useState("");
   const [ticket, setTicket] = useState<TicketResponse | null>(null);
+  const [combos, setCombos] = useState<ComboCheckInResponse[]>([]);
+  // key = selectionKey (bookingComboId or bookingComboId-index), value = { bookingComboId, quantity }
+  const [selectedCombos, setSelectedCombos] = useState<Map<string, { bookingComboId: string; quantity: number }>>(new Map());
   const [loading, setLoading] = useState(false);
   const [checkingIn, setCheckingIn] = useState(false);
   const { addNotification } = useNotificationStore();
@@ -30,21 +33,44 @@ export function TicketList() {
     }
 
     setLoading(true);
+    setSelectedCombos(new Map());
+    setCombos([]);
     try {
-      const data = await ticketService.getTicketByCode(ticketCode);
-      setTicket(data);
+      // Call combined API to get ticket and combos
+      const checkInView = await ticketService.getTicketCheckInView(ticketCode);
+      console.log("=== Check-in view data received ===");
+      console.log("Full data:", JSON.stringify(checkInView, null, 2));
+      
+      setTicket(checkInView.ticket);
+      setCombos(checkInView.comboCheckIn || []);
+      
+      console.log("Ticket set:", checkInView.ticket);
+      console.log("Combos set:", checkInView.comboCheckIn);
+      console.log("Number of combos:", checkInView.comboCheckIn?.length || 0);
+      
+      if (checkInView.comboCheckIn && checkInView.comboCheckIn.length > 0) {
+        addNotification({
+          type: "info",
+          title: "Combos Found",
+          message: `Found ${checkInView.comboCheckIn.length} combo(s) for this booking`,
+        });
+      }
+      
       addNotification({
         type: "success",
         title: "Success",
         message: "Ticket found successfully",
       });
     } catch (error: any) {
+      console.error("=== Error fetching check-in view ===");
+      console.error("Error:", error);
       addNotification({
         type: "error",
         title: "Error",
         message: error.response?.data?.message || "Ticket not found",
       });
       setTicket(null);
+      setCombos([]);
     } finally {
       setLoading(false);
     }
@@ -55,15 +81,23 @@ export function TicketList() {
 
     setCheckingIn(true);
     try {
-      await ticketService.checkInTicket(ticket.ticketCode);
+      // Prepare combo use list
+      const comboUseList = Array.from(selectedCombos.values()).map(({ bookingComboId, quantity }) => ({
+        comboId: bookingComboId,
+        quantity,
+      }));
+
+      await ticketService.checkInTicket(ticket.ticketCode, comboUseList);
       addNotification({
         type: "success",
         title: "Success",
         message: "Ticket checked in successfully",
       });
-      // Refresh ticket data
-      const updatedTicket = await ticketService.getTicketByCode(ticket.ticketCode);
-      setTicket(updatedTicket);
+      // Refresh ticket data with combos
+      const updatedCheckInView = await ticketService.getTicketCheckInView(ticket.ticketCode);
+      setTicket(updatedCheckInView.ticket);
+      setCombos(updatedCheckInView.comboCheckIn || []);
+      setSelectedCombos(new Map());
     } catch (error: any) {
       addNotification({
         type: "error",
@@ -73,6 +107,42 @@ export function TicketList() {
     } finally {
       setCheckingIn(false);
     }
+  };
+
+  const toggleComboSelection = (
+    selectionKey: string,
+    bookingComboId: string,
+    available: number
+  ) => {
+    const newSelection = new Map(selectedCombos);
+    const current = newSelection.get(selectionKey)?.quantity || 0;
+    
+    if (current === 0) {
+      newSelection.set(selectionKey, { bookingComboId, quantity: 1 });
+    } else if (current < available) {
+      newSelection.set(selectionKey, { bookingComboId, quantity: current + 1 });
+    } else {
+      newSelection.delete(selectionKey);
+    }
+    
+    setSelectedCombos(newSelection);
+  };
+
+  const updateComboQuantity = (
+    selectionKey: string,
+    bookingComboId: string,
+    quantity: number,
+    maxQuantity: number
+  ) => {
+    const newSelection = new Map(selectedCombos);
+    
+    if (quantity <= 0) {
+      newSelection.delete(selectionKey);
+    } else if (quantity <= maxQuantity) {
+      newSelection.set(selectionKey, { bookingComboId, quantity });
+    }
+    
+    setSelectedCombos(newSelection);
   };
 
   const getStatusBadge = (status: TicketStatus) => {
@@ -229,6 +299,16 @@ export function TicketList() {
                   </div>
                 </div>
               </div>
+
+              <div className="space-y-2">
+                <div className="flex items-start gap-3">
+                  <Calendar className="h-5 w-5 text-muted-foreground mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Created At</p>
+                    <p className="text-base">{formatDate(ticket.createdAt)}</p>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {ticket.qrContent && (
@@ -253,6 +333,113 @@ export function TicketList() {
             )}
 
             <Separator />
+
+            {combos.length > 0 && (
+              <>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <ShoppingCart className="h-5 w-5" />
+                    <h3 className="text-lg font-semibold">Available Combos</h3>
+                  </div>
+                  
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {combos.map((bookingCombo, index) => {
+                      const combo = bookingCombo.combo;
+                      // Create a selection key; if backend sends duplicate bookingComboId, include index to keep it unique in UI state
+                      const selectionKey = `${bookingCombo.bookingComboId}-${index}`;
+                      const selectedEntry = selectedCombos.get(selectionKey);
+                      const selectedQty = selectedEntry?.quantity || 0;
+                      const maxAvailable = bookingCombo.remain;
+                      const uniqueKey = selectionKey;
+                      
+                      return (
+                        <div
+                          key={uniqueKey}
+                          className={`border rounded-lg p-4 transition-all ${
+                            selectedQty > 0
+                              ? "border-green-500 bg-green-50"
+                              : "border-border hover:border-primary hover:bg-accent/50"
+                          }`}
+                        >
+                          <div className="space-y-3">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex-1">
+                                <p className="font-semibold">{combo.name}</p>
+                                <p className="text-sm text-muted-foreground mt-1">{combo.description}</p>
+                                <p className="text-xs text-muted-foreground mt-1">Available: {maxAvailable}</p>
+                              </div>
+                              {combo.imageUrl && (
+                                <img
+                                  src={combo.imageUrl}
+                                  alt={combo.name}
+                                  className="w-16 h-16 rounded object-cover"
+                                />
+                              )}
+                            </div>
+                            
+                            {bookingCombo.comboItemResponseList.length > 0 && (
+                              <div className="space-y-1 text-sm">
+                                <p className="font-medium text-muted-foreground">Items:</p>
+                                <ul className="ml-4 space-y-0.5">
+                                  {bookingCombo.comboItemResponseList.map((item) => (
+                                    <li key={item.id} className="text-muted-foreground">
+                                      • {item.name} x{item.quantity}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            
+                            <div className="flex items-center justify-between pt-2 border-t">
+                              <p className="font-semibold text-green-600">{formatPrice(combo.price)}</p>
+                              
+                              <div className="flex items-center gap-2">
+                                {selectedQty > 0 ? (
+                                  <div className="flex items-center gap-2 bg-white border rounded-lg px-2 py-1">
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => updateComboQuantity(selectionKey, bookingCombo.bookingComboId, selectedQty - 1, maxAvailable)}
+                                      className="h-6 w-6 p-0"
+                                    >
+                                      <Minus className="h-3 w-3" />
+                                    </Button>
+                                    <span className="w-6 text-center font-semibold text-sm">
+                                      {selectedQty}
+                                    </span>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => updateComboQuantity(selectionKey, bookingCombo.bookingComboId, selectedQty + 1, maxAvailable)}
+                                      className="h-6 w-6 p-0"
+                                      disabled={selectedQty >= maxAvailable}
+                                    >
+                                      <Plus className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => toggleComboSelection(selectionKey, bookingCombo.bookingComboId, maxAvailable)}
+                                    className="gap-1"
+                                    disabled={maxAvailable === 0}
+                                  >
+                                    <Plus className="h-3 w-3" />
+                                    Select
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+                <Separator />
+              </>
+            )}
 
             <div className="flex justify-end gap-4">
               {ticket.status === TicketStatus.ACTIVE ? (

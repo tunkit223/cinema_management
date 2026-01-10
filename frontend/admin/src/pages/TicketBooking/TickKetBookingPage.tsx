@@ -16,10 +16,8 @@ import PaymentStep from "@/components/booking/staff/PaymentStep"
 import SuccessStep from "@/components/booking/staff/SuccessStep"
 import { useAuthStore } from "@/stores/useAuthStore"
 import httpClient from "@/configurations/httpClient"
-import { 
-  getAllMovies, 
-  type Movie 
-} from "@/services/movieService"
+import { getAllMovies } from "@/services/movieService"
+import type { MovieSimple as Movie } from "@/types/MovieType/Movie"
 import {
   getShowtimesByMovie,
   type ShowtimeResponse
@@ -41,7 +39,7 @@ import {
   cancelBooking,
   redeemBookingPoints,
 } from "@/services/bookingService"
-import { getMyInfo, getCustomerLoyaltyPoints } from "@/services/customerService"
+import { getCustomerLoyaltyPoints } from "@/services/customerService"
 import type { Seat, ComboItem, Showtime } from "@/lib/types"
 import { useNotificationStore } from "@/stores"
 import { validateOrphanSeats } from "@/utils/seatValidation"
@@ -95,8 +93,8 @@ export const TicketBookingPage = () => {
   const [isUpdatingCombos, setIsUpdatingCombos] = useState(false)
   const [isRedeemingPoints, setIsRedeemingPoints] = useState(false)
   const [seatsError, setSeatsError] = useState<string | null>(null)
-  const [skipCancelOnUnload, setSkipCancelOnUnload] = useState(false)
   const skipCancelOnUnloadRef = useRef(false)
+  const intentionallyCancelledRef = useRef(false)
 
   // VNPay return handling
   const [isVerifyingVnp, setIsVerifyingVnp] = useState(false)
@@ -150,7 +148,6 @@ export const TicketBookingPage = () => {
     const verifyReturn = async () => {
       try {
         skipCancelOnUnloadRef.current = true
-        setSkipCancelOnUnload(true)
         setIsVerifyingVnp(true)
         setVnpReturnError(null)
 
@@ -160,6 +157,10 @@ export const TicketBookingPage = () => {
 
         if (data?.code === "00") {
           setCurrentStep(7)
+          // Set bookingId from response if available
+          if (data.bookingId) {
+            setBookingId(data.bookingId)
+          }
         }
 
         // Clean URL params after verification (replace history)
@@ -336,6 +337,7 @@ export const TicketBookingPage = () => {
   const handleCancelBooking = async (id: string) => {
     if (isCancellingBooking.current) return
     isCancellingBooking.current = true
+    intentionallyCancelledRef.current = true
 
     try {
       await cancelBooking(id)
@@ -361,15 +363,20 @@ export const TicketBookingPage = () => {
     return () => {
       window.removeEventListener("beforeunload", handleUnload)
       const shouldSkip = skipCancelOnUnloadRef.current
-      if (bookingId && !isCancellingBooking.current && !shouldSkip) {
+      const isIntentiouslyCancelled = intentionallyCancelledRef.current
+      if (bookingId && !isCancellingBooking.current && !shouldSkip && !isIntentiouslyCancelled) {
         void handleCancelBooking(bookingId)
+      }
+      // Reset the flag for next booking
+      if (!bookingId) {
+        intentionallyCancelledRef.current = false
       }
     }
   }, [bookingId])
 
   const handleSelectMovie = (movie: Movie) => {
     setSelectedMovie(movie)
-    setCurrentStep(2)
+    // Don't change step here - user must click "Select showtimes" button
     setSelectedShowtime(null)
     setSelectedSeats([])
     setSelectedCombos([])
@@ -391,7 +398,7 @@ export const TicketBookingPage = () => {
           cinemaId: showtime.cinemaId,
           cinemaName: showtime.cinemaName,
         } as ExtendedShowtime)
-        setCurrentStep(3)
+        // Don't change step here - user must click "Select seats" button
         setSelectedSeats([])
         setSelectedCombos([])
         setCheckoutMode("guest")
@@ -414,6 +421,16 @@ export const TicketBookingPage = () => {
     setSelectedCombos([])
     setBookingId(null)
     setCustomerId(null)
+    setCustomerName("")
+    setCustomerEmail("")
+    setCheckoutMode("guest")
+    setPointsUsed(0)
+    setPointsDiscount(0)
+    setCustomerPoints(0)
+    // Clear VNPay return states
+    setVnpReturnResult(null)
+    setVnpReturnError(null)
+    intentionallyCancelledRef.current = false
   }
 
   const handleGoBackToShowtimes = async () => {
@@ -436,22 +453,17 @@ export const TicketBookingPage = () => {
   const handleBack = async () => {
     if (currentStep <= 1) return
 
-    const nextStep = currentStep - 1
-
-    // If booking was already created (from combo step onward) and user moves back before combo,
-    // cancel booking to release seats
-    if (currentStep >= 4 && nextStep < 4 && bookingId) {
-      await handleCancelBooking(bookingId)
-      setBookingId(null)
-      setCustomerId(null)
-    }
-
     if (currentStep === 2) {
       handleGoBackToMovies()
     } else if (currentStep === 3) {
       await handleGoBackToShowtimes()
     } else if (currentStep === 4) {
-      // Returning from combo to seats: refresh seats to reflect any changes
+      // Returning from combo to seats: cancel booking and refresh seats
+      if (bookingId) {
+        await handleCancelBooking(bookingId)
+        setBookingId(null)
+        setCustomerId(null)
+      }
       setSelectedSeats([])
       setCurrentStep(3)
       if (selectedShowtime) {
@@ -482,8 +494,16 @@ export const TicketBookingPage = () => {
           setSeatsLoading(false)
         }
       }
+    } else if (currentStep >= 5) {
+      // From confirmation, payment, or success steps back to combos - cancel booking
+      if (bookingId) {
+        await handleCancelBooking(bookingId)
+        setBookingId(null)
+        setCustomerId(null)
+      }
+      setCurrentStep(currentStep - 1)
     } else {
-      setCurrentStep(nextStep)
+      setCurrentStep(currentStep - 1)
     }
   }
 
@@ -497,12 +517,30 @@ export const TicketBookingPage = () => {
       return
     }
 
+    // Move to showtime selection step when movie is selected
+    if (currentStep === 1 && selectedMovie) {
+      setCurrentStep(2)
+      setSelectedShowtime(null)
+      setSelectedSeats([])
+      setSelectedCombos([])
+      return
+    }
+
     if (currentStep === 2 && !selectedShowtime) {
       addNotification({
         type: "error",
         title: "Error",
         message: "Please select a showtime"
       })
+      return
+    }
+
+    // Move to seat selection step when showtime is selected
+    if (currentStep === 2 && selectedShowtime) {
+      setCurrentStep(3)
+      setSelectedSeats([])
+      setSelectedCombos([])
+      setCheckoutMode("guest")
       return
     }
 
@@ -727,7 +765,7 @@ export const TicketBookingPage = () => {
               </div>
             ))}
           </div>
-          {(isVerifyingVnp || vnpReturnResult || vnpReturnError) ? (
+          {(isVerifyingVnp || (vnpReturnResult && currentStep !== 7) || (vnpReturnError && currentStep !== 7)) ? (
             <div className="min-h-[40vh] flex items-center justify-center">
               <div className="w-full max-w-md">
                 {isVerifyingVnp ? (
@@ -782,13 +820,18 @@ export const TicketBookingPage = () => {
                       <Button
                         className="bg-blue-600 hover:bg-blue-700 flex-1"
                         onClick={() => {
-                          setCurrentStep(vnpReturnResult?.code === "00" ? 7 : 1)
-                          if (vnpReturnResult?.code !== "00") {
+                          if (vnpReturnResult?.code === "00") {
+                            setCurrentStep(7)
+                            if (vnpReturnResult.bookingId) {
+                              setBookingId(vnpReturnResult.bookingId)
+                            }
+                          } else {
+                            setCurrentStep(1)
                             handleGoBackToMovies()
                           }
                         }}
                       >
-                        Continue
+                        {(vnpReturnResult?.code === "00") ? "View Tickets" : "Try Again"}
                       </Button>
                       <Button variant="outline" className="flex-1" onClick={() => handleGoBackToMovies()}>
                         Back to booking
@@ -805,6 +848,7 @@ export const TicketBookingPage = () => {
                   movies={movies}
                   loading={moviesLoading}
                   onSelectMovie={handleSelectMovie}
+                  selectedMovie={selectedMovie}
                 />
               )}
 
@@ -870,7 +914,6 @@ export const TicketBookingPage = () => {
                   onPaymentSuccess={() => setCurrentStep(7)}
                   onExternalPaymentStart={() => {
                     skipCancelOnUnloadRef.current = true
-                    setSkipCancelOnUnload(true)
                   }}
                 />
               )}
@@ -880,7 +923,12 @@ export const TicketBookingPage = () => {
                   bookingId={bookingId}
                   selectedSeats={selectedSeats}
                   selectedCombos={selectedCombos}
-                  total={total}
+                  total={total > 0 ? total : (vnpReturnResult?.amount || 0)}
+                  movie={selectedMovie || undefined}
+                  showtime={selectedShowtime ? {
+                    time: selectedShowtime.time,
+                    format: selectedShowtime.format
+                  } : undefined}
                   onNewBooking={() => {
                     handleGoBackToMovies()
                   }}
@@ -890,7 +938,8 @@ export const TicketBookingPage = () => {
           )}
         </div>
         {/* Navigation & Summary */}
-        <div className="px-6 py-4 border-t bg-gray-50 dark:bg-gray-900 flex items-center justify-between">
+        {currentStep !== 7 && (
+          <div className="px-6 py-4 border-t bg-gray-50 dark:bg-gray-900 flex items-center justify-between">
           <Button
             variant="outline"
             onClick={handleBack}
@@ -925,6 +974,7 @@ export const TicketBookingPage = () => {
             {currentStep !== 7 && <ChevronRight className="w-4 h-4 ml-2" />}
           </Button>
         </div>
+        )}
       </Card>
     </div>
   )

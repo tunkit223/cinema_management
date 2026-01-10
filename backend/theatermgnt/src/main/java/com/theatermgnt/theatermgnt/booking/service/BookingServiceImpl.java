@@ -311,16 +311,14 @@ public class BookingServiceImpl implements BookingService {
 
         screeningSeatRepository.markSeatsAsSoldByBooking(bookingId);
 
+        // Create tickets for all bookings (both customer and staff guest bookings)
+        ticketService.createTickets(UUID.fromString(bookingId));
+        log.info("Tickets created for booking {}", bookingId);
+
         if (booking.getCustomer() != null) {
             int pointsEarned = discountService.calculateEarnedPoints(booking.getTotalAmount());
             int pointDiscounted = discountService.caculateDiscountPoints(booking.getDiscount());
             customerService.addLoyaltyPoints(booking.getCustomer().getId(), pointsEarned - pointDiscounted);
-            
-            // Only create tickets if booking has a customer (not staff guest booking)
-            ticketService.createTickets(UUID.fromString(bookingId));
-            log.info("Tickets created for booking {}", bookingId);
-        } else {
-            log.info("Booking {} is staff guest booking, skipping ticket creation", bookingId);
         }
 
         log.info("Booking {} confirmed", bookingId);

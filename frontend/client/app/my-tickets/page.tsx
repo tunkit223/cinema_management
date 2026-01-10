@@ -207,38 +207,56 @@ export default function MyTicketsPage() {
               <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {paginatedTickets.map((ticket) => (
-                  <div key={ticket.id} className="bg-card border border-border rounded-lg p-6 hover:shadow-lg transition-shadow">
+                  <div 
+                    key={ticket.id} 
+                    className={`relative rounded-xl p-6 transition-all hover:shadow-xl hover:-translate-y-1 border-2 bg-card ${
+                      ticket.status === "ACTIVE"
+                        ? "border-green-300 dark:border-green-700"
+                        : ticket.status === "USED"
+                        ? "border-blue-300 dark:border-blue-700"
+                        : "border-red-300 dark:border-red-700"
+                    }`}
+                  >
                     <div className="flex justify-between items-start mb-4">
                       <div className="flex-1">
-                        <h3 className="font-bold text-xl text-purple-600 dark:text-purple-400 mb-2">{ticket.movieTitle}</h3>
-                        <p className="text-sm text-slate-600 dark:text-slate-300"><span className="font-semibold">Ticket:</span> {ticket.ticketCode}</p>
-                        <p className="text-sm text-slate-600 dark:text-slate-300"><span className="font-semibold">Seat:</span> {ticket.seatName}</p>
+                        <h3 className="font-bold text-2xl text-purple-700 dark:text-purple-300 mb-3 line-clamp-2">{ticket.movieTitle}</h3>
+                        <div className="space-y-1">
+                          <p className="text-xs text-slate-500 dark:text-slate-400"><span className="font-semibold">🎫 Ticket:</span> {ticket.ticketCode}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400"><span className="font-semibold">💺 Seat:</span> {ticket.seatName}</p>
+                        </div>
                       </div>
                       <span
-                        className={`px-3 py-1 rounded-full text-xs font-medium ${
+                        className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap ml-2 ${
                           ticket.status === "ACTIVE"
-                            ? "bg-green-500/10 text-green-600"
+                            ? "bg-green-500 text-white"
                             : ticket.status === "USED"
-                            ? "bg-blue-500/10 text-blue-600"
-                            : "bg-red-500/10 text-red-600"
+                            ? "bg-blue-500 text-white"
+                            : "bg-red-500 text-white"
                         }`}
                       >
                         {ticket.status}
                       </span>
                     </div>
-                    <div className="space-y-2 text-base mb-4 pb-4 border-b border-border dark:border-slate-700">
-                      <p>
-                        <span className="font-semibold text-slate-700 dark:text-slate-300">🎬 Showtime:</span> <span className="text-slate-600 dark:text-slate-300">{new Date(ticket.startTime).toLocaleString()}</span>
-                      </p>
-                      <p>
-                        <span className="font-semibold text-slate-700 dark:text-slate-300">💰 Price:</span> <span className="text-purple-600 dark:text-purple-400 font-semibold">{ticket.price.toLocaleString()} VND</span>
-                      </p>
-                      <p>
-                        <span className="font-semibold text-slate-700 dark:text-slate-300">⏰ Expires:</span> <span className="text-orange-600 dark:text-orange-400">{new Date(ticket.expiresAt).toLocaleString()}</span>
-                      </p>
+                    <div className="space-y-2.5 text-sm mb-4 pb-4 border-b-2 border-current border-opacity-20">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-slate-700 dark:text-slate-300">🎬 Showtime</span>
+                        <span className="text-right text-slate-600 dark:text-slate-300">{new Date(ticket.startTime).toLocaleString()}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-slate-700 dark:text-slate-300">💰 Price</span>
+                        <span className="text-right text-purple-600 dark:text-purple-400 font-bold">{ticket.price.toLocaleString()} VND</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-slate-700 dark:text-slate-300">📅 Purchased</span>
+                        <span className="text-right text-slate-600 dark:text-slate-300 text-xs">{new Date(ticket.createdAt).toLocaleString()}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-slate-700 dark:text-slate-300">⏰ Expires</span>
+                        <span className="text-right text-orange-600 dark:text-orange-400 font-semibold text-xs">{new Date(ticket.expiresAt).toLocaleString()}</span>
+                      </div>
                     </div>
                     {ticket.qrContent && (
-                      <div className="mb-4 p-4 bg-white rounded-lg flex justify-center">
+                      <div className="mb-4 p-4 bg-white dark:bg-slate-800 rounded-xl flex justify-center border border-slate-200 dark:border-slate-700">
                         <img 
                           src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(ticket.qrContent)}`}
                           alt="QR Code"
