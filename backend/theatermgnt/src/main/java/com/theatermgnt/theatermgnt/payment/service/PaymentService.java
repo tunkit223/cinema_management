@@ -22,4 +22,9 @@ public interface PaymentService {
      * Handle VNPay IPN (Instant Payment Notification)
      */
     Map<String, Object> handleVNPayIPN(Map<String, String> params);
+
+    /**
+     * Process cash payment for invoice
+     */
+    PaymentDetailsResponse processCashPayment(String invoiceId);
 }

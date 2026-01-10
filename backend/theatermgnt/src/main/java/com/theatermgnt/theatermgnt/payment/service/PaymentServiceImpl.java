@@ -364,4 +364,87 @@ public class PaymentServiceImpl implements PaymentService {
 
         return response;
     }
+
+    @Override
+    @Transactional
+    public PaymentDetailsResponse processCashPayment(String invoiceId) {
+        try {
+            log.info("Processing cash payment for invoice: {}", invoiceId);
+
+            // Get invoice
+            Invoice invoice = invoiceRepository
+                    .findById(invoiceId)
+                    .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_EXISTED));
+
+            // Check if invoice is already paid
+            if (invoice.getStatus() == InvoiceStatus.PAID) {
+                throw new AppException(ErrorCode.BOOKING_NOT_EXISTED); // Invoice already paid
+            }
+
+            // Get Cash payment method
+            var cashMethod = paymentMethodRepository.findByName("Cash").orElseThrow(() -> {
+                log.error("Cash payment method not found in database");
+                return new AppException(ErrorCode.BOOKING_NOT_EXISTED);
+            });
+
+            // Generate transaction code for cash payment
+            String txnRef = "CASH" + VNPayUtil.getRandomNumber(10);
+
+            // Create payment record
+            Payment payment = Payment.builder()
+                    .invoiceId(invoiceId)
+                    .paymentMethodId(cashMethod.getId())
+                    .amount(invoice.getTotalAmount())
+                    .paymentType(PaymentType.BOOKING)
+                    .transactionCode(txnRef)
+                    .status(PaymentStatus.SUCCESS)
+                    .paymentDate(LocalDateTime.now())
+                    .description("Cash payment for invoice: " + invoiceId)
+                    .build();
+            paymentRepository.save(payment);
+
+            // Update invoice status to PAID
+            invoice.setStatus(InvoiceStatus.PAID);
+            invoice.setPaidAt(LocalDateTime.now());
+            invoiceRepository.save(invoice);
+            log.info("Invoice {} marked as PAID", invoice.getId());
+
+            // Update booking status to CONFIRMED
+            try {
+                log.info("Confirming booking {} for invoice {}", invoice.getBookingId(), invoice.getId());
+                bookingService.confirmBookingPayment(invoice.getBookingId());
+                log.info("Booking {} confirmed successfully after cash payment", invoice.getBookingId());
+            } catch (Exception e) {
+                log.error("Error confirming booking {} for invoice {}: {}", invoice.getBookingId(), invoice.getId(), e.getMessage(), e);
+                throw e; // Rollback transaction if booking confirmation fails
+            }
+
+            // Aggregate revenue after successful payment
+            try {
+                revenueAggregationService.processPaymentForRevenue(payment);
+            } catch (Exception e) {
+                log.error("Error aggregating revenue for payment {}", payment.getId(), e);
+                // Don't fail the payment, just log the error
+            }
+
+            log.info("Cash payment processed successfully for invoice: {}", invoiceId);
+
+            return PaymentDetailsResponse.builder()
+                    .code("00")
+                    .message("Cash payment successful")
+                    .id(payment.getId())
+                    .transactionCode(txnRef)
+                    .invoiceId(invoiceId)
+                    .amount(invoice.getTotalAmount())
+                    .status(PaymentStatus.SUCCESS.name())
+                    .build();
+
+        } catch (AppException e) {
+            log.error("AppException processing cash payment: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Error processing cash payment", e);
+            throw new AppException(ErrorCode.BOOKING_NOT_EXISTED);
+        }
+    }
 }

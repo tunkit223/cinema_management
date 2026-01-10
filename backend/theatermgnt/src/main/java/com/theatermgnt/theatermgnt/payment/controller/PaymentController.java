@@ -57,4 +57,15 @@ public class PaymentController {
         Map<String, Object> response = paymentService.handleVNPayIPN(params);
         return ResponseEntity.ok(response);
     }
+
+    /**
+     * Process cash payment for invoice
+     * POST /api/theater-mgnt/payment/cash/{invoiceId}
+     */
+    @PostMapping("/cash/{invoiceId}")
+    public ApiResponse<PaymentDetailsResponse> processCashPayment(@PathVariable String invoiceId) {
+        log.info("Processing cash payment for invoice: {}", invoiceId);
+        PaymentDetailsResponse response = paymentService.processCashPayment(invoiceId);
+        return ApiResponse.<PaymentDetailsResponse>builder().result(response).build();
+    }
 }

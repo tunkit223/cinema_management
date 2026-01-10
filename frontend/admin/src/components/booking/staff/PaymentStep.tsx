@@ -120,14 +120,35 @@ export default function PaymentStep({
     }
   }
 
-  const handleCashPayment = () => {
+  const handleCashPayment = async () => {
     if (isPaying) return
     setPaymentError(null)
     setIsPaying(true)
-    setTimeout(() => {
-      onPaymentSuccess()
+
+    try {
+      // Tạo hóa đơn cho booking
+      const invoiceResponse = await httpClient.post(`/bookings/${bookingId}/create-invoice`)
+      const invoiceId = invoiceResponse.data?.result?.id
+
+      if (!invoiceId) {
+        throw new Error("Không lấy được mã hóa đơn từ hệ thống")
+      }
+
+      // Xử lý thanh toán tiền mặt
+      const paymentResponse = await httpClient.post(`/payment/cash/${invoiceId}`)
+      const paymentResult = paymentResponse.data?.result
+
+      if (paymentResult?.code === "00") {
+        onPaymentSuccess()
+      } else {
+        throw new Error(paymentResult?.message || "Thanh toán tiền mặt không thành công")
+      }
+    } catch (error: any) {
+      console.error("Error processing cash payment:", error)
+      setPaymentError(error?.response?.data?.message || error?.message || "Không thể xử lý thanh toán tiền mặt")
+    } finally {
       setIsPaying(false)
-    }, 800)
+    }
   }
 
   return (
