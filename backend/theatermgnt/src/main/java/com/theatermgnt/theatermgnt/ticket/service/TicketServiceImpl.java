@@ -3,7 +3,9 @@ package com.theatermgnt.theatermgnt.ticket.service;
 import com.theatermgnt.theatermgnt.booking.entity.Booking;
 import com.theatermgnt.theatermgnt.booking.enums.BookingStatus;
 import com.theatermgnt.theatermgnt.booking.repository.BookingRepository;
+import com.theatermgnt.theatermgnt.bookingCombo.dto.response.ComboCheckInResponse;
 import com.theatermgnt.theatermgnt.bookingCombo.repository.BookingComboRepository;
+import com.theatermgnt.theatermgnt.bookingCombo.service.BookingComboService;
 import com.theatermgnt.theatermgnt.common.exception.AppException;
 import com.theatermgnt.theatermgnt.common.exception.ErrorCode;
 import com.theatermgnt.theatermgnt.notification.listener.NotificationEventListener;
@@ -12,6 +14,7 @@ import com.theatermgnt.theatermgnt.screeningSeat.repository.ScreeningSeatReposit
 import com.theatermgnt.theatermgnt.screeningSeat.service.ScreeningSeatService;
 import com.theatermgnt.theatermgnt.ticket.dto.request.TicketCheckInRequest;
 import com.theatermgnt.theatermgnt.ticket.dto.response.TicketCheckInResponse;
+import com.theatermgnt.theatermgnt.ticket.dto.response.TicketCheckInViewResponse;
 import com.theatermgnt.theatermgnt.ticket.dto.response.TicketEmailView;
 import com.theatermgnt.theatermgnt.ticket.dto.response.TicketResponse;
 import com.theatermgnt.theatermgnt.ticket.entity.Ticket;
@@ -43,6 +46,7 @@ public class TicketServiceImpl implements TicketService {
     private final BookingComboRepository bookingComboRepository;
     private final ScreeningSeatRepository screeningSeatRepository;
     private final ScreeningSeatService screeningSeatService;
+    private final BookingComboService bookingComboService;
     private final TicketCodeGenerator ticketCodeGenerator;
     private final QrGenerator qrGenerator;
     private final ApplicationEventPublisher eventPublisher;
@@ -171,6 +175,15 @@ public class TicketServiceImpl implements TicketService {
     }
 
     @Override
+    public TicketCheckInViewResponse getTicketCheckInViewByCode(String ticketCode) {
+        Ticket ticket = ticketRepository.findByTicketCode(ticketCode)
+                .orElseThrow(() -> new AppException(ErrorCode.TICKET_NOT_EXISTED));
+        List<ComboCheckInResponse> comboResponse = bookingComboService.getCombos(ticket.getBooking().getId());
+        TicketResponse ticketResponse = ticketMapper.toResponse(ticket);
+        return new TicketCheckInViewResponse(ticketResponse, comboResponse);
+    }
+
+    @Override
     public List<Ticket> getTicketsByCustomerId(String customerId) {
         return ticketRepository.findByBooking_Customer_IdOrderByCreatedAtDesc(customerId);
     }
@@ -214,7 +227,7 @@ public class TicketServiceImpl implements TicketService {
             throw new AppException(ErrorCode.TICKET_EXPIRED);
         }
         for(var comboUse : request.getComboUseList()){
-            var bookingCombo = bookingComboRepository.findById(UUID.fromString(comboUse.getComboId()))
+            var bookingCombo = bookingComboRepository.findById(comboUse.getComboId())
                     .orElseThrow(() -> new AppException(ErrorCode.BOOKING_COMBO_NOT_EXISTED));
             if(bookingCombo.getRemain() < comboUse.getQuantity()){
                 throw new AppException(ErrorCode.INSUFFICIENT_COMBO_QUANTITY);

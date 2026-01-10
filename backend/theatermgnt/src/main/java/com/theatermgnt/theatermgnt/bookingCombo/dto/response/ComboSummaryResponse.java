@@ -14,7 +14,6 @@ public class ComboSummaryResponse {
     String comboId;
     String comboName;
     int quantity;
-    int remain;
     BigDecimal unitPrice;
     BigDecimal subtotal;
 }

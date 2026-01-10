@@ -5,10 +5,10 @@ import java.util.UUID;
 
 import com.theatermgnt.theatermgnt.booking.dto.response.BookingPricingResponse;
 import com.theatermgnt.theatermgnt.bookingCombo.dto.request.UpdateBookingCombosRequest;
-import com.theatermgnt.theatermgnt.bookingCombo.dto.response.ComboSummaryResponse;
+import com.theatermgnt.theatermgnt.bookingCombo.dto.response.ComboCheckInResponse;
 
 public interface BookingComboService {
     BookingPricingResponse updateCombos(UUID bookingId, UpdateBookingCombosRequest request);
-    List<ComboSummaryResponse> getCombos(UUID bookingId);
 
+    List<ComboCheckInResponse> getCombos(UUID bookingId);
 }

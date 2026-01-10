@@ -27,4 +27,5 @@ public class TicketResponse {
     TicketStatus status;
     Instant expiresAt;
     Instant createdAt;
+    UUID bookingId;
 }

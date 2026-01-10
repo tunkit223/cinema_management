@@ -2,6 +2,7 @@ package com.theatermgnt.theatermgnt.ticket.service;
 
 import com.theatermgnt.theatermgnt.ticket.dto.request.TicketCheckInRequest;
 import com.theatermgnt.theatermgnt.ticket.dto.response.TicketCheckInResponse;
+import com.theatermgnt.theatermgnt.ticket.dto.response.TicketCheckInViewResponse;
 import com.theatermgnt.theatermgnt.ticket.dto.response.TicketResponse;
 import com.theatermgnt.theatermgnt.ticket.entity.Ticket;
 
@@ -16,6 +17,7 @@ public interface TicketService {
     List<Ticket> createTickets(UUID bookingId);
 
     Ticket getTicketByCode(String ticketCode);
+    TicketCheckInViewResponse getTicketCheckInViewByCode(String ticketCode);
 
     List<Ticket> getTicketsByCustomerId(String customerId);
 
