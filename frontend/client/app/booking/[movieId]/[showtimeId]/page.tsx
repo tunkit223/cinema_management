@@ -18,6 +18,7 @@ import PaymentStep from "@/components/booking/payment-step"
 import SuccessStep from "@/components/booking/success-step"
 import BookingTimer from "@/components/booking/booking-timer"
 import { validateOrphanSeats } from "@/lib/seatValidation"
+import { ErrorNotification } from "@/components/error-notification"
 
 export default function BookingPage({
   params,
@@ -48,6 +49,7 @@ export default function BookingPage({
   const [pointsUsed, setPointsUsed] = useState(0)
   const [pointsDiscount, setPointsDiscount] = useState(0)
   const [paymentSuccess, setPaymentSuccess] = useState(false)
+  const [orphanSeatError, setOrphanSeatError] = useState<string | null>(null)
   
   // Booking state
   const [bookingId, setBookingId] = useState<string | null>(null)
@@ -688,7 +690,8 @@ export default function BookingPage({
         )
 
         if (!validation.isValid) {
-          alert(`⚠️ Invalid Seat Selection\n\n${validation.message}\n\nPlease adjust your seat selection.`)
+          setOrphanSeatError(validation.message)
+          setIsCreatingBooking(false)
           return
         }
 
@@ -822,6 +825,18 @@ export default function BookingPage({
 
   return (
     <div className="min-h-screen bg-background dark:bg-slate-950 pt-20 pb-12">
+      {/* Orphan Seat Error Notification */}
+      {orphanSeatError && (
+        <div className="fixed top-20 left-4 right-4 z-50 max-w-lg md:max-w-md md:left-auto md:right-4">
+          <ErrorNotification
+            title="Invalid Seat Selection"
+            message={orphanSeatError}
+            onClose={() => setOrphanSeatError(null)}
+            isVisible={!!orphanSeatError}
+          />
+        </div>
+      )}
+
       {bookingExpiredAt && currentStep > 1 && currentStep < 5 && (
         <div className="fixed top-16 md:top-20 left-1/2 -translate-x-1/2 z-50">
           <BookingTimer expiredAt={bookingExpiredAt} onExpired={handleBookingExpired} />

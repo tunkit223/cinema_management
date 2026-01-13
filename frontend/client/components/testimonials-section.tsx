@@ -21,7 +21,7 @@ export function TestimonialsSection() {
           </h2>
 
           <p className="text-xl text-slate-400 max-w-2xl mx-auto">
-            Join thousands of satisfied customers who have experienced the CINEPLEX difference.
+            Join thousands of satisfied customers who have experienced the Cifastar difference.
           </p>
         </div>
 
@@ -60,7 +60,7 @@ export function TestimonialsSection() {
 
         {/* CTA */}
         <div className="mt-12 text-center">
-          <p className="text-slate-400 mb-6">Share your CINEPLEX experience with us</p>
+          <p className="text-slate-400 mb-6">Share your Cifastar experience with us</p>
           <button className="px-8 py-4 rounded-lg gradient-primary text-white font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition-all">
             Write a Review
           </button>

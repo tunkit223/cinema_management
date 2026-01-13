@@ -52,6 +52,31 @@ export interface BookingSummaryResponse {
   }
 }
 
+export interface BookingListItem {
+  id: string
+  bookingCode: string
+  customerId: string | null
+  customerName: string
+  email: string
+  phone: string
+  movieTitle: string
+  roomName: string
+  screeningTime: string
+  seatCount: number
+  totalAmount: number
+  status: 'PENDING' | 'CONFIRM' | 'PAID' | 'EXPIRED' | 'CANCELLED'
+  createdAt: string
+  expiredAt: string | null
+}
+
+export interface BookingListResponse {
+  bookings: BookingListItem[]
+  totalElements: number
+  totalPages: number
+  currentPage: number
+  pageSize: number
+}
+
 export interface UpdateBookingCombosRequest {
   combos: Array<{ comboId: string; quantity: number }>
 }
@@ -138,3 +163,32 @@ export const cancelBooking = async (bookingId: string): Promise<string> => {
     throw error
   }
 }
+
+// Get list of bookings
+export const getBookingList = async (
+  status?: string,
+  customerSearch?: string,
+  emailSearch?: string,
+  movieSearch?: string,
+  page: number = 0,
+  size: number = 10
+): Promise<BookingListResponse> => {
+  try {
+    const params = new URLSearchParams()
+    if (status) params.append('status', status)
+    if (customerSearch) params.append('customerSearch', customerSearch)
+    if (emailSearch) params.append('emailSearch', emailSearch)
+    if (movieSearch) params.append('movieSearch', movieSearch)
+    params.append('page', page.toString())
+    params.append('size', size.toString())
+
+    const response = await httpClient.get<ApiResponse<BookingListResponse>>(
+      `/bookings?${params.toString()}`
+    )
+    return response.data.result
+  } catch (error) {
+    console.error("Failed to get booking list:", error)
+    throw error
+  }
+}
+

@@ -50,6 +50,8 @@ public interface ScreeningSeatRepository extends JpaRepository<ScreeningSeat, St
 
     List<ScreeningSeat> findByBooking(String bookingId);
 
+    long countByBooking(String bookingId);
+
     @Modifying
     @Query(
             """
