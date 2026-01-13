@@ -5,6 +5,7 @@ import { Modal } from "@/components/ui/Modal";
 import type { StaffProfile } from "@/types/StaffType/StaffProfile";
 import type { StaffRequest } from "@/services/staffService";
 import { getAllCinemas, type Cinema } from "@/services/cinemaService";
+import { getAllRoles, type Role } from "@/services/roleService";
 
 interface StaffFormDialogProps {
   isOpen: boolean;
@@ -40,30 +41,31 @@ export function StaffFormDialog({
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [cinemas, setCinemas] = useState<Cinema[]>([]);
   const [loadingCinemas, setLoadingCinemas] = useState(false);
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [loadingRoles, setLoadingRoles] = useState(false);
 
-  // Available roles
-  const availableRoles = [
-    { value: "STAFF", label: "Staff" },
-    { value: "MANAGER", label: "Manager" },
-    { value: "ADMIN", label: "Admin" },
-  ];
-
-  // Load cinemas when dialog opens
+  // Load cinemas and roles when dialog opens
   useEffect(() => {
-    const loadCinemas = async () => {
+    const loadData = async () => {
       if (isOpen) {
         try {
           setLoadingCinemas(true);
-          const cinemasData = await getAllCinemas();
+          setLoadingRoles(true);
+          const [cinemasData, rolesData] = await Promise.all([
+            getAllCinemas(),
+            getAllRoles(),
+          ]);
           setCinemas(cinemasData);
+          setRoles(rolesData);
         } catch (error) {
-          console.error("Failed to load cinemas:", error);
+          console.error("Failed to load data:", error);
         } finally {
           setLoadingCinemas(false);
+          setLoadingRoles(false);
         }
       }
     };
-    loadCinemas();
+    loadData();
   }, [isOpen]);
 
   useEffect(() => {
@@ -420,31 +422,35 @@ export function StaffFormDialog({
             Role(s)
             {!staff && (
               <span className="text-xs text-muted-foreground ml-2">
-                (Default: Staff)
+                (Select at least one role)
               </span>
             )}
           </label>
-          <div className="flex flex-wrap gap-2">
-            {availableRoles.map((role) => (
-              <button
-                key={role.value}
-                type="button"
-                onClick={() => handleRoleToggle(role.value)}
-                disabled={saving}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  selectedRoles.includes(role.value)
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
-              >
-                {role.label}
-              </button>
-            ))}
-          </div>
+          {loadingRoles ? (
+            <p className="text-sm text-muted-foreground">Loading roles...</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {roles.map((role) => (
+                <button
+                  key={role.name}
+                  type="button"
+                  onClick={() => handleRoleToggle(role.name)}
+                  disabled={saving}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    selectedRoles.includes(role.name)
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  title={role.description}
+                >
+                  {role.name}
+                </button>
+              ))}
+            </div>
+          )}
           {selectedRoles.length === 0 && (
-            <p className="text-xs text-muted-foreground mt-2">
-              At least one role is recommended. If no role is selected, STAFF
-              role will be assigned by default.
+            <p className="text-xs text-destructive mt-2">
+              Please select at least one role.
             </p>
           )}
         </div>

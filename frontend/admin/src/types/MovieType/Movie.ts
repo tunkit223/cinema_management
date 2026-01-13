@@ -28,7 +28,7 @@ export interface Movie {
   description: string;
   durationMinutes: number;
   director: string;
-  cast: string;
+  castMembers: string;
   posterUrl: string;
   trailerUrl: string;
   releaseDate: string;
@@ -45,7 +45,7 @@ export interface CreateMovieRequest {
   description: string;
   durationMinutes: number;
   director: string;
-  cast: string;
+  castMembers: string;
   posterUrl: string;
   trailerUrl: string;
   releaseDate: string;

@@ -7,9 +7,9 @@ export interface MovieReview {
   helpfulCount: number;
   unhelpfulCount: number;
   customer: {
-    id: string;
-    firstName: string;
-    lastName: string;
+    id?: string;
+    firstName?: string;
+    lastName?: string;
     avatarUrl?: string;
   };
   movie: {
