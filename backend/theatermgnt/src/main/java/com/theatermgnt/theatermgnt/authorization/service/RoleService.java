@@ -14,6 +14,7 @@ import com.theatermgnt.theatermgnt.authorization.repository.PermissionRepository
 import com.theatermgnt.theatermgnt.authorization.repository.RoleRepository;
 import com.theatermgnt.theatermgnt.common.exception.AppException;
 import com.theatermgnt.theatermgnt.common.exception.ErrorCode;
+import com.theatermgnt.theatermgnt.staff.repository.StaffRepository;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ public class RoleService {
     RoleRepository roleRepository;
     PermissionRepository permissionRepository;
     RoleMapper roleMapper;
+    StaffRepository staffRepository;
 
     /// CREATE A ROLE
     public RoleResponse create(RoleRequest request) {
@@ -60,6 +62,16 @@ public class RoleService {
 
     /// DELETE A ROLE
     public void delete(String roleId) {
+        // Kiểm tra xem role có tồn tại không
+        Role role = roleRepository.findById(roleId)
+            .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
+        
+        // Kiểm tra xem role có đang được sử dụng bởi staff nào không
+        boolean isRoleInUse = staffRepository.existsByRoleName(roleId);
+        if (isRoleInUse) {
+            throw new AppException(ErrorCode.ROLE_IN_USE);
+        }
+        
         roleRepository.deleteById(roleId);
     }
 }

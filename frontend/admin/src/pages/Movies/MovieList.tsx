@@ -77,33 +77,34 @@ export function MovieList() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <PageHeader
-          title="Movies Management"
-          description="Manage all movies in the system"
+      <PageHeader
+        title="Movies Management"
+        description="Manage all movies in the system"
+      />
+
+      {/* Search and Actions Bar */}
+      <div className="space-y-3">
+        <SearchAddBar
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          placeholder="Search by movie title or director..."
+          totalCount={movies.length}
+          filteredCount={filteredMovies.length}
+          icon={<Film className="w-4 h-4" />}
+          label="movies"
+          buttonText="Add Movie"
+          onAddClick={handleOpenCreateDialog}
         />
+
         <Button
           variant="outline"
           onClick={() => setGenreManagerOpen(true)}
-          className="gap-2"
+          className="gap-2 w-full sm:w-auto"
         >
           <Settings className="h-4 w-4" />
           Manage Genres & Ratings
         </Button>
       </div>
-
-      {/* Search and Actions Bar */}
-      <SearchAddBar
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        placeholder="Search by movie title or director..."
-        totalCount={movies.length}
-        filteredCount={filteredMovies.length}
-        icon={<Film className="w-4 h-4" />}
-        label="movies"
-        buttonText="Add Movie"
-        onAddClick={handleOpenCreateDialog}
-      />
 
       {/* Movie Table */}
       {searchQuery.trim() && filteredMovies.length === 0 && !loading ? (

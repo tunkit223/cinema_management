@@ -87,11 +87,9 @@ public class AuthenticationService {
 
         // Validate account type
         if (account.getAccountType() != requiredAccountType) {
-            log.warn(
-                    "Account type mismatch: {} tried to login with {} account type",
-                    account.getUsername(),
-                    requiredAccountType);
-            throw new AppException(ErrorCode.WRONG_ACCOUNT_TYPE);
+            log.warn("Account type mismatch: {} tried to login with {} account type", 
+                    account.getUsername(), requiredAccountType);
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
 
         var token = tokenService.generateToken(account);

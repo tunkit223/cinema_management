@@ -52,10 +52,10 @@ export function MovieRatingStatsDisplay({
   // Group ratings into ranges for better visualization
   const ratingRanges = [
     { label: "9-10", min: 9, max: 10 },
-    { label: "7-8", min: 7, max: 9 },
-    { label: "5-6", min: 5, max: 7 },
-    { label: "3-4", min: 3, max: 5 },
-    { label: "1-2", min: 1, max: 3 },
+    { label: "7-8", min: 7, max: 8.9 },
+    { label: "5-6", min: 5, max: 6.9 },
+    { label: "3-4", min: 3, max: 4.9 },
+    { label: "1-2", min: 1, max: 2.9 },
   ];
 
   const groupedDistribution = ratingRanges.map((range) => {
