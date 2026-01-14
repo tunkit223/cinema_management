@@ -17,6 +17,7 @@ import ConfirmationStep from "@/components/booking/confirmation-step"
 import PaymentStep from "@/components/booking/payment-step"
 import SuccessStep from "@/components/booking/success-step"
 import BookingTimer from "@/components/booking/booking-timer"
+import { validateOrphanSeats } from "@/lib/seatValidation"
 
 export default function BookingPage({
   params,
@@ -604,7 +605,7 @@ export default function BookingPage({
     )
   }
 
-  const seatPrice = showtime.price
+  const seatPrice = showtime.price ?? 0
   // Only use bookingSummary from step 3 onwards (confirmation step)
   const useBookingSummary = bookingSummary && currentStep >= 3
   const seatsTotal = useBookingSummary
@@ -679,6 +680,17 @@ export default function BookingPage({
         }
 
         console.log('Creating booking with customerId:', customerId)
+
+        // Validate orphan seats before creating booking
+        const validation = validateOrphanSeats(
+          seats,
+          selectedSeats.map(seat => seat.id)
+        )
+
+        if (!validation.isValid) {
+          alert(`⚠️ Invalid Seat Selection\n\n${validation.message}\n\nPlease adjust your seat selection.`)
+          return
+        }
 
         // Tạo booking request
         const bookingRequest = {
@@ -827,10 +839,7 @@ export default function BookingPage({
             </div>
             <div className="flex-1">
               <h1 className="text-3xl font-bold mb-2">{movie?.title}</h1>
-              <p className="text-muted-foreground mb-2">{movie?.genre}</p>
-              <p className="text-sm text-muted-foreground">
-                {showtime?.time} • {showtime?.format} • {showtime?.price.toLocaleString()} VND
-              </p>
+              <p className="text-muted-foreground mb-2">{movie?.genre} • {showtime?.time}</p>
             </div>
           </div>
         </div>

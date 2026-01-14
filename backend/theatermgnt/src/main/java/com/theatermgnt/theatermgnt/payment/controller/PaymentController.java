@@ -28,9 +28,11 @@ public class PaymentController {
      */
     @PostMapping("/vnpay/{invoiceId}")
     public ApiResponse<PaymentDetailsResponse> createVNPayPayment(
-            @PathVariable String invoiceId, HttpServletRequest httpRequest) {
-        log.info("Creating VNPay payment for invoice: {}", invoiceId);
-        PaymentDetailsResponse response = paymentService.createVNPayPayment(invoiceId, httpRequest);
+            @PathVariable String invoiceId,
+            @RequestParam(value = "returnUrl", required = false) String returnUrl,
+            HttpServletRequest httpRequest) {
+        log.info("Creating VNPay payment for invoice: {}, returnUrl: {}", invoiceId, returnUrl);
+        PaymentDetailsResponse response = paymentService.createVNPayPayment(invoiceId, httpRequest, returnUrl);
         return ApiResponse.<PaymentDetailsResponse>builder().result(response).build();
     }
 
@@ -54,5 +56,16 @@ public class PaymentController {
         log.info("VNPay IPN callback");
         Map<String, Object> response = paymentService.handleVNPayIPN(params);
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Process cash payment for invoice
+     * POST /api/theater-mgnt/payment/cash/{invoiceId}
+     */
+    @PostMapping("/cash/{invoiceId}")
+    public ApiResponse<PaymentDetailsResponse> processCashPayment(@PathVariable String invoiceId) {
+        log.info("Processing cash payment for invoice: {}", invoiceId);
+        PaymentDetailsResponse response = paymentService.processCashPayment(invoiceId);
+        return ApiResponse.<PaymentDetailsResponse>builder().result(response).build();
     }
 }

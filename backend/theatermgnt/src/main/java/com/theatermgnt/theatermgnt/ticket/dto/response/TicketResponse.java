@@ -26,4 +26,6 @@ public class TicketResponse {
     BigDecimal price;
     TicketStatus status;
     Instant expiresAt;
+    Instant createdAt;
+    UUID bookingId;
 }

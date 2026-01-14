@@ -11,6 +11,11 @@ export default function MyTicketsPage() {
   const [tickets, setTickets] = useState<TicketResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [purchaseDate, setPurchaseDate] = useState("");
+  const [page, setPage] = useState(1);
+
+  const PAGE_SIZE = 9;
 
   useEffect(() => {
     const token = getToken();
@@ -58,6 +63,31 @@ export default function MyTicketsPage() {
 
     fetchTickets();
   }, [router]);
+
+  const filteredTickets = tickets.filter((ticket) => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+    const matchesTitle = normalizedSearch
+      ? ticket.movieTitle.toLowerCase().includes(normalizedSearch)
+      : true;
+
+    const parsedTicketDate = ticket.startTime ? Date.parse(ticket.startTime) : NaN;
+    const ticketDate = Number.isNaN(parsedTicketDate)
+      ? null
+      : new Date(parsedTicketDate).toISOString().slice(0, 10);
+    const matchesDate = purchaseDate ? ticketDate === purchaseDate : true;
+
+    return matchesTitle && matchesDate;
+  });
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, purchaseDate, tickets]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredTickets.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const startIdx = (currentPage - 1) * PAGE_SIZE;
+  const endIdx = startIdx + PAGE_SIZE;
+  const paginatedTickets = filteredTickets.slice(startIdx, endIdx);
 
   return (
     <div className="min-h-screen pt-20 pb-12 px-4">
@@ -133,50 +163,137 @@ export default function MyTicketsPage() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {tickets.map((ticket) => (
-              <div key={ticket.id} className="bg-card border border-border rounded-lg p-6 hover:shadow-lg transition-shadow">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex-1">
-                    <h3 className="font-bold text-xl text-purple-600 dark:text-purple-400 mb-2">{ticket.movieTitle}</h3>
-                    <p className="text-sm text-slate-600 dark:text-slate-300"><span className="font-semibold">Ticket:</span> {ticket.ticketCode}</p>
-                    <p className="text-sm text-slate-600 dark:text-slate-300"><span className="font-semibold">Seat:</span> {ticket.seatName}</p>
-                  </div>
-                  <span
-                    className={`px-3 py-1 rounded-full text-xs font-medium ${
+          <>
+            <div className="bg-card border border-border rounded-2xl p-4 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold mb-2">Search by movie name</label>
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Enter movie name..."
+                    className="w-full px-3 py-2 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold mb-2">Filter by showtime date</label>
+                  <input
+                    type="date"
+                    value={purchaseDate}
+                    onChange={(e) => setPurchaseDate(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+                <div className="flex items-end">
+                  <button
+                    onClick={() => {
+                      setSearchTerm("");
+                      setPurchaseDate("");
+                    }}
+                    className="w-full px-4 py-2 rounded-lg border border-border text-sm font-semibold hover:bg-muted transition-colors"
+                  >
+                    Clear filters
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {filteredTickets.length === 0 ? (
+              <div className="bg-card border border-border rounded-2xl p-8 text-center">
+                <p className="text-muted-foreground">No tickets match the current filters.</p>
+              </div>
+            ) : (
+              <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {paginatedTickets.map((ticket) => (
+                  <div 
+                    key={ticket.id} 
+                    className={`relative rounded-xl p-6 transition-all hover:shadow-xl hover:-translate-y-1 border-2 bg-card ${
                       ticket.status === "ACTIVE"
-                        ? "bg-green-500/10 text-green-600"
+                        ? "border-green-300 dark:border-green-700"
                         : ticket.status === "USED"
-                        ? "bg-blue-500/10 text-blue-600"
-                        : "bg-red-500/10 text-red-600"
+                        ? "border-blue-300 dark:border-blue-700"
+                        : "border-red-300 dark:border-red-700"
                     }`}
                   >
-                    {ticket.status}
-                  </span>
-                </div>
-                <div className="space-y-2 text-base mb-4 pb-4 border-b border-border dark:border-slate-700">
-                  <p>
-                    <span className="font-semibold text-slate-700 dark:text-slate-300">🎬 Showtime:</span> <span className="text-slate-600 dark:text-slate-300">{new Date(ticket.startTime).toLocaleString()}</span>
-                  </p>
-                  <p>
-                    <span className="font-semibold text-slate-700 dark:text-slate-300">💰 Price:</span> <span className="text-purple-600 dark:text-purple-400 font-semibold">{ticket.price.toLocaleString()} VND</span>
-                  </p>
-                  <p>
-                    <span className="font-semibold text-slate-700 dark:text-slate-300">⏰ Expires:</span> <span className="text-orange-600 dark:text-orange-400">{new Date(ticket.expiresAt).toLocaleString()}</span>
-                  </p>
-                </div>
-                {ticket.qrContent && (
-                  <div className="mb-4 p-4 bg-white rounded-lg flex justify-center">
-                    <img 
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(ticket.qrContent)}`}
-                      alt="QR Code"
-                      className="w-32 h-32"
-                    />
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex-1">
+                        <h3 className="font-bold text-2xl text-purple-700 dark:text-purple-300 mb-3 line-clamp-2">{ticket.movieTitle}</h3>
+                        <div className="space-y-1">
+                          <p className="text-xs text-slate-500 dark:text-slate-400"><span className="font-semibold">🎫 Ticket:</span> {ticket.ticketCode}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400"><span className="font-semibold">💺 Seat:</span> {ticket.seatName}</p>
+                        </div>
+                      </div>
+                      <span
+                        className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap ml-2 ${
+                          ticket.status === "ACTIVE"
+                            ? "bg-green-500 text-white"
+                            : ticket.status === "USED"
+                            ? "bg-blue-500 text-white"
+                            : "bg-red-500 text-white"
+                        }`}
+                      >
+                        {ticket.status}
+                      </span>
+                    </div>
+                    <div className="space-y-2.5 text-sm mb-4 pb-4 border-b-2 border-current border-opacity-20">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-slate-700 dark:text-slate-300">🎬 Showtime</span>
+                        <span className="text-right text-slate-600 dark:text-slate-300">{new Date(ticket.startTime).toLocaleString()}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-slate-700 dark:text-slate-300">💰 Price</span>
+                        <span className="text-right text-purple-600 dark:text-purple-400 font-bold">{ticket.price.toLocaleString()} VND</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-slate-700 dark:text-slate-300">📅 Purchased</span>
+                        <span className="text-right text-slate-600 dark:text-slate-300 text-xs">{new Date(ticket.createdAt).toLocaleString()}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-slate-700 dark:text-slate-300">⏰ Expires</span>
+                        <span className="text-right text-orange-600 dark:text-orange-400 font-semibold text-xs">{new Date(ticket.expiresAt).toLocaleString()}</span>
+                      </div>
+                    </div>
+                    {ticket.qrContent && (
+                      <div className="mb-4 p-4 bg-white dark:bg-slate-800 rounded-xl flex justify-center border border-slate-200 dark:border-slate-700">
+                        <img 
+                          src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(ticket.qrContent)}`}
+                          alt="QR Code"
+                          className="w-32 h-32"
+                        />
+                      </div>
+                    )}
                   </div>
-                )}
+                ))}
               </div>
-            ))}
-          </div>
+              <div className="flex flex-col sm:flex-row items-center justify-between mt-6 gap-3">
+                <span className="text-sm text-muted-foreground">
+                  Showing {filteredTickets.length === 0 ? 0 : startIdx + 1}-{Math.min(endIdx, filteredTickets.length)} of {filteredTickets.length}
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                    className="px-4 py-2 rounded-lg border border-border text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted transition-colors"
+                  >
+                    Previous
+                  </button>
+                  <span className="text-sm font-semibold">
+                    Page {currentPage} / {totalPages}
+                  </span>
+                  <button
+                    onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                    className="px-4 py-2 rounded-lg border border-border text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted transition-colors"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+              </>
+            )}
+          </>
         )}
       </div>
     </div>

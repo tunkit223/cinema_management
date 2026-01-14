@@ -2,6 +2,9 @@ package com.theatermgnt.theatermgnt.bookingCombo.service;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import jakarta.transaction.Transactional;
@@ -15,9 +18,15 @@ import com.theatermgnt.theatermgnt.booking.mapper.BookingPricingMapper;
 import com.theatermgnt.theatermgnt.booking.repository.BookingRepository;
 import com.theatermgnt.theatermgnt.bookingCombo.dto.request.ComboItemRequest;
 import com.theatermgnt.theatermgnt.bookingCombo.dto.request.UpdateBookingCombosRequest;
+import com.theatermgnt.theatermgnt.bookingCombo.dto.response.ComboCheckInResponse;
 import com.theatermgnt.theatermgnt.bookingCombo.entity.BookingCombo;
 import com.theatermgnt.theatermgnt.bookingCombo.repository.BookingComboRepository;
+import com.theatermgnt.theatermgnt.combo.dto.response.ComboItemResponse;
+import com.theatermgnt.theatermgnt.combo.dto.response.ComboResponse;
 import com.theatermgnt.theatermgnt.combo.entity.Combo;
+import com.theatermgnt.theatermgnt.combo.mapper.ComboItemMapper;
+import com.theatermgnt.theatermgnt.combo.mapper.ComboMapper;
+import com.theatermgnt.theatermgnt.combo.repository.ComboItemRepository;
 import com.theatermgnt.theatermgnt.combo.repository.ComboRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -29,7 +38,10 @@ public class BookingComboServiceImpl implements BookingComboService {
     private final BookingComboRepository bookingComboRepository;
     private final BookingRepository bookingRepository;
     private final ComboRepository comboRepository;
+    private final ComboItemRepository comboItemRepository;
+    private final ComboMapper comboMapper;
     private final BookingPricingMapper bookingPricingMapper;
+    private final ComboItemMapper comboItemMapper;
 
     @Override
     public BookingPricingResponse updateCombos(UUID bookingId, UpdateBookingCombosRequest request) {
@@ -58,6 +70,7 @@ public class BookingComboServiceImpl implements BookingComboService {
                     item.getComboId(),
                     combo.getName(),
                     item.getQuantity(),
+                    item.getQuantity(),
                     unitPrice,
                     subtotal);
 
@@ -84,5 +97,25 @@ public class BookingComboServiceImpl implements BookingComboService {
         }
 
         return booking;
+    }
+
+    @Override
+    public List<ComboCheckInResponse> getCombos(UUID bookingId) {
+        List<ComboCheckInResponse> responses = new ArrayList<>();
+        List<BookingCombo> combos = bookingComboRepository.findByBookingId(bookingId.toString());
+
+        for (BookingCombo combo : combos) {
+            Optional<Combo> cb = comboRepository.findById(combo.getComboId());
+            if (cb.isPresent()) {
+                ComboResponse cr = comboMapper.toComboResponse(cb.get());
+                List<ComboItemResponse> items = comboItemRepository.findByComboId(combo.getComboId()).stream()
+                        .map(comboItemMapper::toComboItemResponse)
+                        .toList();
+                ComboCheckInResponse response =
+                        new ComboCheckInResponse(combo.getId(), combo.getQuantity(), combo.getRemain(), cr, items);
+                responses.add(response);
+            }
+        }
+        return responses;
     }
 }

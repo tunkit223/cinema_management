@@ -3,13 +3,18 @@ package com.theatermgnt.theatermgnt.ticket.service;
 import com.theatermgnt.theatermgnt.booking.entity.Booking;
 import com.theatermgnt.theatermgnt.booking.enums.BookingStatus;
 import com.theatermgnt.theatermgnt.booking.repository.BookingRepository;
+import com.theatermgnt.theatermgnt.bookingCombo.dto.response.ComboCheckInResponse;
+import com.theatermgnt.theatermgnt.bookingCombo.repository.BookingComboRepository;
+import com.theatermgnt.theatermgnt.bookingCombo.service.BookingComboService;
 import com.theatermgnt.theatermgnt.common.exception.AppException;
 import com.theatermgnt.theatermgnt.common.exception.ErrorCode;
 import com.theatermgnt.theatermgnt.notification.listener.NotificationEventListener;
 import com.theatermgnt.theatermgnt.screeningSeat.entity.ScreeningSeat;
 import com.theatermgnt.theatermgnt.screeningSeat.repository.ScreeningSeatRepository;
 import com.theatermgnt.theatermgnt.screeningSeat.service.ScreeningSeatService;
+import com.theatermgnt.theatermgnt.ticket.dto.request.TicketCheckInRequest;
 import com.theatermgnt.theatermgnt.ticket.dto.response.TicketCheckInResponse;
+import com.theatermgnt.theatermgnt.ticket.dto.response.TicketCheckInViewResponse;
 import com.theatermgnt.theatermgnt.ticket.dto.response.TicketEmailView;
 import com.theatermgnt.theatermgnt.ticket.dto.response.TicketResponse;
 import com.theatermgnt.theatermgnt.ticket.entity.Ticket;
@@ -20,6 +25,7 @@ import com.theatermgnt.theatermgnt.ticket.repository.TicketRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -37,12 +43,12 @@ public class TicketServiceImpl implements TicketService {
     private final TicketRepository ticketRepository;
     private final TicketMapper ticketMapper;
     private final BookingRepository bookingRepository;
+    private final BookingComboRepository bookingComboRepository;
     private final ScreeningSeatRepository screeningSeatRepository;
     private final ScreeningSeatService screeningSeatService;
+    private final BookingComboService bookingComboService;
     private final TicketCodeGenerator ticketCodeGenerator;
     private final QrGenerator qrGenerator;
-    private final QrImageGenerator qrImageGenerator;
-    private final NotificationEventListener notificationEventListener;
     private final ApplicationEventPublisher eventPublisher;
 
 
@@ -138,19 +144,19 @@ public class TicketServiceImpl implements TicketService {
                     .build();
         }).toList();
         List<Ticket> savedTickets = ticketRepository.saveAll(tickets);
-
-        eventPublisher.publishEvent(
-                TicketCreatedEvent.builder()
-                        .accountId(UUID.fromString(booking.getCustomer().getAccount().getId()))
-                        .bookingId(booking.getId())
-                        .ticketIds(
-                                savedTickets.stream()
-                                        .map(Ticket::getId)
-                                        .toList()
-                        )
-                        .build()
-        );
-
+        if(booking.getCustomer() != null){
+            eventPublisher.publishEvent(
+                    TicketCreatedEvent.builder()
+                            .accountId(UUID.fromString(booking.getCustomer().getAccount().getId()))
+                            .bookingId(booking.getId())
+                            .ticketIds(
+                                    savedTickets.stream()
+                                            .map(Ticket::getId)
+                                            .toList()
+                            )
+                            .build()
+            );
+        }
         return savedTickets;
     }
 
@@ -166,6 +172,15 @@ public class TicketServiceImpl implements TicketService {
     public Ticket getTicketByCode(String ticketCode) {
         return ticketRepository.findByTicketCode(ticketCode)
                 .orElseThrow(() -> new AppException(ErrorCode.TICKET_NOT_EXISTED));
+    }
+
+    @Override
+    public TicketCheckInViewResponse getTicketCheckInViewByCode(String ticketCode) {
+        Ticket ticket = ticketRepository.findByTicketCode(ticketCode)
+                .orElseThrow(() -> new AppException(ErrorCode.TICKET_NOT_EXISTED));
+        List<ComboCheckInResponse> comboResponse = bookingComboService.getCombos(ticket.getBooking().getId());
+        TicketResponse ticketResponse = ticketMapper.toResponse(ticket);
+        return new TicketCheckInViewResponse(ticketResponse, comboResponse);
     }
 
     @Override
@@ -194,5 +209,37 @@ public class TicketServiceImpl implements TicketService {
         );
 
         ticketRepository.saveAll(expiredTickets);
+    }
+
+    @Override
+    @PreAuthorize("hasRole('ADMIN') || hasRole('STAFF')")
+    public void checkInTicket(TicketCheckInRequest request) {
+        Ticket ticket = ticketRepository.findByTicketCode(request.getTicketCode())
+                .orElseThrow(() -> new AppException(ErrorCode.TICKET_NOT_EXISTED));
+
+        if (ticket.getStatus() != TicketStatus.ACTIVE) {
+            throw new AppException(ErrorCode.TICKET_NOT_ACTIVE);
+        }
+
+        if (Instant.now().isAfter(ticket.getExpiresAt())) {
+            ticket.setStatus(TicketStatus.EXPIRED);
+            ticketRepository.save(ticket);
+            throw new AppException(ErrorCode.TICKET_EXPIRED);
+        }
+        for(var comboUse : request.getComboUseList()){
+            var bookingCombo = bookingComboRepository.findById(comboUse.getComboId())
+                    .orElseThrow(() -> new AppException(ErrorCode.BOOKING_COMBO_NOT_EXISTED));
+            if(bookingCombo.getRemain() < comboUse.getQuantity()){
+                throw new AppException(ErrorCode.INSUFFICIENT_COMBO_QUANTITY);
+            }
+            bookingCombo.setRemain(
+                    bookingCombo.getRemain() - comboUse.getQuantity()
+            );
+            bookingComboRepository.save(bookingCombo);
+        }
+
+        ticket.setStatus(TicketStatus.USED);
+        ticket.setUsedAt(Instant.now());
+        ticketRepository.save(ticket);
     }
 }

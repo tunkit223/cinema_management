@@ -29,8 +29,7 @@ public interface InvoiceService {
 
     Page<InvoiceResponse> getInvoicesByStatus(InvoiceStatus status, int page, int size);
 
-    Page<InvoiceResponse> getInvoicesByDateRange(
-            LocalDateTime startDate, LocalDateTime endDate, int page, int size);
+    Page<InvoiceResponse> getInvoicesByDateRange(LocalDateTime startDate, LocalDateTime endDate, int page, int size);
 
     Page<InvoiceResponse> searchInvoices(String search, int page, int size);
 

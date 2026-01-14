@@ -1,12 +1,13 @@
 package com.theatermgnt.theatermgnt.review.dto.request;
 
+import java.math.BigDecimal;
+
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Size;
+
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-
-import java.math.BigDecimal;
 
 @Data
 @Builder

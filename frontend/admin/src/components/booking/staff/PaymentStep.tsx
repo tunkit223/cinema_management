@@ -1,9 +1,11 @@
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Card } from "@/components/ui/card"
-import { Building2, CheckCircle2, CreditCard, Smartphone, Wallet } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { CheckCircle2, Loader2, Smartphone, Wallet } from "lucide-react"
 import { format } from "date-fns"
 import type { Seat, ComboItem, Showtime } from "../../../lib/types"
 import type { Movie } from "@/services/movieService"
+import httpClient from "@/configurations/httpClient"
 
 interface PaymentStepProps {
   bookingId: string
@@ -15,6 +17,7 @@ interface PaymentStepProps {
   selectedSeats: Seat[]
   selectedCombos: ComboItem[]
   onPaymentSuccess: () => void
+  onExternalPaymentStart?: () => void
 }
 
 export default function PaymentStep({
@@ -27,25 +30,125 @@ export default function PaymentStep({
   selectedSeats,
   selectedCombos,
   onPaymentSuccess,
+  onExternalPaymentStart,
 }: PaymentStepProps) {
-  const [selectedMethod, setSelectedMethod] = useState("cash")
+  const [selectedMethod, setSelectedMethod] = useState<"cash" | "vnpay">("vnpay")
   const [isPaying, setIsPaying] = useState(false)
+  const [paymentError, setPaymentError] = useState<string | null>(null)
+  const [isVerifyingReturn, setIsVerifyingReturn] = useState(false)
+  const [returnResult, setReturnResult] = useState<{ code?: string; message?: string; txnRef?: string; amount?: number; orderInfo?: string } | null>(null)
+
+  // Detect VNPay callback parameters once when the page loads after redirect
+  const vnpQueryString = useMemo(() => {
+    if (typeof window === "undefined") return ""
+    return window.location.search.startsWith("?") ? window.location.search.slice(1) : ""
+  }, [])
+
+  useEffect(() => {
+    const hasVnpParams = vnpQueryString.includes("vnp_")
+    if (!hasVnpParams) return
+
+    const verifyPayment = async () => {
+      try {
+        setIsVerifyingReturn(true)
+        const response = await httpClient.get(`/payment/vnpay-return?${vnpQueryString}`)
+        const data = response.data?.result || {}
+        setReturnResult(data)
+
+        // Auto-complete booking when VNPay reports success
+        if (data?.code === "00") {
+          onPaymentSuccess()
+        } else {
+          setPaymentError(data?.message || "Payment was not successful")
+        }
+      } catch (error: any) {
+        console.error("Error verifying VNPay return:", error)
+        setPaymentError(error?.response?.data?.message || error?.message || "Failed to verify VNPay payment")
+      } finally {
+        setIsVerifyingReturn(false)
+      }
+    }
+
+    verifyPayment()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vnpQueryString])
 
   const seatTotal = selectedSeats.reduce((sum, seat) => sum + (seat.price || 0), 0)
   const comboTotal = selectedCombos.reduce((sum, combo) => sum + (combo.price * (combo.quantity || 1)), 0)
 
   const methods = [
-    { id: "cash", label: "Cash", description: "Pay at counter", icon: Wallet },
-    { id: "card", label: "Credit/Debit Card", description: "Visa, Mastercard, etc", icon: CreditCard },
-  ]
+    { id: "vnpay", label: "VNPay", description: "Redirect to VNPay sandbox", icon: Smartphone },
+    { id: "cash", label: "Cash", description: "Collect cash at counter", icon: Wallet },
+  ] as const
 
-  const handlePaymentSimulation = () => {
+  const handleVnpayPayment = async () => {
     if (isPaying) return
+    setPaymentError(null)
     setIsPaying(true)
-    setTimeout(() => {
-      onPaymentSuccess()
+
+    // Prevent auto-cancel when leaving page for VNPay
+    onExternalPaymentStart?.()
+
+    try {
+      // Force a stable return URL for VNPay (admin app on port 5173)
+      const returnUrl = typeof window !== "undefined" ? `${window.location.origin}/admin/ticket-booking` : undefined
+
+      // Tạo hóa đơn cho booking
+      const invoiceResponse = await httpClient.post(`/bookings/${bookingId}/create-invoice`)
+      const invoiceId = invoiceResponse.data?.result?.id
+
+      if (!invoiceId) {
+        throw new Error("Không lấy được mã hóa đơn từ hệ thống")
+      }
+
+      // Yêu cầu liên kết thanh toán VNPay (sandbox)
+      const url = returnUrl ? `/payment/vnpay/${invoiceId}?returnUrl=${encodeURIComponent(returnUrl)}` : `/payment/vnpay/${invoiceId}`
+      const paymentResponse = await httpClient.post(url)
+      const paymentUrl = paymentResponse.data?.result?.paymentUrl
+
+      if (!paymentUrl || typeof paymentUrl !== "string") {
+        throw new Error("Không nhận được đường dẫn thanh toán VNPay")
+      }
+
+      // Use replace to avoid back-button returning to half-state
+      window.location.replace(paymentUrl)
+    } catch (error: any) {
+      console.error("Error initiating VNPay payment:", error)
+      setPaymentError(error?.response?.data?.message || error?.message || "Không thể khởi tạo thanh toán VNPay")
+    } finally {
       setIsPaying(false)
-    }, 1200)
+    }
+  }
+
+  const handleCashPayment = async () => {
+    if (isPaying) return
+    setPaymentError(null)
+    setIsPaying(true)
+
+    try {
+      // Tạo hóa đơn cho booking
+      const invoiceResponse = await httpClient.post(`/bookings/${bookingId}/create-invoice`)
+      const invoiceId = invoiceResponse.data?.result?.id
+
+      if (!invoiceId) {
+        throw new Error("Không lấy được mã hóa đơn từ hệ thống")
+      }
+
+      // Xử lý thanh toán tiền mặt
+      const paymentResponse = await httpClient.post(`/payment/cash/${invoiceId}`)
+      const paymentResult = paymentResponse.data?.result
+
+      if (paymentResult?.code === "00") {
+        onPaymentSuccess()
+      } else {
+        throw new Error(paymentResult?.message || "Thanh toán tiền mặt không thành công")
+      }
+    } catch (error: any) {
+      console.error("Error processing cash payment:", error)
+      setPaymentError(error?.response?.data?.message || error?.message || "Không thể xử lý thanh toán tiền mặt")
+    } finally {
+      setIsPaying(false)
+    }
   }
 
   return (
@@ -66,7 +169,7 @@ export default function PaymentStep({
         <Card className="p-6 space-y-6 shadow-sm">
           <div>
             <h3 className="text-lg font-semibold text-gray-900">Payment Method</h3>
-            <p className="text-sm text-gray-500">Choose how you'd like to pay</p>
+            <p className="text-sm text-gray-500">Choose how you want to pay</p>
           </div>
 
           <div className="space-y-3">
@@ -79,7 +182,10 @@ export default function PaymentStep({
                   className={`w-full border rounded-lg px-4 py-3 text-left transition flex items-center gap-3 ${
                     isActive ? "border-blue-600 bg-blue-50" : "border-gray-200 hover:border-blue-400"
                   }`}
-                  onClick={() => setSelectedMethod(method.id)}
+                  onClick={() => {
+                    setSelectedMethod(method.id)
+                    setPaymentError(null)
+                  }}
                 >
                   <span
                     className={`h-5 w-5 rounded-full border flex items-center justify-center ${
@@ -101,6 +207,53 @@ export default function PaymentStep({
                 </button>
               )
             })}
+          </div>
+
+          {paymentError && (
+            <div className="mt-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {paymentError}
+            </div>
+          )}
+
+          {returnResult && (
+            <div className="mt-4 rounded-md border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+              <div className="font-semibold">VNPay response</div>
+              <div>Code: {returnResult.code || "--"}</div>
+              {returnResult.message && <div>Message: {returnResult.message}</div>}
+              {returnResult.txnRef && <div>Transaction: {returnResult.txnRef}</div>}
+              {typeof returnResult.amount === "number" && <div>Amount: {returnResult.amount.toLocaleString()} VND</div>}
+              {returnResult.orderInfo && <div>Info: {returnResult.orderInfo}</div>}
+            </div>
+          )}
+
+          <div className="pt-4 grid gap-3 sm:flex sm:items-center sm:justify-between">
+            <div className="text-sm text-gray-600 space-y-1">
+              {selectedMethod === "vnpay" ? (
+                <>
+                  <p>The system will create an invoice and redirect to VNPay sandbox.</p>
+                  <p className="text-gray-500">Keep this tab open after payment to update status.</p>
+                </>
+              ) : (
+                <p>Collect cash and confirm the booking.</p>
+              )}
+            </div>
+
+            {selectedMethod === "vnpay" ? (
+              <Button onClick={handleVnpayPayment} disabled={isPaying || isVerifyingReturn} className="bg-blue-600 hover:bg-blue-700">
+                {isPaying ? "Redirecting..." : "Pay with VNPay"}
+              </Button>
+            ) : (
+              <Button onClick={handleCashPayment} disabled={isPaying || isVerifyingReturn} variant="outline">
+                {isPaying ? "Confirming..." : "Confirm cash payment"}
+              </Button>
+            )}
+
+          {isVerifyingReturn && (
+            <div className="flex items-center gap-2 text-sm text-blue-700">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Verifying VNPay response...
+            </div>
+          )}
           </div>
         </Card>
 

@@ -2,20 +2,16 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { use } from "react";
 import { ChevronLeft, Clock, Users } from "lucide-react";
-import { nowShowingMovies, comingSoonMovies, showtimes } from "@/lib/mock-data";
 import type { Movie, Showtime } from "@/lib/types";
 
 interface MovieDetailClientProps {
   movie: Movie;
+  movieShowtimes: Showtime[];
+  movieId: string;
 }
 
-export default function MovieDetailClient({ movie }: MovieDetailClientProps) {
-  const { id } = use(params);
-  const allMovies = [...nowShowingMovies, ...comingSoonMovies];
-  const movie = allMovies.find((m) => m.id === id) as Movie | undefined;
-  const movieShowtimes = showtimes[id] || [];
+export default function MovieDetailClient({ movie, movieShowtimes, movieId }: MovieDetailClientProps) {
   const [selectedShowtime, setSelectedShowtime] = useState<Showtime | null>(null);
 
   if (!movie) {
@@ -157,7 +153,7 @@ export default function MovieDetailClient({ movie }: MovieDetailClientProps) {
         {selectedShowtime && (
           <div className="mt-8 flex justify-center">
             <Link
-              href={`/booking/${id}/${selectedShowtime.id}`}
+              href={`/booking/${movieId}/${selectedShowtime.id}`}
               className="px-8 py-4 rounded-lg gradient-primary text-white font-semibold hover:shadow-lg transition-all"
             >
               Continue to Booking

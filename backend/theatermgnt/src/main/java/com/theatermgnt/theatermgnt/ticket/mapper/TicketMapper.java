@@ -10,5 +10,6 @@ public interface TicketMapper {
     @Mapping(source = "expiresAt", target = "expiresAt")
     @Mapping(source = "booking.screening.movie.title", target = "movieTitle")
     @Mapping(source = "booking.screening.startTime", target = "startTime")
+    @Mapping(source = "booking.id", target = "bookingId")
     TicketResponse toResponse(Ticket ticket);
 }

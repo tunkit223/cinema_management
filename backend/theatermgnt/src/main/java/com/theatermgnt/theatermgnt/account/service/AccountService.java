@@ -50,8 +50,8 @@ public class AccountService {
     }
 
     public void deleteAccount(String accountId) {
-        Account account = accountRepository.findById(accountId)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        Account account =
+                accountRepository.findById(accountId).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
         String suffix = "_deleted_" + System.currentTimeMillis();
         account.setUsername(account.getUsername() + suffix);
@@ -61,6 +61,7 @@ public class AccountService {
         account.setIsActive(false);
         accountRepository.save(account);
     }
+
     public void createPassword(PasswordCreationRequest request) {
 
         if (!request.getPassword().equals(request.getConfirmPassword())) {

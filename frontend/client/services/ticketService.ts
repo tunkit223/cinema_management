@@ -12,6 +12,7 @@ export interface TicketResponse {
   price: number
   status: string
   expiresAt: string
+  purchaseDate?: string
 }
 
 export const getTicketsByBooking = async (bookingId: string): Promise<TicketResponse[]> => {

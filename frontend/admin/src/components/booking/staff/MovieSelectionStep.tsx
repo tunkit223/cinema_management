@@ -8,12 +8,14 @@ interface MovieSelectionStepProps {
   movies: Movie[]
   loading: boolean
   onSelectMovie: (movie: Movie) => void
+  selectedMovie: Movie | null
 }
 
 export default function MovieSelectionStep({
   movies,
   loading,
   onSelectMovie,
+  selectedMovie,
 }: MovieSelectionStepProps) {
   const [searchQuery, setSearchQuery] = useState("")
 
@@ -52,34 +54,65 @@ export default function MovieSelectionStep({
           <p className="text-gray-600">No movies found</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredMovies.map((movie) => (
-            <Card
-              key={movie.id}
-              className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group"
-              onClick={() => onSelectMovie(movie)}
-            >
-              <div className="relative overflow-hidden bg-gray-200 h-48">
-                {movie.posterUrl && (
-                  <img
-                    src={movie.posterUrl}
-                    alt={movie.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                    onError={(e) => {
-                      e.currentTarget.style.display = "none"
-                    }}
-                  />
-                )}
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredMovies.map((movie) => (
+              <Card
+                key={movie.id}
+                className={`overflow-hidden hover:shadow-lg transition-all cursor-pointer group ${
+                  selectedMovie?.id === movie.id
+                    ? "ring-2 ring-blue-600 shadow-lg"
+                    : ""
+                }`}
+                onClick={() => onSelectMovie(movie)}
+              >
+                <div className="relative overflow-hidden bg-gray-200 h-48">
+                  {movie.posterUrl && (
+                    <img
+                      src={movie.posterUrl}
+                      alt={movie.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none"
+                      }}
+                    />
+                  )}
+                </div>
+                <div className="p-4">
+                  <h3 className="font-bold truncate mb-2">{movie.title}</h3>
+                  <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+                    {movie.description}
+                  </p>
+                  <p className="text-xs text-gray-500">Duration: {movie.durationMinutes} min</p>
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          {selectedMovie && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h4 className="font-semibold text-gray-900 mb-3">Selected Movie</h4>
+              <div className="flex gap-4">
+                <div className="w-24 h-32 rounded-lg overflow-hidden flex-shrink-0">
+                  {selectedMovie.posterUrl && (
+                    <img
+                      src={selectedMovie.posterUrl}
+                      alt={selectedMovie.title}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none"
+                      }}
+                    />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <h5 className="font-bold text-lg mb-2">{selectedMovie.title}</h5>
+                  <p className="text-sm text-gray-600 mb-2">{selectedMovie.description}</p>
+                  <p className="text-xs text-gray-500">Duration: {selectedMovie.durationMinutes} minutes</p>
+                </div>
               </div>
-              <div className="p-4">
-                <h3 className="font-bold truncate mb-2">{movie.title}</h3>
-                <p className="text-sm text-gray-600 mb-2 line-clamp-2">
-                  {movie.description}
-                </p>
-                <p className="text-xs text-gray-500">Duration: {movie.duration} min</p>
-              </div>
-            </Card>
-          ))}
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -11,7 +11,8 @@ public interface PaymentService {
     /**
      * Create VNPay payment URL for invoice
      */
-    PaymentDetailsResponse createVNPayPayment(String invoiceId, HttpServletRequest httpRequest);
+    PaymentDetailsResponse createVNPayPayment(
+            String invoiceId, HttpServletRequest httpRequest, String returnUrlOverride);
 
     /**
      * Handle VNPay return URL callback
@@ -22,4 +23,9 @@ public interface PaymentService {
      * Handle VNPay IPN (Instant Payment Notification)
      */
     Map<String, Object> handleVNPayIPN(Map<String, String> params);
+
+    /**
+     * Process cash payment for invoice
+     */
+    PaymentDetailsResponse processCashPayment(String invoiceId);
 }
