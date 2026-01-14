@@ -25,6 +25,10 @@ import com.theatermgnt.theatermgnt.payment.entity.Invoice;
 import com.theatermgnt.theatermgnt.payment.entity.InvoiceStatus;
 import com.theatermgnt.theatermgnt.payment.mapper.InvoiceMapper;
 import com.theatermgnt.theatermgnt.payment.repository.InvoiceRepository;
+import org.springframework.context.ApplicationEventPublisher;
+import com.theatermgnt.theatermgnt.payment.event.InvoiceRefundedEvent;
+import com.theatermgnt.theatermgnt.revenue.service.RevenueAggregationService;
+import com.theatermgnt.theatermgnt.ticket.service.TicketService;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -37,6 +41,9 @@ public class InvoiceServiceImpl implements InvoiceService {
     private final BookingRepository bookingRepository;
     private final BookingService bookingService;
     private final InvoiceMapper invoiceMapper;
+    private final ApplicationEventPublisher eventPublisher;
+    private final RevenueAggregationService revenueAggregationService;
+    private final TicketService ticketService;
 
     private static final int INVOICE_EXPIRY_DAYS = 7;
 
@@ -45,11 +52,17 @@ public class InvoiceServiceImpl implements InvoiceService {
             InvoiceRepository invoiceRepository,
             BookingRepository bookingRepository,
             @Lazy BookingService bookingService,
-            InvoiceMapper invoiceMapper) {
+            InvoiceMapper invoiceMapper,
+            RevenueAggregationService revenueAggregationService,
+            ApplicationEventPublisher eventPublisher,
+            TicketService ticketService) {
         this.invoiceRepository = invoiceRepository;
         this.bookingRepository = bookingRepository;
         this.bookingService = bookingService;
         this.invoiceMapper = invoiceMapper;
+        this.revenueAggregationService = revenueAggregationService;
+        this.eventPublisher = eventPublisher;
+        this.ticketService = ticketService;
     }
 
     @Override
@@ -113,6 +126,44 @@ public class InvoiceServiceImpl implements InvoiceService {
 
         if (status == InvoiceStatus.PAID) {
             invoice.setPaidAt(LocalDateTime.now());
+        } else if (status == InvoiceStatus.REFUNDED) {
+            // When invoice is refunded, update corresponding booking
+            String bookingId = invoice.getBookingId();
+            if (bookingId != null) {
+                try {
+                    bookingService.refundBooking(bookingId);
+                    log.info("Booking {} refunded due to invoice refund", bookingId);
+                    
+                    // Expire all active tickets for this booking
+                    try {
+                        UUID bookingUuid = UUID.fromString(bookingId);
+                        ticketService.expireTicketsByBookingId(bookingUuid);
+                        log.info("Expired tickets for refunded booking {}", bookingId);
+                    } catch (Exception ticketErr) {
+                        log.error("Error expiring tickets for booking {} during refund", bookingId, ticketErr);
+                    }
+                } catch (Exception e) {
+                    log.error("Error refunding booking {} for invoice {}", bookingId, invoiceId, e);
+                    // Don't fail the invoice refund if booking update fails
+                }
+            }
+
+            // Process refund for revenue (subtract revenue)
+            try {
+                revenueAggregationService.processInvoiceRefundForRevenue(invoiceId);
+                log.info("Revenue refund processed for invoice {}", invoiceId);
+            } catch (Exception e) {
+                log.error("Error processing revenue refund for invoice {}", invoiceId, e);
+                // Don't fail the invoice refund if revenue processing fails
+            }
+
+            // Publish refund event to send email
+            try {
+                eventPublisher.publishEvent(new InvoiceRefundedEvent(invoiceId, invoice.getBookingId()));
+                log.info("Published InvoiceRefundedEvent for invoice {}", invoiceId);
+            } catch (Exception e) {
+                log.error("Error publishing InvoiceRefundedEvent for invoice {}", invoiceId, e);
+            }
         }
 
         Invoice updatedInvoice = invoiceRepository.save(invoice);
@@ -132,44 +183,53 @@ public class InvoiceServiceImpl implements InvoiceService {
     }
 
     @Override
-    public Page<InvoiceResponse> getAllInvoices(int page, int size) {
+    public Page<InvoiceResponse> getAllInvoices(int page, int size, String cinemaId) {
         log.info("Fetching all invoices - page: {}, size: {}", page, size);
         Pageable pageable = PageRequest.of(page, size);
-        Page<Invoice> invoices = invoiceRepository.findAllByOrderByCreatedAtDesc(pageable);
+        Page<Invoice> invoices = (cinemaId != null && !cinemaId.isBlank())
+                ? invoiceRepository.findByCinema(cinemaId, pageable)
+                : invoiceRepository.findAllByOrderByCreatedAtDesc(pageable);
         return invoices.map(invoiceMapper::toResponse);
     }
 
     @Override
-    public Page<InvoiceResponse> getInvoicesByStatus(InvoiceStatus status, int page, int size) {
+    public Page<InvoiceResponse> getInvoicesByStatus(InvoiceStatus status, int page, int size, String cinemaId) {
         log.info("Fetching invoices by status: {} - page: {}, size: {}", status, page, size);
         Pageable pageable = PageRequest.of(page, size);
-        Page<Invoice> invoices = invoiceRepository.findByStatusOrderByCreatedAtDesc(status, pageable);
+        Page<Invoice> invoices = (cinemaId != null && !cinemaId.isBlank())
+                ? invoiceRepository.findByCinemaAndStatus(cinemaId, status.name(), pageable)
+                : invoiceRepository.findByStatusOrderByCreatedAtDesc(status, pageable);
         return invoices.map(invoiceMapper::toResponse);
     }
 
     @Override
     public Page<InvoiceResponse> getInvoicesByDateRange(
-            LocalDateTime startDate, LocalDateTime endDate, int page, int size) {
+            LocalDateTime startDate, LocalDateTime endDate, int page, int size, String cinemaId) {
         log.info("Fetching invoices by date range: {} to {} - page: {}, size: {}", startDate, endDate, page, size);
         Pageable pageable = PageRequest.of(page, size);
-        Page<Invoice> invoices =
-                invoiceRepository.findByCreatedAtBetweenOrderByCreatedAtDesc(startDate, endDate, pageable);
+        Page<Invoice> invoices = (cinemaId != null && !cinemaId.isBlank())
+                ? invoiceRepository.findByCinemaAndDateRange(cinemaId, startDate, endDate, pageable)
+                : invoiceRepository.findByCreatedAtBetweenOrderByCreatedAtDesc(startDate, endDate, pageable);
         return invoices.map(invoiceMapper::toResponse);
     }
 
     @Override
-    public Page<InvoiceResponse> searchInvoices(String search, int page, int size) {
+    public Page<InvoiceResponse> searchInvoices(String search, int page, int size, String cinemaId) {
         log.info("Searching invoices: {} - page: {}, size: {}", search, page, size);
         Pageable pageable = PageRequest.of(page, size);
-        Page<Invoice> invoices = invoiceRepository.searchInvoices(search, pageable);
+        Page<Invoice> invoices = (cinemaId != null && !cinemaId.isBlank())
+                ? invoiceRepository.searchInvoicesWithinCinema(search, cinemaId, pageable)
+                : invoiceRepository.searchInvoices(search, pageable);
         return invoices.map(invoiceMapper::toResponse);
     }
 
     @Override
-    public Page<InvoiceResponse> searchInvoicesByStatus(String search, InvoiceStatus status, int page, int size) {
+    public Page<InvoiceResponse> searchInvoicesByStatus(String search, InvoiceStatus status, int page, int size, String cinemaId) {
         log.info("Searching invoices by status: {} search: {} - page: {}, size: {}", status, search, page, size);
         Pageable pageable = PageRequest.of(page, size);
-        Page<Invoice> invoices = invoiceRepository.searchInvoicesByStatus(search, status, pageable);
+        Page<Invoice> invoices = (cinemaId != null && !cinemaId.isBlank())
+                ? invoiceRepository.searchInvoicesByStatusWithinCinema(search, status.name(), cinemaId, pageable)
+                : invoiceRepository.searchInvoicesByStatus(search, status, pageable);
         return invoices.map(invoiceMapper::toResponse);
     }
 
@@ -213,18 +273,41 @@ public class InvoiceServiceImpl implements InvoiceService {
     }
 
     @Override
-    public InvoiceStatisticsResponse getStatistics() {
-        log.info("Calculating invoice statistics");
+    public InvoiceStatisticsResponse getStatistics(String cinemaId) {
+        log.info("Calculating invoice statistics for cinemaId: {}", cinemaId);
 
-        Long totalInvoices = invoiceRepository.count();
-        Long pendingInvoices = invoiceRepository.countByStatus(InvoiceStatus.PENDING);
-        Long paidInvoices = invoiceRepository.countByStatus(InvoiceStatus.PAID);
-        Long failedInvoices = invoiceRepository.countByStatus(InvoiceStatus.FAILED);
-        Long refundedInvoices = invoiceRepository.countByStatus(InvoiceStatus.REFUNDED);
+        Long totalInvoices;
+        Long pendingInvoices;
+        Long paidInvoices;
+        Long failedInvoices;
+        Long refundedInvoices;
+        Double totalRevenue;
+        Double pendingAmount;
+        Double refundedAmount;
 
-        Double totalRevenue = invoiceRepository.sumTotalAmountByStatus(InvoiceStatus.PAID);
-        Double pendingAmount = invoiceRepository.sumTotalAmountByStatus(InvoiceStatus.PENDING);
-        Double refundedAmount = invoiceRepository.sumTotalAmountByStatus(InvoiceStatus.REFUNDED);
+        if (cinemaId != null && !cinemaId.isEmpty()) {
+            // Cinema-scoped statistics
+            totalInvoices = invoiceRepository.countByCinema(cinemaId);
+            pendingInvoices = invoiceRepository.countByCinemaAndStatus(cinemaId, InvoiceStatus.PENDING.toString());
+            paidInvoices = invoiceRepository.countByCinemaAndStatus(cinemaId, InvoiceStatus.PAID.toString());
+            failedInvoices = invoiceRepository.countByCinemaAndStatus(cinemaId, InvoiceStatus.FAILED.toString());
+            refundedInvoices = invoiceRepository.countByCinemaAndStatus(cinemaId, InvoiceStatus.REFUNDED.toString());
+
+            totalRevenue = invoiceRepository.sumTotalAmountByCinemaAndStatus(cinemaId, InvoiceStatus.PAID.toString());
+            pendingAmount = invoiceRepository.sumTotalAmountByCinemaAndStatus(cinemaId, InvoiceStatus.PENDING.toString());
+            refundedAmount = invoiceRepository.sumTotalAmountByCinemaAndStatus(cinemaId, InvoiceStatus.REFUNDED.toString());
+        } else {
+            // Global statistics
+            totalInvoices = invoiceRepository.count();
+            pendingInvoices = invoiceRepository.countByStatus(InvoiceStatus.PENDING);
+            paidInvoices = invoiceRepository.countByStatus(InvoiceStatus.PAID);
+            failedInvoices = invoiceRepository.countByStatus(InvoiceStatus.FAILED);
+            refundedInvoices = invoiceRepository.countByStatus(InvoiceStatus.REFUNDED);
+
+            totalRevenue = invoiceRepository.sumTotalAmountByStatus(InvoiceStatus.PAID);
+            pendingAmount = invoiceRepository.sumTotalAmountByStatus(InvoiceStatus.PENDING);
+            refundedAmount = invoiceRepository.sumTotalAmountByStatus(InvoiceStatus.REFUNDED);
+        }
 
         return InvoiceStatisticsResponse.builder()
                 .totalInvoices(totalInvoices)

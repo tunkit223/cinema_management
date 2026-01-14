@@ -23,4 +23,5 @@ public interface TicketService {
 
     void expireTickets();
     void checkInTicket(TicketCheckInRequest request);
+    void expireTicketsByBookingId(UUID bookingId);
 }

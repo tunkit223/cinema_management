@@ -74,6 +74,7 @@ export const InvoiceDetailDialog = ({
       setUpdating(true);
       await updateInvoiceStatus(invoice.id, newStatus);
       addNotification({
+        title: "Success",
         type: "success",
         message: "Invoice status updated successfully",
       });
@@ -81,6 +82,7 @@ export const InvoiceDetailDialog = ({
       onClose();
     } catch (error) {
       addNotification({
+        title: "Error",
         type: "error",
         message: "Failed to update invoice status",
       });

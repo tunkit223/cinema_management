@@ -78,6 +78,7 @@ export interface InvoiceFilterParams {
   search?: string;
   startDate?: string;
   endDate?: string;
+  cinemaId?: string;
 }
 
 // Paginated Response

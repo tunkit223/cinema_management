@@ -24,6 +24,9 @@ import com.theatermgnt.theatermgnt.notification.dto.request.EmailBuilderRequest;
 import com.theatermgnt.theatermgnt.notification.enums.EmailType;
 import com.theatermgnt.theatermgnt.notification.service.EmailBuilderService;
 import com.theatermgnt.theatermgnt.notification.service.EmailTemplateFactory;
+import com.theatermgnt.theatermgnt.payment.entity.Invoice;
+import com.theatermgnt.theatermgnt.payment.event.InvoiceRefundedEvent;
+import com.theatermgnt.theatermgnt.payment.repository.InvoiceRepository;
 import com.theatermgnt.theatermgnt.staff.event.StaffCreatedEvent;
 import com.theatermgnt.theatermgnt.ticket.dto.response.TicketEmailView;
 import com.theatermgnt.theatermgnt.ticket.entity.Ticket;
@@ -50,6 +53,7 @@ public class NotificationEventListener {
     AccountRepository accountRepository;
     CustomerRepository customerRepository;
     TicketRepository ticketRepository;
+        InvoiceRepository invoiceRepository;
 
     @NonFinal
     @Value("${otp.valid-duration}")
@@ -208,4 +212,43 @@ public class NotificationEventListener {
                 .emailTypeForLog("Welcome New Customer")
                 .build());
     }
+
+        @Async
+        @Transactional
+        @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+        public void handleInvoiceRefundedEvent(InvoiceRefundedEvent event) {
+                try {
+                        Invoice invoice = invoiceRepository.findById(event.getInvoiceId()).orElseThrow();
+                        Booking booking = bookingRepository.findById(java.util.UUID.fromString(event.getBookingId())).orElseThrow();
+                        Account account = booking.getCustomer() != null ? booking.getCustomer().getAccount() : null;
+
+                        if (account == null || account.getEmail() == null || account.getEmail().isBlank()) {
+                                log.info("No customer email for booking {}, skipping refund email", event.getBookingId());
+                                return;
+                        }
+
+                        String subject = "Your Refund Has Been Processed – Cifastar HCM";
+
+                        java.util.Map<String, Object> variables = java.util.Map.of(
+                                        "subject", subject,
+                                        "username", account.getUsername(),
+                                        "bookingCode", booking.getId(),
+                                        "movieName", booking.getScreening().getMovie().getTitle(),
+                                        "showTime", booking.getScreening().getStartTime(),
+                                        "cinema", booking.getScreening().getRoom().getCinema().getName(),
+                                        "refundAmount", booking.getTotalAmount(),
+                                        "email", account.getEmail());
+
+                        String htmlContent = emailTemplateFactory.buildTemplate(EmailType.REFUND_NOTIFICATION, variables);
+
+                        emailBuilderService.buildAndSendEmail(EmailBuilderRequest.builder()
+                                        .account(account)
+                                        .subject(subject)
+                                        .htmlContent(htmlContent)
+                                        .emailTypeForLog("Invoice Refunded")
+                                        .build());
+                } catch (Exception e) {
+                        log.error("Failed to send refund email for invoice {}", event.getInvoiceId(), e);
+                }
+        }
 }
