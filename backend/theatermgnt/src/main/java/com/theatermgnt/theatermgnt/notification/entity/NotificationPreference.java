@@ -1,6 +1,7 @@
 package com.theatermgnt.theatermgnt.notification.entity;
 
 import com.theatermgnt.theatermgnt.common.entity.BaseEntity;
+import com.theatermgnt.theatermgnt.notification.enums.NotificationCategory;
 import com.theatermgnt.theatermgnt.notification.enums.NotificationStatus;
 import com.theatermgnt.theatermgnt.notification.enums.Priority;
 import com.theatermgnt.theatermgnt.notification.enums.RecipientType;
@@ -18,6 +19,7 @@ import java.util.Map;
 @Entity
 @Getter
 @Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "notification_preferences")
@@ -32,6 +34,9 @@ public class NotificationPreference extends BaseEntity {
     @ManyToOne
     @JoinColumn(name = "channel_id")
     NotificationChannel channel;
-    String category;
+    
+    @Enumerated(EnumType.STRING)
+    NotificationCategory category;
+    
     Boolean isEnabled;
 }

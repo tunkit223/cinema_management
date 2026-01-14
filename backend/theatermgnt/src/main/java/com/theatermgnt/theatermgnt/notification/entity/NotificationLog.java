@@ -18,6 +18,7 @@ import java.util.Map;
 @Entity
 @Getter
 @Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "notification_logs")
