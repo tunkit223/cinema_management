@@ -7,6 +7,7 @@ export interface ConfirmDialogState {
   onConfirm: () => void;
   variant?: "default" | "destructive";
   confirmText?: string;
+  loading?: boolean;
 }
 
 export function useConfirmDialog() {
@@ -17,22 +18,28 @@ export function useConfirmDialog() {
     onConfirm: () => {},
     variant: "destructive",
     confirmText: "Confirm",
+    loading: false,
   });
 
-  const showConfirmDialog = useCallback((config: Omit<ConfirmDialogState, 'isOpen'>) => {
+  const showConfirmDialog = useCallback((config: Omit<ConfirmDialogState, 'isOpen' | 'loading'>) => {
     setConfirmDialog({
       ...config,
       isOpen: true,
+      loading: false,
     });
   }, []);
 
   const closeConfirmDialog = useCallback(() => {
-    setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
+    setConfirmDialog((prev) => ({ ...prev, isOpen: false, loading: false }));
+  }, []);
+
+  const setLoading = useCallback((loading: boolean) => {
+    setConfirmDialog((prev) => ({ ...prev, loading }));
   }, []);
 
   const confirmAndClose = useCallback((callback: () => void) => {
     return () => {
-      setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
+      setConfirmDialog((prev) => ({ ...prev, isOpen: false, loading: false }));
       callback();
     };
   }, []);
@@ -42,5 +49,6 @@ export function useConfirmDialog() {
     showConfirmDialog,
     closeConfirmDialog,
     confirmAndClose,
+    setLoading,
   };
 }
