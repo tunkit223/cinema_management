@@ -36,10 +36,7 @@ export const priorityConfig = {
 
 export const categoryConfig = {
   BOOKING: { label: "Booking", value: "BOOKING" },
-  PROMOTION: { label: "Promotion", value: "PROMOTION" },
   SYSTEM: { label: "System", value: "SYSTEM" },
-  SECURITY: { label: "Security", value: "SECURITY" },
-  REMINDER: { label: "Reminder", value: "REMINDER" },
 } as const;
 
 // Export arrays for select options

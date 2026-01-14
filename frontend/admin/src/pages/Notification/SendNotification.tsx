@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type {
   NotificationRequest,
   NotificationPriority,
+  RecipientType,
 } from "@/types/NotificationType/Notification";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -23,17 +23,34 @@ import {
   categoryOptions,
   priorityOptions,
 } from "@/constants/notificationConfig";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { getAllCustomers } from "@/services/customerService";
+import { getAllStaffs } from "@/services/staffService";
+import type { CustomerProfile } from "@/types/CustomerType/CustomerProfile";
+import type { StaffProfile } from "@/types/StaffType/StaffProfile";
 
 const RECIPIENT_TYPE_OPTIONS = [
   { value: "CUSTOMER", label: "Customer" },
   { value: "STAFF", label: "Staff" },
-  { value: "ADMIN", label: "Admin" },
 ];
 
 const CHANNEL_OPTIONS = [
   { value: "EMAIL", label: "Email" },
   { value: "IN_APP", label: "In-App" },
-  { value: "SMS", label: "SMS" },
 ];
 
 export const SendNotification = () => {
@@ -46,6 +63,12 @@ export const SendNotification = () => {
   const addNotification = useNotificationStore(
     (state) => state.addNotification
   );
+
+  // States for users/staffs list
+  const [customers, setCustomers] = useState<CustomerProfile[]>([]);
+  const [staffs, setStaffs] = useState<StaffProfile[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [openCombobox, setOpenCombobox] = useState(false);
 
   const [formData, setFormData] = useState<NotificationRequest>({
     templateCode: "",
@@ -91,6 +114,34 @@ export const SendNotification = () => {
     loadTemplates();
   }, [addNotification]);
 
+  // Load users based on recipient type
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        setLoadingUsers(true);
+        if (formData.recipientType === "CUSTOMER") {
+          const data = await getAllCustomers();
+          setCustomers(data);
+          setStaffs([]); // Clear staff list
+        } else if (formData.recipientType === "STAFF") {
+          const data = await getAllStaffs();
+          setStaffs(data);
+          setCustomers([]); // Clear customer list
+        }
+      } catch (error: any) {
+        addNotification({
+          type: "error",
+          title: "Error",
+          message: error?.response?.data?.message || "Failed to load users",
+        });
+      } finally {
+        setLoadingUsers(false);
+      }
+    };
+
+    loadUsers();
+  }, [formData.recipientType, addNotification]);
+
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
@@ -106,6 +157,13 @@ export const SendNotification = () => {
         ...prev,
         [name]: value,
         priority: (template?.priority as NotificationPriority) || prev.priority,
+      }));
+    } else if (name === "recipientType") {
+      // Clear recipientId when changing recipientType
+      setFormData((prev) => ({
+        ...prev,
+        recipientType: value as RecipientType,
+        recipientId: "",
       }));
     } else {
       setFormData((prev) => ({
@@ -263,24 +321,6 @@ export const SendNotification = () => {
               </select>
             </div>
 
-            {/* Recipient ID */}
-            <div className="space-y-2">
-              <Label htmlFor="recipientId">
-                Recipient ID <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="recipientId"
-                name="recipientId"
-                value={formData.recipientId}
-                onChange={handleChange}
-                placeholder="Enter recipient ID"
-                className={errors.recipientId ? "border-destructive" : ""}
-              />
-              {errors.recipientId && (
-                <p className="text-sm text-destructive">{errors.recipientId}</p>
-              )}
-            </div>
-
             {/* Recipient Type */}
             <div className="space-y-2">
               <Label htmlFor="recipientType">Recipient Type</Label>
@@ -297,6 +337,138 @@ export const SendNotification = () => {
                   </option>
                 ))}
               </select>
+            </div>
+
+            {/* Recipient - Select User with Search */}
+            <div className="space-y-2">
+              <Label htmlFor="recipientId">
+                Recipient <span className="text-destructive">*</span>
+              </Label>
+              <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={openCombobox}
+                    disabled={loadingUsers}
+                    className={cn(
+                      "w-full justify-between",
+                      errors.recipientId && "border-destructive"
+                    )}
+                  >
+                    {formData.recipientId
+                      ? formData.recipientType === "CUSTOMER"
+                        ? (() => {
+                            const customer = customers.find(
+                              (c) => c.accountId === formData.recipientId
+                            );
+                            return customer
+                              ? `${customer.firstName} ${customer.lastName} (${customer.email})`
+                              : "Select a customer";
+                          })()
+                        : (() => {
+                            const staff = staffs.find(
+                              (s) => s.accountId === formData.recipientId
+                            );
+                            return staff
+                              ? `${staff.firstName} ${staff.lastName} (${staff.email})`
+                              : "Select a staff";
+                          })()
+                      : loadingUsers
+                      ? "Loading users..."
+                      : formData.recipientType === "CUSTOMER"
+                      ? "Select a customer"
+                      : "Select a staff"}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[400px] p-0">
+                  <Command>
+                    <CommandInput
+                      placeholder={
+                        formData.recipientType === "CUSTOMER"
+                          ? "Search customer..."
+                          : "Search staff..."
+                      }
+                    />
+                    <CommandList>
+                      <CommandEmpty>
+                        No{" "}
+                        {formData.recipientType === "CUSTOMER"
+                          ? "customer"
+                          : "staff"}{" "}
+                        found.
+                      </CommandEmpty>
+                      <CommandGroup>
+                        {formData.recipientType === "CUSTOMER"
+                          ? customers.map((customer) => (
+                              <CommandItem
+                                key={customer.accountId}
+                                value={`${customer.firstName} ${customer.lastName} ${customer.email}`}
+                                onSelect={() => {
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    recipientId: customer.accountId,
+                                  }));
+                                  if (errors.recipientId) {
+                                    setErrors((prev) => ({
+                                      ...prev,
+                                      recipientId: "",
+                                    }));
+                                  }
+                                  setOpenCombobox(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    formData.recipientId === customer.accountId
+                                      ? "opacity-100"
+                                      : "opacity-0"
+                                  )}
+                                />
+                                {customer.firstName} {customer.lastName} (
+                                {customer.email})
+                              </CommandItem>
+                            ))
+                          : staffs.map((staff) => (
+                              <CommandItem
+                                key={staff.accountId}
+                                value={`${staff.firstName} ${staff.lastName} ${staff.email}`}
+                                onSelect={() => {
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    recipientId: staff.accountId,
+                                  }));
+                                  if (errors.recipientId) {
+                                    setErrors((prev) => ({
+                                      ...prev,
+                                      recipientId: "",
+                                    }));
+                                  }
+                                  setOpenCombobox(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    formData.recipientId === staff.accountId
+                                      ? "opacity-100"
+                                      : "opacity-0"
+                                  )}
+                                />
+                                {staff.firstName} {staff.lastName} (
+                                {staff.email})
+                              </CommandItem>
+                            ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+              {errors.recipientId && (
+                <p className="text-sm text-destructive">{errors.recipientId}</p>
+              )}
             </div>
 
             {/* Priority */}
@@ -348,12 +520,7 @@ export const SendNotification = () => {
 
             {/* Metadata (JSON) */}
             <div className="space-y-2 col-span-2">
-              <Label htmlFor="metadata">
-                Metadata (JSON)
-                <span className="text-xs text-muted-foreground ml-2">
-                  Optional - Template variables
-                </span>
-              </Label>
+              <Label htmlFor="metadata">Metadata (JSON)</Label>
               <Textarea
                 id="metadata"
                 value={metadataInput}
