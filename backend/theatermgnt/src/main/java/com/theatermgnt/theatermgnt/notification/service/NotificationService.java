@@ -5,7 +5,6 @@ import com.theatermgnt.theatermgnt.common.exception.ErrorCode;
 import com.theatermgnt.theatermgnt.notification.dto.request.CreateNotificationRequest;
 import com.theatermgnt.theatermgnt.notification.dto.response.NotificationDetailResponse;
 import com.theatermgnt.theatermgnt.notification.dto.response.NotificationLogResponse;
-import com.theatermgnt.theatermgnt.notification.dto.response.NotificationResponse;
 import com.theatermgnt.theatermgnt.notification.entity.Notification;
 import com.theatermgnt.theatermgnt.notification.entity.NotificationLog;
 import com.theatermgnt.theatermgnt.notification.entity.NotificationTemplate;
@@ -24,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,7 +49,7 @@ public class NotificationService {
      * This is the main method called by event listeners
      */
     @Transactional
-    public Notification createAndSend(CreateNotificationRequest request) {
+    public NotificationDetailResponse createAndSend(CreateNotificationRequest request) {
         log.info("Creating and sending notification for recipient: {}, template: {}", 
                 request.getRecipientId(), request.getTemplateCode());
         
@@ -93,13 +93,13 @@ public class NotificationService {
      * Get user's notifications with pagination
      */
     @Transactional(readOnly = true)
-    public Page<NotificationResponse> getUserNotifications(String userId, Pageable pageable) {
+    public Page<NotificationDetailResponse> getUserNotifications(String userId, Pageable pageable) {
         log.debug("Getting notifications for user: {}", userId);
         
         Page<Notification> notifications = notificationRepository
                 .findByRecipientIdOrderByCreatedAtDesc(userId, pageable);
         
-        return notifications.map(this::toNotificationResponse);
+        return notifications.map(notification -> toNotificationDetailResponse(notification, new ArrayList<>()));
     }
     
     /**
@@ -114,7 +114,7 @@ public class NotificationService {
      * Mark a notification as read
      */
     @Transactional
-    public NotificationResponse markAsRead(String notificationId) {
+    public NotificationDetailResponse markAsRead(String notificationId) {
         log.info("Marking notification as read: {}", notificationId);
         
         Notification notification = notificationRepository.findById(notificationId)
@@ -126,7 +126,8 @@ public class NotificationService {
             log.info("Notification marked as read: {}", notificationId);
         }
         
-        return toNotificationResponse(notification);
+        List<NotificationLog> logs = logRepository.findByNotificationOrderBySentAtDesc(notification);
+        return toNotificationDetailResponse(notification, logs);
     }
     
     /**
@@ -166,9 +167,9 @@ public class NotificationService {
      * Get all notifications (Admin API)
      */
     @Transactional(readOnly = true)
-    public Page<NotificationResponse> getAllNotifications(Pageable pageable) {
+    public Page<NotificationDetailResponse> getAllNotifications(Pageable pageable) {
         Page<Notification> notifications = notificationRepository.findAll(pageable);
-        return notifications.map(this::toNotificationResponse);
+        return notifications.map(notification -> toNotificationDetailResponse(notification, new ArrayList<>()));
     }
     
     /**
@@ -186,17 +187,10 @@ public class NotificationService {
     }
     
     /**
-     * Private helper methods to enrich mapper responses
+     * Private helper method to convert entity to response DTO
      */
-    private NotificationResponse toNotificationResponse(Notification notification) {
-        NotificationResponse response = notificationMapper.toResponse(notification);
-        enrichNotificationResponse(response, notification);
-        return response;
-    }
-    
     private NotificationDetailResponse toNotificationDetailResponse(Notification notification, List<NotificationLog> logs) {
         NotificationDetailResponse response = notificationMapper.toDetailResponse(notification);
-        enrichNotificationResponse(response, notification);
         
         // Map logs
         List<NotificationLogResponse> logResponses = logs.stream()
@@ -205,25 +199,5 @@ public class NotificationService {
         response.setLogs(logResponses);
         
         return response;
-    }
-    
-    private void enrichNotificationResponse(NotificationResponse response, Notification notification) {
-        // Set category from metadata
-        if (notification.getMetadata() != null && notification.getMetadata().containsKey("category")) {
-            response.setCategory(NotificationCategory.valueOf((String) notification.getMetadata().get("category")));
-        }
-        
-        // Set title from metadata
-        if (notification.getMetadata() != null && notification.getMetadata().containsKey("title")) {
-            response.setTitle((String) notification.getMetadata().get("title"));
-        }
-        
-        // Set content from metadata
-        if (notification.getMetadata() != null && notification.getMetadata().containsKey("content")) {
-            response.setContent((String) notification.getMetadata().get("content"));
-        }
-        
-        // Set isRead
-        response.setIsRead(notification.getReadAt() != null);
     }
 }

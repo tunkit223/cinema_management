@@ -173,7 +173,6 @@ public class NotificationDispatcher {
         return NotificationSendRequest.builder()
                 .recipientId(notification.getRecipientId())
                 .recipientEmail(recipient != null ? recipient.getEmail() : null)
-                .recipientPhone(recipient != null ? recipient.getPhone() : null)
                 .recipientName(recipient != null ? recipient.getUsername() : null)
                 .templateCode(notification.getNotificationTemplate() != null 
                         ? notification.getNotificationTemplate().getTemplateCode() 
@@ -189,7 +188,7 @@ public class NotificationDispatcher {
      */
     private void saveLog(Notification notification, String channelName, String status, 
                         Map<String, Object> providerResponse, LocalDateTime sentAt) {
-        NotificationLog log = NotificationLog.builder()
+        NotificationLog notificationLog = NotificationLog.builder()
                 .notification(notification)
                 .channelName(channelName)
                 .status(status)
@@ -197,7 +196,7 @@ public class NotificationDispatcher {
                 .sentAt(sentAt != null ? sentAt : LocalDateTime.now())
                 .build();
         
-        logRepository.save(log);
+        logRepository.save(notificationLog);
         log.info("Notification log saved for channel: {}, status: {}", channelName, status);
     }
 }

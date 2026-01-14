@@ -16,7 +16,6 @@ import java.util.Map;
 public class NotificationSendRequest {
     String recipientId;
     String recipientEmail;
-    String recipientPhone;
     String recipientName;
     
     String templateCode;

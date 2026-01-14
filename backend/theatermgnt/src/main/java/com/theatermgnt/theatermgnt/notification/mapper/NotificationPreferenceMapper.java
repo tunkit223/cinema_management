@@ -9,7 +9,7 @@ import org.mapstruct.*;
 @Mapper(componentModel = "spring")
 public interface NotificationPreferenceMapper {
     
-    @Mapping(target = "channel", source = "channel")
+    @Mapping(target = "channel", source = "channelId")
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
