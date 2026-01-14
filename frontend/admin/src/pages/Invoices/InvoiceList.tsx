@@ -24,8 +24,6 @@ import {
   PaginationContent,
   PaginationItem,
   PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
 } from "@/components/ui/pagination";
 import { useNotificationStore } from "@/stores";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -89,6 +87,7 @@ export const InvoiceList = () => {
     } catch (error) {
       addNotification({
         type: "error",
+        title: "Error",
         message: "Failed to load invoices",
       });
     } finally {
@@ -102,11 +101,12 @@ export const InvoiceList = () => {
       setStatisticsLoading(true);
       // Use filter's cinemaId if provided, otherwise use manager's cinemaId from auth
       const selectedCinemaId = filters.cinemaId || cinemaId;
-      const stats = await getInvoiceStatistics(selectedCinemaId);
+      const stats = await getInvoiceStatistics(selectedCinemaId || undefined);
       setStatistics(stats);
     } catch (error) {
       addNotification({
         type: "error",
+        title: "Error",
         message: "Failed to load statistics",
       });
     } finally {
@@ -123,6 +123,7 @@ export const InvoiceList = () => {
     } catch (error) {
       addNotification({
         type: "error",
+        title: "Error",
         message: "Failed to load invoice details",
       });
     }

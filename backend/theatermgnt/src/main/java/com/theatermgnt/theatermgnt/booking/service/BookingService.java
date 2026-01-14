@@ -29,6 +29,8 @@ public interface BookingService {
      * Refund booking and update status to REFUNDED
      */
     void refundBooking(String bookingId);
+
+    /**
      * Get list of bookings with filters and pagination
      */
     BookingListResponse getBookings(
