@@ -457,7 +457,7 @@ export function ShowtimeList() {
           <DialogHeader>
             <DialogTitle>Edit Showtime</DialogTitle>
             <DialogDescription>
-              Adjust the start time. End time will be calculated automatically based on movie duration ({editDialog.movieDuration} minutes).
+              Adjust the start time only. End time will be calculated automatically.
             </DialogDescription>
           </DialogHeader>
 
@@ -465,12 +465,23 @@ export function ShowtimeList() {
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label>Movie</Label>
-                <Input value={editDialog.showtime.movieName} disabled />
+                <Input value={editDialog.showtime.movieName} disabled className="bg-muted" />
+                <p className="text-xs text-muted-foreground">
+                  Movie cannot be changed
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Room</Label>
+                <Input value={editDialog.showtime.roomName} disabled className="bg-muted" />
+                <p className="text-xs text-muted-foreground">
+                  Room cannot be changed
+                </p>
               </div>
 
               <div className="space-y-2">
                 <Label>Duration</Label>
-                <Input value={`${editDialog.movieDuration} minutes`} disabled />
+                <Input value={`${editDialog.movieDuration} minutes`} disabled className="bg-muted" />
               </div>
 
               <div className="space-y-2">
@@ -488,9 +499,10 @@ export function ShowtimeList() {
                   type="datetime-local"
                   value={editDialog.endTime}
                   disabled
+                  className="bg-muted"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Auto-calculated based on movie duration
+                  Auto-calculated: Start time + {editDialog.movieDuration} minutes
                 </p>
               </div>
             </div>

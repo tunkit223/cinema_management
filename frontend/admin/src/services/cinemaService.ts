@@ -42,3 +42,24 @@ export const updateCinema = async (
 export const deleteCinema = async (cinemaId: string): Promise<void> => {
   await httpClient.delete(`${BASE_URL}/${cinemaId}`);
 };
+
+// Get cinemas for buffer management (role-based)
+export const getCinemasForBufferManagement = async (): Promise<Cinema[]> => {
+  return handleApiResponse<Cinema[]>(
+    httpClient.get<ApiResponse<Cinema[]>>(`${BASE_URL}/buffer-management`)
+  );
+};
+
+// Update cinema buffer
+export const updateCinemaBuffer = async (
+  cinemaId: string,
+  buffer: number | null
+): Promise<Cinema> => {
+  return handleApiResponse<Cinema>(
+    httpClient.patch<ApiResponse<Cinema>>(
+      `${BASE_URL}/${cinemaId}/buffer`,
+      null,
+      { params: { buffer } }
+    )
+  );
+};

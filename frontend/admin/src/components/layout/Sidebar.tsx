@@ -11,6 +11,7 @@ import {
   Shield,
   ShieldCheck,
   DollarSign,
+  Clock,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/utils/cn";
@@ -286,6 +287,22 @@ export function Sidebar() {
                 >
                   <DollarSign className="h-3.5 w-3.5" />
                   Seat Prices
+                </NavLink>
+
+                {/* Buffer */}
+                <NavLink
+                  to={ROUTES.SETTINGS_BUFFER}
+                  className={({ isActive }) =>
+                    cn(
+                      "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
+                      isActive
+                        ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                        : "text-sidebar-foreground hover:bg-sidebar-accent/50"
+                    )
+                  }
+                >
+                  <Clock className="h-3.5 w-3.5" />
+                  Buffer
                 </NavLink>
               </div>
             )}

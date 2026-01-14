@@ -61,4 +61,19 @@ public class CinemaController {
                 .result(cinemaService.updateCinema(cinemaId, request))
                 .build();
     }
+
+    @GetMapping("/buffer-management")
+    ApiResponse<List<CinemaResponse>> getCinemasForBufferManagement() {
+        return ApiResponse.<List<CinemaResponse>>builder()
+                .result(cinemaService.getCinemasForBufferManagement())
+                .build();
+    }
+
+    @PatchMapping("/{cinemaId}/buffer")
+    ApiResponse<CinemaResponse> updateCinemaBuffer(
+            @PathVariable String cinemaId, @RequestParam Integer buffer) {
+        return ApiResponse.<CinemaResponse>builder()
+                .result(cinemaService.updateCinemaBuffer(cinemaId, buffer))
+                .build();
+    }
 }
