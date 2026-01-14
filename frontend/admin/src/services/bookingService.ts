@@ -1,4 +1,5 @@
 import httpClient from "@/configurations/httpClient"
+import { useAuthStore } from "@/stores/useAuthStore"
 import type { ApiResponse } from "@/utils/apiResponse"
 
 export interface CreateBookingRequest {
@@ -60,11 +61,13 @@ export interface BookingListItem {
   email: string
   phone: string
   movieTitle: string
+  cinemaId: string
+  cinemaName: string
   roomName: string
   screeningTime: string
   seatCount: number
   totalAmount: number
-  status: 'PENDING' | 'CONFIRM' | 'PAID' | 'EXPIRED' | 'CANCELLED'
+  status: 'PENDING' | 'CONFIRM' | 'PAID' | 'EXPIRED' | 'CANCELLED' | 'REFUNDED'
   createdAt: string
   expiredAt: string | null
 }
@@ -174,11 +177,13 @@ export const getBookingList = async (
   size: number = 10
 ): Promise<BookingListResponse> => {
   try {
+    const cinemaId = useAuthStore.getState().cinemaId;
     const params = new URLSearchParams()
     if (status) params.append('status', status)
     if (customerSearch) params.append('customerSearch', customerSearch)
     if (emailSearch) params.append('emailSearch', emailSearch)
     if (movieSearch) params.append('movieSearch', movieSearch)
+    if (cinemaId) params.append('cinemaId', cinemaId)
     params.append('page', page.toString())
     params.append('size', size.toString())
 

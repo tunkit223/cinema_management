@@ -1,7 +1,5 @@
 package com.theatermgnt.theatermgnt.authentication.service;
 
-import java.util.UUID;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -10,11 +8,8 @@ import com.theatermgnt.theatermgnt.account.service.RegistrationService;
 import com.theatermgnt.theatermgnt.authentication.dto.request.ExchangeTokenRequest;
 import com.theatermgnt.theatermgnt.authentication.dto.request.OAuthCustomerCreationRequest;
 import com.theatermgnt.theatermgnt.authentication.dto.response.AuthenticationResponse;
-import com.theatermgnt.theatermgnt.authentication.enums.AccountType;
 import com.theatermgnt.theatermgnt.authentication.repository.httpClient.OutboundIdentityClient;
 import com.theatermgnt.theatermgnt.authentication.repository.httpClient.OutboundUserClient;
-import com.theatermgnt.theatermgnt.common.exception.AppException;
-import com.theatermgnt.theatermgnt.common.exception.ErrorCode;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -62,7 +57,6 @@ public class OAuthLoginService {
         var userInfo = outboundUserClient.getUserInfo("json", response.getAccessToken());
 
         log.info("User info from Google: {}", userInfo);
-
 
         // 4. Find or create customer account and profile
         var account = registrationService.registerOAuthCustomer(OAuthCustomerCreationRequest.builder()

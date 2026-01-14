@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 
 import jakarta.persistence.*;
 
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
@@ -14,12 +16,6 @@ import com.theatermgnt.theatermgnt.screening.entity.Screening;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-import org.hibernate.annotations.NotFound;
-import org.hibernate.annotations.NotFoundAction;
-import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.Where;
-
-import java.math.BigDecimal;
 
 @Getter
 @Setter

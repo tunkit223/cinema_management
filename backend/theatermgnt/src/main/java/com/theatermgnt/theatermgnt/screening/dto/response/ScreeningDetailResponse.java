@@ -21,9 +21,9 @@ public class ScreeningDetailResponse {
     LocalDateTime startTime;
     LocalDateTime endTime;
     String status;
-    
+
     // Ticket information
-    Integer totalSeats;      // Tổng số ghế trong phòng
-    Integer bookedSeats;     // Số ghế đã được đặt
-    Integer availableSeats;  // Số ghế còn trống
+    Integer totalSeats; // Tổng số ghế trong phòng
+    Integer bookedSeats; // Số ghế đã được đặt
+    Integer availableSeats; // Số ghế còn trống
 }

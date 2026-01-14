@@ -9,7 +9,8 @@ const BOOKING_STATUSES = [
   { value: "CONFIRM", label: "Confirmed" },
   { value: "PAID", label: "Paid" },
   { value: "EXPIRED", label: "Expired" },
-  { value: "CANCELLED", label: "Cancelled" }
+  { value: "CANCELLED", label: "Cancelled" },
+  { value: "REFUNDED", label: "Refunded" }
 ]
 
 const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
@@ -17,7 +18,8 @@ const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
   CONFIRM: { bg: "bg-blue-100", text: "text-blue-800" },
   PAID: { bg: "bg-green-100", text: "text-green-800" },
   EXPIRED: { bg: "bg-gray-100", text: "text-gray-800" },
-  CANCELLED: { bg: "bg-red-100", text: "text-red-800" }
+  CANCELLED: { bg: "bg-red-100", text: "text-red-800" },
+  REFUNDED: { bg: "bg-purple-100", text: "text-purple-800" }
 }
 
 export const BookingList = () => {
@@ -193,6 +195,7 @@ export const BookingList = () => {
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Customer</th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Email</th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Movie</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Cinema</th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Room</th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Screening Time</th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Seats</th>
@@ -208,6 +211,7 @@ export const BookingList = () => {
                       <td className="px-6 py-4 text-sm text-gray-900">{booking.customerName}</td>
                       <td className="px-6 py-4 text-sm text-gray-600">{booking.email}</td>
                       <td className="px-6 py-4 text-sm text-gray-900 font-medium">{booking.movieTitle}</td>
+                      <td className="px-6 py-4 text-sm text-gray-900">{booking.cinemaName}</td>
                       <td className="px-6 py-4 text-sm text-gray-900">{booking.roomName}</td>
                       <td className="px-6 py-4 text-sm text-gray-900">{formatDate(booking.screeningTime)}</td>
                       <td className="px-6 py-4 text-sm text-gray-900 text-center">{booking.seatCount}</td>

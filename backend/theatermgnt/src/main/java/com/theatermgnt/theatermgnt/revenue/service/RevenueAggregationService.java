@@ -68,10 +68,10 @@ public class RevenueAggregationService {
             Screening screening = booking.getScreening();
             String cinemaId = screening.getRoom().getCinema().getId();
             String movieId = screening.getMovie().getId();
-            
+
             // Find original payment date to subtract revenue from the same date
             LocalDate reportDate = paymentRepository.findByInvoiceId(invoiceId).stream()
-                    .filter(p -> p.getPaymentType() == com.theatermgnt.theatermgnt.payment.entity.PaymentType.BOOKING 
+                    .filter(p -> p.getPaymentType() == com.theatermgnt.theatermgnt.payment.entity.PaymentType.BOOKING
                             && p.getStatus() == PaymentStatus.SUCCESS)
                     .findFirst()
                     .map(p -> p.getPaymentDate() != null ? p.getPaymentDate().toLocalDate() : LocalDate.now())
@@ -154,9 +154,8 @@ public class RevenueAggregationService {
             String cinemaId = screening.getRoom().getCinema().getId();
             String movieId = screening.getMovie().getId();
             // Use payment date instead of screening date for revenue reporting
-            LocalDate reportDate = payment.getPaymentDate() != null 
-                    ? payment.getPaymentDate().toLocalDate() 
-                    : LocalDate.now();
+            LocalDate reportDate =
+                    payment.getPaymentDate() != null ? payment.getPaymentDate().toLocalDate() : LocalDate.now();
 
             // Count tickets sold (screening seats booked)
             int ticketsSold = screeningSeatRepository

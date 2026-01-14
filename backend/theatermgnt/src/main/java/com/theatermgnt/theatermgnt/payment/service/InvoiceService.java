@@ -29,11 +29,13 @@ public interface InvoiceService {
 
     Page<InvoiceResponse> getInvoicesByStatus(InvoiceStatus status, int page, int size, String cinemaId);
 
-    Page<InvoiceResponse> getInvoicesByDateRange(LocalDateTime startDate, LocalDateTime endDate, int page, int size, String cinemaId);
+    Page<InvoiceResponse> getInvoicesByDateRange(
+            LocalDateTime startDate, LocalDateTime endDate, int page, int size, String cinemaId);
 
     Page<InvoiceResponse> searchInvoices(String search, int page, int size, String cinemaId);
 
-    Page<InvoiceResponse> searchInvoicesByStatus(String search, InvoiceStatus status, int page, int size, String cinemaId);
+    Page<InvoiceResponse> searchInvoicesByStatus(
+            String search, InvoiceStatus status, int page, int size, String cinemaId);
 
     InvoiceStatisticsResponse getStatistics(String cinemaId);
 }

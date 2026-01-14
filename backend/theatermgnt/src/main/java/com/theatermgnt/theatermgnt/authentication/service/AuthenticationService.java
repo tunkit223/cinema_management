@@ -87,8 +87,10 @@ public class AuthenticationService {
 
         // Validate account type
         if (account.getAccountType() != requiredAccountType) {
-            log.warn("Account type mismatch: {} tried to login with {} account type", 
-                    account.getUsername(), requiredAccountType);
+            log.warn(
+                    "Account type mismatch: {} tried to login with {} account type",
+                    account.getUsername(),
+                    requiredAccountType);
             throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
 

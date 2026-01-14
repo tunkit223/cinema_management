@@ -346,7 +346,10 @@ public class BookingServiceImpl implements BookingService {
             int pointDiscounted = discountService.caculateDiscountPoints(booking.getDiscount());
             // Subtract points that were added during confirmation
             customerService.addLoyaltyPoints(booking.getCustomer().getId(), -(pointsEarned - pointDiscounted));
-            log.info("Loyalty points reversed for customer {} in booking {}", booking.getCustomer().getId(), bookingId);
+            log.info(
+                    "Loyalty points reversed for customer {} in booking {}",
+                    booking.getCustomer().getId(),
+                    bookingId);
         }
 
         // Release seats back to available
@@ -354,7 +357,6 @@ public class BookingServiceImpl implements BookingService {
 
         log.info("Booking {} refunded", bookingId);
     }
-
 
     private void validateScreeningSeat(Screening screening, List<String> screeningSeatIds) {
         List<ScreeningSeat> seats = screeningSeatRepository.findByScreeningId(screening.getId());
@@ -459,8 +461,14 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public BookingListResponse getBookings(
-            BookingStatus status, String customerSearch, String emailSearch, String movieSearch, Pageable pageable) {
-        Page<Booking> page = bookingRepository.findBookings(status, customerSearch, emailSearch, movieSearch, pageable);
+            BookingStatus status,
+            String customerSearch,
+            String emailSearch,
+            String movieSearch,
+            String cinemaId,
+            Pageable pageable) {
+        Page<Booking> page =
+                bookingRepository.findBookings(status, customerSearch, emailSearch, movieSearch, cinemaId, pageable);
 
         List<BookingListItemResponse> items =
                 page.getContent().stream().map(this::mapToBookingListItem).collect(Collectors.toList());
@@ -502,6 +510,8 @@ public class BookingServiceImpl implements BookingService {
                 .status(booking.getStatus())
                 .createdAt(booking.getCreatedAt())
                 .expiredAt(booking.getExpiredAt())
+                .cinemaName(booking.getScreening().getRoom().getCinema().getName())
+                .cinemaId(booking.getScreening().getRoom().getCinema().getId())
                 .build();
     }
 }

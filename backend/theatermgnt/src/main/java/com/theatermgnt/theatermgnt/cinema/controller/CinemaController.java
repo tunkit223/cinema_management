@@ -70,8 +70,7 @@ public class CinemaController {
     }
 
     @PatchMapping("/{cinemaId}/buffer")
-    ApiResponse<CinemaResponse> updateCinemaBuffer(
-            @PathVariable String cinemaId, @RequestParam Integer buffer) {
+    ApiResponse<CinemaResponse> updateCinemaBuffer(@PathVariable String cinemaId, @RequestParam Integer buffer) {
         return ApiResponse.<CinemaResponse>builder()
                 .result(cinemaService.updateCinemaBuffer(cinemaId, buffer))
                 .build();

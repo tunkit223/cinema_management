@@ -6,8 +6,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import com.theatermgnt.theatermgnt.screening.enums.ScreeningStatus;
-import com.theatermgnt.theatermgnt.screening.repository.ScreeningRepository;
 import org.springframework.stereotype.Service;
 
 import com.theatermgnt.theatermgnt.common.enums.MovieStatus;
@@ -24,6 +22,8 @@ import com.theatermgnt.theatermgnt.movie.mapper.MovieMapper;
 import com.theatermgnt.theatermgnt.movie.repository.AgeRatingRepository;
 import com.theatermgnt.theatermgnt.movie.repository.GenreRepository;
 import com.theatermgnt.theatermgnt.movie.repository.MovieRepository;
+import com.theatermgnt.theatermgnt.screening.enums.ScreeningStatus;
+import com.theatermgnt.theatermgnt.screening.repository.ScreeningRepository;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -78,7 +78,6 @@ public class MovieService {
                 })
                 .collect(Collectors.toList());
     }
-
 
     public MovieResponse getMovieById(String id) {
         Movie movie = movieRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.MOVIE_NOT_EXISTED));
@@ -178,8 +177,6 @@ public class MovieService {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime sevenDaysLater = now.plusDays(7);
 
-        return !screeningRepository.existsByMovieIdAndStartTimeBetween(
-                movie.getId(), now, sevenDaysLater);
+        return !screeningRepository.existsByMovieIdAndStartTimeBetween(movie.getId(), now, sevenDaysLater);
     }
-
 }

@@ -63,15 +63,14 @@ public class RoleService {
     /// DELETE A ROLE
     public void delete(String roleId) {
         // Kiểm tra xem role có tồn tại không
-        Role role = roleRepository.findById(roleId)
-            .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
-        
+        Role role = roleRepository.findById(roleId).orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
+
         // Kiểm tra xem role có đang được sử dụng bởi staff nào không
         boolean isRoleInUse = staffRepository.existsByRoleName(roleId);
         if (isRoleInUse) {
             throw new AppException(ErrorCode.ROLE_IN_USE);
         }
-        
+
         roleRepository.deleteById(roleId);
     }
 }

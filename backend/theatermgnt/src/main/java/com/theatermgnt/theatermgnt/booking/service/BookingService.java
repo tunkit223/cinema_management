@@ -20,17 +20,15 @@ public interface BookingService {
 
     void cancelBooking(UUID bookingId);
 
-    /**
-     * Confirm booking after successful payment
-     */
     void confirmBookingPayment(String bookingId);
 
-    /**
-     * Refund booking and update status to REFUNDED
-     */
     void refundBooking(String bookingId);
-     * Get list of bookings with filters and pagination
-     */
+
     BookingListResponse getBookings(
-            BookingStatus status, String customerSearch, String emailSearch, String movieSearch, Pageable pageable);
+            BookingStatus status,
+            String customerSearch,
+            String emailSearch,
+            String movieSearch,
+            String cinemaId,
+            Pageable pageable);
 }

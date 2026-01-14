@@ -1,7 +1,6 @@
 package com.theatermgnt.theatermgnt.revenue.controller;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -24,7 +23,7 @@ public class RevenueReprocessController {
     // @PreAuthorize("hasAuthority('SCOPE_REPORT_CREATE')") // Temporarily disabled for testing
     public ResponseEntity<ApiResponse<String>> reprocessAllRevenue() {
         log.info("Revenue reprocess requested");
-        
+
         try {
             reprocessService.reprocessAllPayments();
             return ResponseEntity.ok(ApiResponse.<String>builder()
@@ -32,9 +31,10 @@ public class RevenueReprocessController {
                     .build());
         } catch (Exception e) {
             log.error("Error during revenue reprocessing", e);
-            return ResponseEntity.internalServerError().body(ApiResponse.<String>builder()
-                    .message("Error during reprocessing: " + e.getMessage())
-                    .build());
+            return ResponseEntity.internalServerError()
+                    .body(ApiResponse.<String>builder()
+                            .message("Error during reprocessing: " + e.getMessage())
+                            .build());
         }
     }
 }

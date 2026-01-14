@@ -127,9 +127,8 @@ public class CinemaService {
     }
 
     public CinemaResponse updateCinemaBuffer(String cinemaId, Integer buffer) {
-        Cinema cinema = cinemaRepository
-                .findById(cinemaId)
-                .orElseThrow(() -> new AppException(ErrorCode.CINEMA_NOT_EXISTED));
+        Cinema cinema =
+                cinemaRepository.findById(cinemaId).orElseThrow(() -> new AppException(ErrorCode.CINEMA_NOT_EXISTED));
 
         cinema.setBuffer(buffer);
         return cinemaMapper.toCinemaResponse(cinemaRepository.save(cinema));

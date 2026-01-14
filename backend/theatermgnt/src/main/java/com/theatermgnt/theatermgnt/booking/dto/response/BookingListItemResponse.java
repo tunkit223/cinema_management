@@ -23,6 +23,8 @@ public class BookingListItemResponse {
     private String email;
     private String phone;
     private String movieTitle;
+    private String cinemaId;
+    private String cinemaName;
     private String roomName;
     private String screeningTime;
     private Integer seatCount;
