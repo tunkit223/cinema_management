@@ -1,28 +1,28 @@
 package com.theatermgnt.theatermgnt.ticket.entity;
 
-import com.theatermgnt.theatermgnt.booking.entity.Booking;
-import com.theatermgnt.theatermgnt.screeningSeat.entity.ScreeningSeat;
-import com.theatermgnt.theatermgnt.ticket.enums.TicketStatus;
-import jakarta.persistence.*;
-import lombok.*;
-import lombok.experimental.FieldDefaults;
-import org.hibernate.annotations.CreationTimestamp;
-
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
+import jakarta.persistence.*;
+
+import org.hibernate.annotations.CreationTimestamp;
+
+import com.theatermgnt.theatermgnt.booking.entity.Booking;
+import com.theatermgnt.theatermgnt.screeningSeat.entity.ScreeningSeat;
+import com.theatermgnt.theatermgnt.ticket.enums.TicketStatus;
+
+import lombok.*;
+import lombok.experimental.FieldDefaults;
+
 @Entity
 @Table(
         name = "tickets",
-        uniqueConstraints = {
-                @UniqueConstraint(columnNames = "ticket_code")
-        },
+        uniqueConstraints = {@UniqueConstraint(columnNames = "ticket_code")},
         indexes = {
-                @Index(name = "idx_ticket_booking", columnList = "booking_id"),
-                @Index(name = "idx_ticket_status", columnList = "status")
-        }
-)
+            @Index(name = "idx_ticket_booking", columnList = "booking_id"),
+            @Index(name = "idx_ticket_status", columnList = "status")
+        })
 @Getter
 @Setter
 @Builder

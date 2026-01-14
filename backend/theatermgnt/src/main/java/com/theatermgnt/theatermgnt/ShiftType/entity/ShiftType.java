@@ -1,17 +1,20 @@
 package com.theatermgnt.theatermgnt.ShiftType.entity;
 
-import com.theatermgnt.theatermgnt.common.entity.BaseEntity;
+import java.time.LocalTime;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
+
+import com.theatermgnt.theatermgnt.common.entity.BaseEntity;
+
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
-import java.time.LocalTime;
-
 @Entity
 @Table(name = "shift_types")
-@Getter @Setter
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
