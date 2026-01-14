@@ -64,7 +64,7 @@ export function ComingSoonSection() {
           </h2>
 
           <p className="text-xl text-slate-400 max-w-2xl">
-            Get excited for the most anticipated films coming to CINEPLEX. Reserve your seats in advance.
+            Get excited for the most anticipated films coming to Cifastar. Reserve your seats in advance.
           </p>
         </div>
 

@@ -120,7 +120,7 @@ export function Header() {
               <span className="text-white font-bold text-lg">C</span>
             </div>
             <span className="gradient-text font-bold text-xl hidden sm:inline">
-              CINEPLEX
+              Cifastar
             </span>
           </Link>
 
