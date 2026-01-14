@@ -50,6 +50,7 @@ export interface ComboItem {
   imageUrl?: string
   items?: ComboItemDetail[]
   quantity?: number
+  deleted?: boolean
 }
 
 export interface BookingState {

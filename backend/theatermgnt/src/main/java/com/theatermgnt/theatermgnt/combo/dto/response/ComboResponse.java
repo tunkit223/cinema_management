@@ -16,4 +16,5 @@ public class ComboResponse {
     String description;
     BigDecimal price;
     String imageUrl;
+    boolean deleted;
 }

@@ -29,6 +29,7 @@ export interface ComboItem {
   imageUrl?: string
   items?: any[]
   quantity?: number
+  deleted?: boolean
 }
 
 // Movie Types

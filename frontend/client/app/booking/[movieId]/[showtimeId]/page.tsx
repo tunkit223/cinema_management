@@ -372,7 +372,7 @@ export default function BookingPage({
         const mapped = Array.isArray(data)
           ? data
               .map((combo) => mapComboForDisplay(combo))
-              .filter((combo): combo is ComboItem => combo !== null)
+              .filter((combo): combo is ComboItem => combo !== null && !combo.deleted)
           : []
 
         const combosWithItems = await Promise.all(
