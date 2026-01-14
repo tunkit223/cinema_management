@@ -1,8 +1,7 @@
 package com.theatermgnt.theatermgnt.notification.dto.response;
 
 import java.time.LocalDateTime;
-
-import com.theatermgnt.theatermgnt.notification.enums.Priority;
+import java.util.Map;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -12,12 +11,12 @@ import lombok.experimental.FieldDefaults;
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class NotificationTemplateResponse {
+public class NotificationLogDetailResponse {
     String id;
-    String templateCode;
-    String titleTemplate;
-    String contentTemplate;
-    Priority priority;
-    LocalDateTime createdAt;
-    LocalDateTime updatedAt;
+    String notificationId;
+    String notificationTitle;
+    String channelName;
+    String status;
+    Map<String, Object> providerResponse;
+    LocalDateTime sentAt;
 }

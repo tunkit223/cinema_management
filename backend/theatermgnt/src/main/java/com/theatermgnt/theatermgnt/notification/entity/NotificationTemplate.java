@@ -1,15 +1,17 @@
 package com.theatermgnt.theatermgnt.notification.entity;
 
-import com.theatermgnt.theatermgnt.common.entity.BaseEntity;
-import com.theatermgnt.theatermgnt.notification.enums.Priority;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import lombok.*;
-import lombok.experimental.FieldDefaults;
+
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
+
+import com.theatermgnt.theatermgnt.common.entity.BaseEntity;
+import com.theatermgnt.theatermgnt.notification.enums.Priority;
+
+import lombok.*;
+import lombok.experimental.FieldDefaults;
 
 @Entity
 @Getter
@@ -26,5 +28,6 @@ public class NotificationTemplate extends BaseEntity {
 
     @Column(columnDefinition = "TEXT")
     String contentTemplate;
+
     Priority priority;
 }

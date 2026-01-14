@@ -1,13 +1,14 @@
 package com.theatermgnt.theatermgnt.notification.dto.response;
 
+import java.time.LocalDateTime;
+
 import com.theatermgnt.theatermgnt.notification.enums.NotificationCategory;
 import com.theatermgnt.theatermgnt.notification.enums.NotificationStatus;
 import com.theatermgnt.theatermgnt.notification.enums.Priority;
 import com.theatermgnt.theatermgnt.notification.enums.RecipientType;
+
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-
-import java.time.LocalDateTime;
 
 @Data
 @Builder

@@ -1,10 +1,10 @@
 package com.theatermgnt.theatermgnt.notification.dto.response;
 
-import lombok.*;
-import lombok.experimental.FieldDefaults;
-
 import java.time.LocalDateTime;
 import java.util.Map;
+
+import lombok.*;
+import lombok.experimental.FieldDefaults;
 
 /**
  * Result DTO after sending notification through a channel
@@ -19,7 +19,7 @@ public class NotificationSendResult {
     String status; // "SENT", "FAILED", "PENDING"
     String message;
     String channelName;
-    
+
     Map<String, Object> providerResponse;
     LocalDateTime sentAt;
     String errorCode;

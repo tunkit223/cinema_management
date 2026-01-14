@@ -1,19 +1,19 @@
 package com.theatermgnt.theatermgnt.notification.entity;
 
-import com.theatermgnt.theatermgnt.common.entity.BaseEntity;
-import com.theatermgnt.theatermgnt.notification.enums.NotificationStatus;
-import com.theatermgnt.theatermgnt.notification.enums.Priority;
-import com.theatermgnt.theatermgnt.notification.enums.RecipientType;
+import java.time.LocalDateTime;
+import java.util.Map;
+
 import jakarta.persistence.*;
-import lombok.*;
-import lombok.experimental.FieldDefaults;
+
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 import org.hibernate.type.SqlTypes;
 
-import java.time.LocalDateTime;
-import java.util.Map;
+import com.theatermgnt.theatermgnt.common.entity.BaseEntity;
+
+import lombok.*;
+import lombok.experimental.FieldDefaults;
 
 @Entity
 @Getter
@@ -35,5 +35,6 @@ public class NotificationLog extends BaseEntity {
 
     @JdbcTypeCode(SqlTypes.JSON)
     Map<String, Object> providerResponse;
+
     LocalDateTime sentAt;
 }

@@ -2,6 +2,7 @@ package com.theatermgnt.theatermgnt.notification.dto.response;
 
 import com.theatermgnt.theatermgnt.notification.enums.NotificationCategory;
 import com.theatermgnt.theatermgnt.notification.enums.RecipientType;
+
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 

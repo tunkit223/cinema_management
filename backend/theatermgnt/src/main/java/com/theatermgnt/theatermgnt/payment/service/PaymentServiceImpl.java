@@ -425,7 +425,12 @@ public class PaymentServiceImpl implements PaymentService {
                 bookingService.confirmBookingPayment(invoice.getBookingId());
                 log.info("Booking {} confirmed successfully after cash payment", invoice.getBookingId());
             } catch (Exception e) {
-                log.error("Error confirming booking {} for invoice {}: {}", invoice.getBookingId(), invoice.getId(), e.getMessage(), e);
+                log.error(
+                        "Error confirming booking {} for invoice {}: {}",
+                        invoice.getBookingId(),
+                        invoice.getId(),
+                        e.getMessage(),
+                        e);
                 throw e; // Rollback transaction if booking confirmation fails
             }
 

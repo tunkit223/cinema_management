@@ -1,15 +1,17 @@
 package com.theatermgnt.theatermgnt.notification.provider;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import org.springframework.stereotype.Component;
+
 import com.theatermgnt.theatermgnt.notification.dto.request.NotificationSendRequest;
 import com.theatermgnt.theatermgnt.notification.dto.response.NotificationSendResult;
+
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * In-App notification provider
@@ -21,19 +23,19 @@ import java.util.Map;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
 public class InAppChannelProvider implements NotificationChannelProvider {
-    
+
     private static final String CHANNEL_NAME = "IN_APP";
-    
+
     @Override
     public String getChannelName() {
         return CHANNEL_NAME;
     }
-    
+
     @Override
     public NotificationSendResult send(NotificationSendRequest request) {
         try {
             log.info("Processing in-app notification for user: {}", request.getRecipientId());
-            
+
             // Validate recipient
             if (request.getRecipientId() == null || request.getRecipientId().isEmpty()) {
                 return NotificationSendResult.builder()
@@ -44,18 +46,18 @@ public class InAppChannelProvider implements NotificationChannelProvider {
                         .sentAt(java.time.LocalDateTime.now())
                         .build();
             }
-            
+
             // For in-app notifications, we just need to ensure the notification is saved to DB
             // The actual saving happens in NotificationService, not here
             // This provider just marks it as "delivered" to in-app channel
-            
+
             Map<String, Object> providerResponse = new HashMap<>();
             providerResponse.put("recipientId", request.getRecipientId());
             providerResponse.put("deliveryMethod", "DATABASE");
             providerResponse.put("message", "Notification saved to database for in-app display");
-            
+
             log.info("In-app notification processed successfully for user: {}", request.getRecipientId());
-            
+
             return NotificationSendResult.builder()
                     .success(true)
                     .status("SENT")
@@ -63,7 +65,7 @@ public class InAppChannelProvider implements NotificationChannelProvider {
                     .providerResponse(providerResponse)
                     .sentAt(java.time.LocalDateTime.now())
                     .build();
-            
+
         } catch (Exception e) {
             log.error("Failed to process in-app notification for user: {}", request.getRecipientId(), e);
             return NotificationSendResult.builder()

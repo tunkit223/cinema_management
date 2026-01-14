@@ -1,24 +1,26 @@
 package com.theatermgnt.theatermgnt.notification.entity;
 
-import com.theatermgnt.theatermgnt.common.entity.BaseEntity;
-import com.theatermgnt.theatermgnt.notification.enums.Priority;
-import jakarta.persistence.Column;
+import java.util.Map;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
-import lombok.*;
-import lombok.experimental.FieldDefaults;
+
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 import org.hibernate.type.SqlTypes;
 
-import java.util.Map;
+import com.theatermgnt.theatermgnt.common.entity.BaseEntity;
+
+import lombok.*;
+import lombok.experimental.FieldDefaults;
 
 @Entity
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 @Table(name = "notification_channels")
 @SQLDelete(sql = "UPDATE notification_channels SET deleted = true WHERE id = ?")
 @Where(clause = "deleted = false")
@@ -29,5 +31,4 @@ public class NotificationChannel extends BaseEntity {
 
     @JdbcTypeCode(SqlTypes.JSON)
     Map<String, Object> configJson;
-
 }

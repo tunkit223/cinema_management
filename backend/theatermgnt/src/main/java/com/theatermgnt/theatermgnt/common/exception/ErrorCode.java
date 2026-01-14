@@ -15,7 +15,10 @@ public enum ErrorCode {
     PHONE_NUMBER_EXISTED(1005, "Phone number has existed", HttpStatus.BAD_REQUEST),
     UNAUTHENTICATED(1006, "Unauthenticated", HttpStatus.UNAUTHORIZED), // 401
     ROLE_NOT_FOUND(1007, "Role not found", HttpStatus.NOT_FOUND), // 401
-    ROLE_IN_USE(1026, "Cannot delete role. This role is currently assigned to one or more staff members", HttpStatus.BAD_REQUEST),
+    ROLE_IN_USE(
+            1026,
+            "Cannot delete role. This role is currently assigned to one or more staff members",
+            HttpStatus.BAD_REQUEST),
     INVALID_TYPING(1008, "WRONG IN YOUR CODE", HttpStatus.BAD_REQUEST),
     INVALID_USERNAME(1009, "Username must be at least {min} characters", HttpStatus.BAD_REQUEST),
     INVALID_PASSWORD(1010, "Password must be at least {min} characters", HttpStatus.BAD_REQUEST),
@@ -89,7 +92,8 @@ public enum ErrorCode {
     INVALID_POSTER_URL(2033, "Poster URL must be a valid URL", HttpStatus.BAD_REQUEST),
     INVALID_TRAILER_URL(2034, "Trailer URL must be a valid URL", HttpStatus.BAD_REQUEST),
     INVALID_MOVIE_GENRES(2035, "Movie must have between {min} and {max} genres", HttpStatus.BAD_REQUEST),
-    MOVIE_HAS_SCHEDULED_SCREENINGS(2036, "Cannot archive movie because it has scheduled screenings", HttpStatus.BAD_REQUEST),
+    MOVIE_HAS_SCHEDULED_SCREENINGS(
+            2036, "Cannot archive movie because it has scheduled screenings", HttpStatus.BAD_REQUEST),
 
     // Work Schedule
     WORK_SCHEDULE_NOT_FOUND(2040, "Work schedule not found", HttpStatus.BAD_REQUEST),
@@ -163,15 +167,14 @@ public enum ErrorCode {
 
     // CHATBOT DOCUMENT;
     PRIORITY_INVALID(6001, "Priority must have greater than 0", HttpStatus.BAD_REQUEST),
-    
+
     // NOTIFICATION
     TEMPLATE_NOT_FOUND(7001, "Notification template not found", HttpStatus.NOT_FOUND),
     TEMPLATE_ALREADY_EXISTS(7002, "Notification template already exists", HttpStatus.BAD_REQUEST),
     CHANNEL_NOT_FOUND(7003, "Notification channel not found", HttpStatus.NOT_FOUND),
     PREFERENCE_NOT_FOUND(7004, "Notification preference not found", HttpStatus.NOT_FOUND),
     PREFERENCE_ALREADY_EXISTS(7005, "Notification preference already exists", HttpStatus.BAD_REQUEST),
-    NOTIFICATION_NOT_FOUND(7006, "Notification not found", HttpStatus.NOT_FOUND)
-    ;
+    NOTIFICATION_NOT_FOUND(7006, "Notification not found", HttpStatus.NOT_FOUND);
 
     private int code;
     private String message;
