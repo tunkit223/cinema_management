@@ -19,6 +19,8 @@ export interface MovieSimple {
   status: "now_showing" | "coming_soon" | "archived";
   ageRatingCode: string;
   director: string;
+  needsArchiveWarning?: boolean;
+
 }
 
 // Full response for detail view

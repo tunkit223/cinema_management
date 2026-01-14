@@ -89,6 +89,7 @@ public enum ErrorCode {
     INVALID_POSTER_URL(2033, "Poster URL must be a valid URL", HttpStatus.BAD_REQUEST),
     INVALID_TRAILER_URL(2034, "Trailer URL must be a valid URL", HttpStatus.BAD_REQUEST),
     INVALID_MOVIE_GENRES(2035, "Movie must have between {min} and {max} genres", HttpStatus.BAD_REQUEST),
+    MOVIE_HAS_SCHEDULED_SCREENINGS(2036, "Cannot archive movie because it has scheduled screenings", HttpStatus.BAD_REQUEST),
 
     // Work Schedule
     WORK_SCHEDULE_NOT_FOUND(2040, "Work schedule not found", HttpStatus.BAD_REQUEST),

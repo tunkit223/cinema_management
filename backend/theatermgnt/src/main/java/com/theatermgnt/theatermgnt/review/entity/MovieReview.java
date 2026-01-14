@@ -7,6 +7,8 @@ import com.theatermgnt.theatermgnt.screening.entity.Screening;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
@@ -28,6 +30,7 @@ public class MovieReview extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "customer_id", nullable = false)
+    @NotFound(action = NotFoundAction.IGNORE)
     Customer customer;
 
     @ManyToOne(fetch = FetchType.LAZY)
