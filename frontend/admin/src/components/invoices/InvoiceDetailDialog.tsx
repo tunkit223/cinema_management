@@ -74,6 +74,7 @@ export const InvoiceDetailDialog = ({
       setUpdating(true);
       await updateInvoiceStatus(invoice.id, newStatus);
       addNotification({
+        title: "Success",
         type: "success",
         message: "Invoice status updated successfully",
       });
@@ -81,6 +82,7 @@ export const InvoiceDetailDialog = ({
       onClose();
     } catch (error) {
       addNotification({
+        title: "Error",
         type: "error",
         message: "Failed to update invoice status",
       });
@@ -224,27 +226,6 @@ export const InvoiceDetailDialog = ({
         </div>
 
         <DialogFooter className="flex gap-2">
-          {invoice.status === InvoiceStatus.PENDING && (
-            <>
-              <Button
-                variant="outline"
-                onClick={() => handleUpdateStatus(InvoiceStatus.FAILED)}
-                disabled={updating}
-                className="text-red-600 hover:text-red-700"
-              >
-                <XCircle className="h-4 w-4 mr-2" />
-                Mark as Failed
-              </Button>
-              <Button
-                onClick={() => handleUpdateStatus(InvoiceStatus.PAID)}
-                disabled={updating}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                <CheckCircle2 className="h-4 w-4 mr-2" />
-                Mark as Paid
-              </Button>
-            </>
-          )}
           {invoice.status === InvoiceStatus.PAID && (
             <Button
               variant="outline"

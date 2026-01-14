@@ -18,7 +18,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Film, Clock, DoorOpen, Calendar } from "lucide-react";
-import { getAllMovies, type Movie } from "@/services/movieService";
+import { getAllMovies } from "@/services/movieService";
+import type { MovieSimple } from "@/types/MovieType/Movie";
 import type { Room } from "@/types/RoomType/room";
 import {
   getShowtimesByRoom,
@@ -32,6 +33,7 @@ interface EditShowtimeDialogProps {
   open: boolean;
   onClose: () => void;
   cinemaName: string;
+  cinemaBuffer?: number | null;
   rooms: Room[];
   showtimes: ShowtimeResponse[];
   onSuccess: () => void;
@@ -41,6 +43,7 @@ export function EditShowtimeDialog({
   open,
   onClose,
   cinemaName,
+  cinemaBuffer,
   rooms,
   showtimes,
   onSuccess,
@@ -48,7 +51,7 @@ export function EditShowtimeDialog({
   const addNotification = useNotificationStore((state) => state.addNotification);
 
   const [loading, setLoading] = useState(false);
-  const [movies, setMovies] = useState<Movie[]>([]);
+  const [movies, setMovies] = useState<MovieSimple[]>([]);
   const [existingShowtimes, setExistingShowtimes] = useState<ShowtimeResponse[]>([]);
 
   const [selectedShowtimeId, setSelectedShowtimeId] = useState("");
@@ -94,18 +97,20 @@ export function EditShowtimeDialog({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedShowtimeId]);
 
-  // Auto-calculate end time based on movie duration (with 1s delay)
+  // Auto-calculate end time based on movie duration + buffer (with 1s delay)
   useEffect(() => {
     if (isLoadingShowtime) return; // Don't auto-calculate when loading showtime data
     
     const selectedMovie = movies.find((m) => m.id === selectedMovieId);
-    if (selectedMovie && startTime && selectedMovie.duration) {
+    if (selectedMovie && startTime && selectedMovie.durationMinutes) {
       // Delay 1 second to allow user to finish selecting date/time
       const debounceTimer = setTimeout(() => {
         try {
           const start = parse(startTime, "yyyy-MM-dd'T'HH:mm", new Date());
           if (!isNaN(start.getTime())) {
-            const end = addMinutes(start, selectedMovie.duration);
+            const buffer = cinemaBuffer || 0;
+            const totalMinutes = selectedMovie.durationMinutes + buffer;
+            const end = addMinutes(start, totalMinutes);
             const endTimeStr = format(end, "yyyy-MM-dd'T'HH:mm");
             setEndTime(endTimeStr);
           }
@@ -116,7 +121,7 @@ export function EditShowtimeDialog({
 
       return () => clearTimeout(debounceTimer);
     }
-  }, [selectedMovieId, startTime, movies, isLoadingShowtime]);
+  }, [selectedMovieId, startTime, movies, isLoadingShowtime, cinemaBuffer]);
 
   const loadMovies = async () => {
     try {
@@ -226,6 +231,8 @@ export function EditShowtimeDialog({
           <DialogTitle className="dark:text-gray-100">Edit Showtime</DialogTitle>
           <DialogDescription>
             Edit scheduled showtime at cinema: <strong>{cinemaName}</strong>
+            <br />
+            <span className="text-xs">Note: You can only update start time. Movie and room are fixed.</span>
           </DialogDescription>
         </DialogHeader>
 
@@ -258,44 +265,38 @@ export function EditShowtimeDialog({
 
             {selectedShowtimeId && (
               <>
-                {/* Movie Selection */}
+                {/* Movie (Read-only) */}
                 <div className="space-y-2">
                   <Label htmlFor="movie" className="flex items-center gap-2">
                     <Film className="h-4 w-4" />
                     Movie
                   </Label>
-                  <Select value={selectedMovieId} onValueChange={setSelectedMovieId}>
-                    <SelectTrigger id="movie">
-                      <SelectValue placeholder="Select movie..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {movies.map((movie) => (
-                        <SelectItem key={movie.id} value={movie.id}>
-                          {movie.title} ({movie.duration} min)
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Input
+                    id="movie"
+                    value={selectedMovie ? `${selectedMovie.title} (${selectedMovie.durationMinutes} min)` : ""}
+                    disabled
+                    className="bg-gray-100 dark:bg-gray-800 cursor-not-allowed"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Movie cannot be changed when editing showtime
+                  </p>
                 </div>
 
-                {/* Room Selection */}
+                {/* Room (Read-only) */}
                 <div className="space-y-2">
                   <Label htmlFor="room" className="flex items-center gap-2">
                     <DoorOpen className="h-4 w-4" />
                     Room
                   </Label>
-                  <Select value={selectedRoomId} onValueChange={setSelectedRoomId}>
-                    <SelectTrigger id="room">
-                      <SelectValue placeholder="Select room..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {rooms.map((room) => (
-                        <SelectItem key={room.id} value={room.id}>
-                          {room.name} ({room.totalSeats} seats)
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Input
+                    id="room"
+                    value={rooms.find(r => r.id === selectedRoomId)?.name || ""}
+                    disabled
+                    className="bg-gray-100 dark:bg-gray-800 cursor-not-allowed"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Room cannot be changed when editing showtime
+                  </p>
                 </div>
 
                 {/* Start Time */}
@@ -324,13 +325,15 @@ export function EditShowtimeDialog({
                     id="endTime"
                     type="datetime-local"
                     value={endTime}
-                    onChange={(e) => setEndTime(e.target.value)}
-                    min={format(new Date(), "yyyy-MM-dd'T'HH:mm")}
-                    required
+                    disabled
+                    className="bg-gray-100 dark:bg-gray-800 cursor-not-allowed"
                   />
                   {selectedMovie && (
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Auto-calculated based on movie duration ({selectedMovie.duration} min)
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {cinemaBuffer !== undefined && cinemaBuffer !== null
+                        ? `Auto-calculated: ${selectedMovie.durationMinutes} min (movie) + ${cinemaBuffer} min (buffer)`
+                        : `Auto-calculated: Start time + ${selectedMovie.durationMinutes} minutes`
+                      }
                     </p>
                   )}
                 </div>

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { CheckCircle2, ChevronLeft, ChevronRight } from "lucide-react"
+import { CheckCircle2, ChevronLeft, ChevronRight, Clock3 } from "lucide-react"
 import { PageHeader } from "@/components/ui/PageHeader"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -43,6 +43,7 @@ import { getCustomerLoyaltyPoints } from "@/services/customerService"
 import type { Seat, ComboItem, Showtime } from "@/lib/types"
 import { useNotificationStore } from "@/stores"
 import { validateOrphanSeats } from "@/utils/seatValidation"
+import { cn } from "@/lib/utils"
 
 interface ExtendedShowtime extends Showtime {
   roomId: string
@@ -78,6 +79,8 @@ export const TicketBookingPage = () => {
   // Booking state
   const [bookingId, setBookingId] = useState<string | null>(null)
   const [customerId, setCustomerId] = useState<string | null>(null)
+  const [bookingExpiredAt, setBookingExpiredAt] = useState<string | null>(null)
+  const [timeRemaining, setTimeRemaining] = useState<number>(0)
 
   // Loyalty points
   const [customerPoints, setCustomerPoints] = useState(0)
@@ -110,6 +113,30 @@ export const TicketBookingPage = () => {
       setCustomerEmail("")
     }
   }, [checkoutMode])
+
+  // Timer for booking expiration
+  useEffect(() => {
+    if (!bookingExpiredAt) {
+      setTimeRemaining(0)
+      return
+    }
+
+    const updateTimer = () => {
+      const now = new Date().getTime()
+      const expireTime = new Date(bookingExpiredAt).getTime()
+      const remaining = Math.max(0, expireTime - now)
+      setTimeRemaining(Math.ceil(remaining / 1000))
+      
+      // If time has expired, reset to step 1
+      if (remaining <= 0) {
+        handleGoBackToMovies()
+      }
+    }
+
+    updateTimer()
+    const interval = setInterval(updateTimer, 1000)
+    return () => clearInterval(interval)
+  }, [bookingExpiredAt])
 
   // Fetch movies on mount
   useEffect(() => {
@@ -157,6 +184,7 @@ export const TicketBookingPage = () => {
 
         if (data?.code === "00") {
           setCurrentStep(7)
+          setBookingExpiredAt(null) // Stop timer on successful payment
           // Set bookingId from response if available
           if (data.bookingId) {
             setBookingId(data.bookingId)
@@ -187,7 +215,7 @@ export const TicketBookingPage = () => {
         const mapped = Array.isArray(data)
           ? data
               .map((combo) => mapComboForDisplay(combo))
-              .filter((combo): combo is ComboItem => combo !== null)
+              .filter((combo): combo is ComboItem => combo !== null && !combo.deleted)
           : []
 
         const combosWithItems = await Promise.all(
@@ -341,6 +369,8 @@ export const TicketBookingPage = () => {
 
     try {
       await cancelBooking(id)
+      setBookingExpiredAt(null)
+      setTimeRemaining(0)
       console.log("Booking cancelled successfully:", id)
     } catch (error: any) {
       console.error("Error cancelling booking:", error)
@@ -596,7 +626,9 @@ export const TicketBookingPage = () => {
         const response = await createBooking(bookingRequest)
         setBookingId(response.id)
         setCustomerId(response.customerId || null)
+        setBookingExpiredAt(response.expiredAt || null)
         console.log("Booking created with ID:", response.id)
+        console.log("Booking expires at:", response.expiredAt)
         console.log("Associated customer ID:", response.customerId)
         setCurrentStep(4)
       } catch (error: any) {
@@ -843,6 +875,30 @@ export const TicketBookingPage = () => {
             </div>
           ) : (
             <>
+              {bookingId && timeRemaining > 0 && (!vnpReturnResult || vnpReturnResult?.code !== "00") && (
+                <div className={cn(
+                  "mb-4 p-4 rounded-lg border-2 flex items-center justify-between",
+                  timeRemaining <= 60 
+                    ? "border-red-500 bg-red-50" 
+                    : "border-yellow-500 bg-yellow-50"
+                )}>
+                  <div className="flex items-center gap-2">
+                    <Clock3 className={cn("w-5 h-5", timeRemaining <= 60 ? "text-red-600" : "text-yellow-600")} />
+                    <div>
+                      <p className={cn("text-sm font-semibold", timeRemaining <= 60 ? "text-red-700" : "text-yellow-700")}>
+                        Booking expires in
+                      </p>
+                      <p className={cn("text-lg font-bold", timeRemaining <= 60 ? "text-red-900" : "text-yellow-900")}>
+                        {Math.floor(timeRemaining / 60)}:{String(timeRemaining % 60).padStart(2, "0")}
+                      </p>
+                    </div>
+                  </div>
+                  {timeRemaining <= 60 && (
+                    <p className="text-xs text-red-600 font-semibold">Hurry up!</p>
+                  )}
+                </div>
+              )}
+
               {currentStep === 1 && (
                 <MovieSelectionStep
                   movies={movies}
@@ -911,7 +967,10 @@ export const TicketBookingPage = () => {
                   movie={selectedMovie}
                   selectedSeats={selectedSeats}
                   selectedCombos={selectedCombos}
-                  onPaymentSuccess={() => setCurrentStep(7)}
+                  onPaymentSuccess={() => {
+                    setBookingExpiredAt(null)
+                    setCurrentStep(7)
+                  }}
                   onExternalPaymentStart={() => {
                     skipCancelOnUnloadRef.current = true
                   }}

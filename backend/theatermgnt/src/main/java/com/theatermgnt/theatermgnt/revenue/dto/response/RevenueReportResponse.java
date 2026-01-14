@@ -24,5 +24,6 @@ public class RevenueReportResponse {
     BigDecimal totalTicketRevenue;
     BigDecimal totalComboRevenue;
     BigDecimal netRevenue;
+
     LocalDateTime generatedAt;
 }

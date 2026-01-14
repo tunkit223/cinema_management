@@ -28,6 +28,8 @@ import com.theatermgnt.theatermgnt.combo.mapper.ComboItemMapper;
 import com.theatermgnt.theatermgnt.combo.mapper.ComboMapper;
 import com.theatermgnt.theatermgnt.combo.repository.ComboItemRepository;
 import com.theatermgnt.theatermgnt.combo.repository.ComboRepository;
+import com.theatermgnt.theatermgnt.common.exception.AppException;
+import com.theatermgnt.theatermgnt.common.exception.ErrorCode;
 
 import lombok.RequiredArgsConstructor;
 
@@ -60,6 +62,9 @@ public class BookingComboServiceImpl implements BookingComboService {
             Combo combo = comboRepository
                     .findById(item.getComboId())
                     .orElseThrow(() -> new IllegalStateException("Combo not found"));
+            if (combo.getDeleted() == true) {
+                throw new AppException(ErrorCode.COMBO_NOT_EXISTED);
+            }
 
             BigDecimal unitPrice = combo.getPrice();
             BigDecimal subtotal = unitPrice.multiply(BigDecimal.valueOf(item.getQuantity()));

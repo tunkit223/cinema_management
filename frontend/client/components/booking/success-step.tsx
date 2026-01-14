@@ -14,16 +14,18 @@ interface SuccessStepProps {
   selectedCombos: ComboItem[]
   total: number
   bookingId: string
+  status?: string
 }
 
-export default function SuccessStep({ movie, showtime, selectedSeats, selectedCombos, total, bookingId }: SuccessStepProps) {
+export default function SuccessStep({ movie, showtime, selectedSeats, selectedCombos, total, bookingId, status }: SuccessStepProps) {
   const [tickets, setTickets] = useState<TicketResponse[]>([])
   const [currentTicketIndex, setCurrentTicketIndex] = useState(0)
   const [qrCodeUrls, setQrCodeUrls] = useState<string[]>([])
   const [isLoadingTickets, setIsLoadingTickets] = useState(true)
   const bookingDate = new Date().toLocaleDateString()
+  const isRefunded = (status || '').toUpperCase() === 'REFUNDED'
 
-  // Fetch tickets when component mounts
+  // Fetch tickets when component mounts (skip QR generation for refunded)
   useEffect(() => {
     const fetchTickets = async () => {
       try {
@@ -31,19 +33,23 @@ export default function SuccessStep({ movie, showtime, selectedSeats, selectedCo
         const fetchedTickets = await getTicketsByBooking(bookingId)
         setTickets(fetchedTickets)
 
-        // Generate QR codes for all tickets
-        const qrPromises = fetchedTickets.map((ticket) =>
-          QRCode.toDataURL(ticket.qrContent || ticket.ticketCode, {
-            width: 300,
-            margin: 2,
-            color: {
-              dark: "#000000",
-              light: "#FFFFFF",
-            },
-          })
-        )
-        const qrUrls = await Promise.all(qrPromises)
-        setQrCodeUrls(qrUrls)
+        if (!isRefunded && fetchedTickets.length > 0) {
+          // Generate QR codes for all tickets
+          const qrPromises = fetchedTickets.map((ticket) =>
+            QRCode.toDataURL(ticket.qrContent || ticket.ticketCode, {
+              width: 300,
+              margin: 2,
+              color: {
+                dark: "#000000",
+                light: "#FFFFFF",
+              },
+            })
+          )
+          const qrUrls = await Promise.all(qrPromises)
+          setQrCodeUrls(qrUrls)
+        } else {
+          setQrCodeUrls([])
+        }
       } catch (error) {
         console.error("Failed to fetch tickets:", error)
       } finally {
@@ -54,7 +60,7 @@ export default function SuccessStep({ movie, showtime, selectedSeats, selectedCo
     if (bookingId) {
       fetchTickets()
     }
-  }, [bookingId])
+  }, [bookingId, isRefunded])
 
   const handlePrevTicket = () => {
     setCurrentTicketIndex((prev) => (prev > 0 ? prev - 1 : tickets.length - 1))
@@ -68,13 +74,22 @@ export default function SuccessStep({ movie, showtime, selectedSeats, selectedCo
 
   return (
     <div className="bg-card dark:bg-slate-900 border border-border dark:border-slate-800 rounded-xl p-8">
-      {/* Success Message */}
+      {/* Success/Refund Message */}
       <div className="text-center mb-12">
         <div className="flex justify-center mb-4">
-          <CheckCircle size={64} className="text-green-500" />
+          <CheckCircle size={64} className={isRefunded ? "text-yellow-500" : "text-green-500"} />
         </div>
-        <h2 className="text-3xl font-bold mb-2">Booking Confirmed!</h2>
-        <p className="text-muted-foreground">Your tickets have been successfully booked</p>
+        {isRefunded ? (
+          <>
+            <h2 className="text-3xl font-bold mb-2">Booking Refunded</h2>
+            <p className="text-muted-foreground">This booking was refunded. Tickets are no longer valid.</p>
+          </>
+        ) : (
+          <>
+            <h2 className="text-3xl font-bold mb-2">Booking Confirmed!</h2>
+            <p className="text-muted-foreground">Your tickets have been successfully booked</p>
+          </>
+        )}
       </div>
 
       {/* Booking Details */}
@@ -107,7 +122,7 @@ export default function SuccessStep({ movie, showtime, selectedSeats, selectedCo
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Seats</p>
-              <p className="font-semibold">{selectedSeats.map((s) => s.id).join(", ")}</p>
+              <p className="font-semibold">{selectedSeats.length > 0 ? selectedSeats.map((s) => s.id).join(", ") : (isRefunded ? "—" : "")}</p>
             </div>
           </div>
         </div>
@@ -117,7 +132,11 @@ export default function SuccessStep({ movie, showtime, selectedSeats, selectedCo
       <div className="mb-8">
         <h3 className="font-bold text-xl mb-4 text-center">Your Tickets</h3>
         
-        {isLoadingTickets ? (
+        {isRefunded ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <p>Tickets are unavailable because this booking was refunded.</p>
+          </div>
+        ) : isLoadingTickets ? (
           <div className="flex justify-center py-12">
             <div className="text-center">
               <div className="inline-block w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
@@ -202,7 +221,7 @@ export default function SuccessStep({ movie, showtime, selectedSeats, selectedCo
                   {/* Show at entrance notice */}
                   <div className="mt-6 bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700 rounded-lg p-3">
                     <p className="text-sm text-center font-semibold text-yellow-800 dark:text-yellow-200">
-                      📱 Show this QR code at the entrance
+                      Show this QR code at the entrance
                     </p>
                   </div>
                 </div>
@@ -222,7 +241,7 @@ export default function SuccessStep({ movie, showtime, selectedSeats, selectedCo
         <div className="space-y-2 mb-4">
           <div className="flex justify-between text-sm">
             <span>Seats ({selectedSeats.length})</span>
-            <span className="font-semibold">{(selectedSeats.length * showtime.price).toLocaleString()} VND</span>
+            <span className="font-semibold">{(selectedSeats.length * (showtime.price || 0)).toLocaleString()} VND</span>
           </div>
           {selectedCombos.length > 0 && (
             <div className="flex justify-between text-sm">
@@ -234,8 +253,8 @@ export default function SuccessStep({ movie, showtime, selectedSeats, selectedCo
           )}
         </div>
         <div className="border-t border-purple-500/30 pt-4 flex justify-between items-center">
-          <span className="font-bold">Total Paid</span>
-          <span className="text-2xl font-bold text-purple-600">{total.toLocaleString()} VND</span>
+          <span className="font-bold">{isRefunded ? 'Refunded Amount' : 'Total Paid'}</span>
+          <span className="text-2xl font-bold text-purple-600">{(total || 0).toLocaleString()} VND</span>
         </div>
       </div>
 

@@ -8,33 +8,49 @@ import { Badge } from "@/components/ui/badge";
 import { Film, MapPin, Clock, Calendar, DoorOpen } from "lucide-react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
-import type { ShowtimeResponse } from "@/services/showtimeService";
+import { useState, useEffect } from "react";
+import { getShowtimeDetail, type ShowtimeDetailResponse } from "@/services/showtimeService";
+import { useNotificationStore } from "@/stores";
 
 interface ShowtimeDetailModalProps {
-  showtime: ShowtimeResponse | null;
+  showtimeId: string | null;
   open: boolean;
   onClose: () => void;
 }
 
 export function ShowtimeDetailModal({
-  showtime,
+  showtimeId,
   open,
   onClose,
 }: ShowtimeDetailModalProps) {
-  if (!showtime) return null;
+  const [showtime, setShowtime] = useState<ShowtimeDetailResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const addNotification = useNotificationStore((state) => state.addNotification);
 
-  const startTime = new Date(showtime.startTime);
-  const endTime = new Date(showtime.endTime);
-  const duration = Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60));
+  useEffect(() => {
+    if (open && showtimeId) {
+      loadShowtimeDetail();
+    }
+  }, [open, showtimeId]);
 
-  // Status display
-  const statusConfig = {
-    SCHEDULED: { label: "Scheduled", color: "bg-blue-100 text-blue-700" },
-    ONGOING: { label: "Ongoing", color: "bg-green-100 text-green-700" },
-    COMPLETED: { label: "Completed", color: "bg-gray-100 text-gray-600" },
+  const loadShowtimeDetail = async () => {
+    if (!showtimeId) return;
+    
+    try {
+      setLoading(true);
+      const data = await getShowtimeDetail(showtimeId);
+      setShowtime(data);
+    } catch (error) {
+      console.error("Failed to load showtime detail:", error);
+      addNotification({
+        type: "error",
+        title: "Error",
+        message: "Failed to load showtime details",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
-
-  const status = statusConfig[showtime.status] || statusConfig.SCHEDULED;
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -46,7 +62,27 @@ export function ShowtimeDetailModal({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
+        {loading ? (
+          <div className="py-8 text-center text-muted-foreground">
+            Loading...
+          </div>
+        ) : showtime ? (
+          (() => {
+            const startTime = new Date(showtime.startTime);
+            const endTime = new Date(showtime.endTime);
+            const duration = Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60));
+
+            // Status display
+            const statusConfig = {
+              SCHEDULED: { label: "Scheduled", color: "bg-blue-100 text-blue-700" },
+              ONGOING: { label: "Ongoing", color: "bg-green-100 text-green-700" },
+              COMPLETED: { label: "Completed", color: "bg-gray-100 text-gray-600" },
+            };
+
+            const status = statusConfig[showtime.status as keyof typeof statusConfig] || statusConfig.SCHEDULED;
+
+            return (
+          <div className="space-y-6">
           {/* Movie Title */}
           <div>
             <h3 className="text-2xl font-bold text-gray-900">
@@ -107,39 +143,41 @@ export function ShowtimeDetailModal({
             </div>
           </div>
 
-          {/* Additional Information */}
-          <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-            <h4 className="mb-3 font-semibold text-gray-900">
-              Additional Information
+          {/* Ticket Information */}
+          <div className="rounded-lg border border-border bg-card p-6">
+            <h4 className="mb-4 text-lg font-semibold text-foreground">
+              Ticket Information
             </h4>
-            <div className="grid gap-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Showtime ID:</span>
-                <span className="font-mono font-medium text-gray-900">
-                  {showtime.id}
+            <div className="grid gap-4">
+              {/* Total Seats */}
+              <div className="flex items-center justify-between rounded-lg border border-border bg-muted/50 p-4">
+                <span className="font-medium text-foreground">Total Seats</span>
+                <span className="text-2xl font-bold text-foreground">
+                  {showtime.totalSeats}
                 </span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Movie ID:</span>
-                <span className="font-mono font-medium text-gray-900">
-                  {showtime.movieId}
+
+              {/* Booked Seats */}
+              <div className="flex items-center justify-between rounded-lg border border-border bg-muted/50 p-4">
+                <span className="font-medium text-foreground">Tickets Sold</span>
+                <span className="text-2xl font-bold text-green-600">
+                  {showtime.bookedSeats}
                 </span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Room ID:</span>
-                <span className="font-mono font-medium text-gray-900">
-                  {showtime.roomId}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Cinema ID:</span>
-                <span className="font-mono font-medium text-gray-900">
-                  {showtime.cinemaId}
+
+              {/* Available Seats */}
+              <div className="flex items-center justify-between rounded-lg border border-border bg-muted/50 p-4">
+                <span className="font-medium text-foreground">Available Seats</span>
+                <span className="text-2xl font-bold text-blue-600">
+                  {showtime.availableSeats}
                 </span>
               </div>
             </div>
           </div>
         </div>
+            );
+          })()
+        ) : null}
       </DialogContent>
     </Dialog>
   );

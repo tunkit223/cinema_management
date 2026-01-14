@@ -11,6 +11,8 @@ import jakarta.transaction.Transactional;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +21,8 @@ import com.theatermgnt.theatermgnt.account.repository.AccountRepository;
 import com.theatermgnt.theatermgnt.authentication.enums.AccountType;
 import com.theatermgnt.theatermgnt.booking.dto.request.CreateBookingRequest;
 import com.theatermgnt.theatermgnt.booking.dto.request.DiscountPointRequest;
+import com.theatermgnt.theatermgnt.booking.dto.response.BookingListItemResponse;
+import com.theatermgnt.theatermgnt.booking.dto.response.BookingListResponse;
 import com.theatermgnt.theatermgnt.booking.dto.response.BookingSummaryResponse;
 import com.theatermgnt.theatermgnt.booking.dto.response.CreateBookingResponse;
 import com.theatermgnt.theatermgnt.booking.entity.Booking;
@@ -324,6 +328,36 @@ public class BookingServiceImpl implements BookingService {
         log.info("Booking {} confirmed", bookingId);
     }
 
+    @Override
+    public void refundBooking(String bookingId) {
+        log.info("Refunding booking: {}", bookingId);
+
+        Booking booking = bookingRepository
+                .findById(UUID.fromString(bookingId))
+                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_EXISTED));
+
+        // Update booking status to REFUNDED
+        booking.setStatus(BookingStatus.REFUNDED);
+        bookingRepository.save(booking);
+
+        // Return loyalty points if customer exists
+        if (booking.getCustomer() != null) {
+            int pointsEarned = discountService.calculateEarnedPoints(booking.getTotalAmount());
+            int pointDiscounted = discountService.caculateDiscountPoints(booking.getDiscount());
+            // Subtract points that were added during confirmation
+            customerService.addLoyaltyPoints(booking.getCustomer().getId(), -(pointsEarned - pointDiscounted));
+            log.info(
+                    "Loyalty points reversed for customer {} in booking {}",
+                    booking.getCustomer().getId(),
+                    bookingId);
+        }
+
+        // Release seats back to available
+        screeningSeatRepository.releaseSeatsByBooking(bookingId);
+
+        log.info("Booking {} refunded", bookingId);
+    }
+
     private void validateScreeningSeat(Screening screening, List<String> screeningSeatIds) {
         List<ScreeningSeat> seats = screeningSeatRepository.findByScreeningId(screening.getId());
 
@@ -423,5 +457,61 @@ public class BookingServiceImpl implements BookingService {
             return 1; // ra khỏi dãy ghế
         }
         return map[index];
+    }
+
+    @Override
+    public BookingListResponse getBookings(
+            BookingStatus status,
+            String customerSearch,
+            String emailSearch,
+            String movieSearch,
+            String cinemaId,
+            Pageable pageable) {
+        Page<Booking> page =
+                bookingRepository.findBookings(status, customerSearch, emailSearch, movieSearch, cinemaId, pageable);
+
+        List<BookingListItemResponse> items =
+                page.getContent().stream().map(this::mapToBookingListItem).collect(Collectors.toList());
+
+        return BookingListResponse.builder()
+                .bookings(items)
+                .totalElements(page.getTotalElements())
+                .totalPages(page.getTotalPages())
+                .currentPage(page.getNumber())
+                .pageSize(page.getSize())
+                .build();
+    }
+
+    private BookingListItemResponse mapToBookingListItem(Booking booking) {
+        return BookingListItemResponse.builder()
+                .id(booking.getId())
+                .bookingCode("BK-" + booking.getId().toString().substring(0, 8).toUpperCase())
+                .customerId(
+                        booking.getCustomer() != null
+                                ? UUID.fromString(booking.getCustomer().getId())
+                                : null)
+                .customerName(
+                        booking.getCustomer() != null
+                                ? (booking.getCustomer().getFirstName() + " "
+                                                + booking.getCustomer().getLastName())
+                                        .trim()
+                                : "Guest")
+                .email(
+                        booking.getCustomer() != null
+                                ? booking.getCustomer().getAccount().getEmail()
+                                : "")
+                .phone(booking.getCustomer() != null ? booking.getCustomer().getPhoneNumber() : "")
+                .movieTitle(booking.getScreening().getMovie().getTitle())
+                .roomName(booking.getScreening().getRoom().getName())
+                .screeningTime(booking.getScreening().getStartTime().toString())
+                .seatCount((int)
+                        screeningSeatRepository.countByBooking(booking.getId().toString()))
+                .totalAmount(booking.getTotalAmount())
+                .status(booking.getStatus())
+                .createdAt(booking.getCreatedAt())
+                .expiredAt(booking.getExpiredAt())
+                .cinemaName(booking.getScreening().getRoom().getCinema().getName())
+                .cinemaId(booking.getScreening().getRoom().getCinema().getId())
+                .build();
     }
 }

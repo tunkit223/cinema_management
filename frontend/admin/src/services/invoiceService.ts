@@ -14,11 +14,12 @@ const BASE_URL = "/invoices";
 
 export const getAllInvoices = async (
   page: number = 0,
-  size: number = 10
+  size: number = 10,
+  cinemaId?: string
 ): Promise<PaginatedInvoiceResponse> => {
   return handleApiResponse<PaginatedInvoiceResponse>(
     httpClient.get<ApiResponse<PaginatedInvoiceResponse>>(BASE_URL, {
-      params: { page, size },
+      params: { page, size, cinemaId },
     })
   );
 };
@@ -54,13 +55,14 @@ export const getInvoiceByBookingId = async (
 export const getInvoicesByStatus = async (
   status: InvoiceStatus,
   page: number = 0,
-  size: number = 10
+  size: number = 10,
+  cinemaId?: string
 ): Promise<PaginatedInvoiceResponse> => {
   return handleApiResponse<PaginatedInvoiceResponse>(
     httpClient.get<ApiResponse<PaginatedInvoiceResponse>>(
       `${BASE_URL}/status/${status}`,
       {
-        params: { page, size },
+        params: { page, size, cinemaId },
       }
     )
   );
@@ -69,47 +71,51 @@ export const getInvoicesByStatus = async (
 export const searchInvoices = async (
   filters: InvoiceFilterParams
 ): Promise<PaginatedInvoiceResponse> => {
-  const { page = 0, size = 10, search, status } = filters;
+  const { page = 0, size = 10, search, status, cinemaId } = filters;
 
   if (search) {
     return handleApiResponse<PaginatedInvoiceResponse>(
       httpClient.get<ApiResponse<PaginatedInvoiceResponse>>(
         `${BASE_URL}/search`,
         {
-          params: { query: search, status, page, size },
+          params: { query: search, status, page, size, cinemaId },
         }
       )
     );
   }
 
   if (status) {
-    return getInvoicesByStatus(status, page, size);
+    return getInvoicesByStatus(status, page, size, cinemaId);
   }
 
-  return getAllInvoices(page, size);
+  return getAllInvoices(page, size, cinemaId);
 };
 
 export const getInvoicesByDateRange = async (
   startDate: string,
   endDate: string,
   page: number = 0,
-  size: number = 10
+  size: number = 10,
+  cinemaId?: string
 ): Promise<PaginatedInvoiceResponse> => {
   return handleApiResponse<PaginatedInvoiceResponse>(
     httpClient.get<ApiResponse<PaginatedInvoiceResponse>>(
       `${BASE_URL}/date-range`,
       {
-        params: { startDate, endDate, page, size },
+        params: { startDate, endDate, page, size, cinemaId },
       }
     )
   );
 };
 
 export const getInvoiceStatistics =
-  async (): Promise<InvoiceStatisticsResponse> => {
+  async (cinemaId?: string): Promise<InvoiceStatisticsResponse> => {
     return handleApiResponse<InvoiceStatisticsResponse>(
       httpClient.get<ApiResponse<InvoiceStatisticsResponse>>(
-        `${BASE_URL}/statistics`
+        `${BASE_URL}/statistics`,
+        {
+          params: { cinemaId },
+        }
       )
     );
   };

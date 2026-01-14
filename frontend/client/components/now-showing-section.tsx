@@ -61,7 +61,7 @@ export function NowShowingSection() {
           </h2>
 
           <p className="text-xl text-muted-foreground max-w-2xl">
-            Discover the latest blockbusters and critically acclaimed films playing at CINEPLEX now.
+            Discover the latest blockbusters and critically acclaimed films playing at Cifastar now.
           </p>
         </div>
 

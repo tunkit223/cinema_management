@@ -25,15 +25,17 @@ public interface InvoiceService {
 
     InvoiceResponse markAsFailed(String invoiceId);
 
-    Page<InvoiceResponse> getAllInvoices(int page, int size);
+    Page<InvoiceResponse> getAllInvoices(int page, int size, String cinemaId);
 
-    Page<InvoiceResponse> getInvoicesByStatus(InvoiceStatus status, int page, int size);
+    Page<InvoiceResponse> getInvoicesByStatus(InvoiceStatus status, int page, int size, String cinemaId);
 
-    Page<InvoiceResponse> getInvoicesByDateRange(LocalDateTime startDate, LocalDateTime endDate, int page, int size);
+    Page<InvoiceResponse> getInvoicesByDateRange(
+            LocalDateTime startDate, LocalDateTime endDate, int page, int size, String cinemaId);
 
-    Page<InvoiceResponse> searchInvoices(String search, int page, int size);
+    Page<InvoiceResponse> searchInvoices(String search, int page, int size, String cinemaId);
 
-    Page<InvoiceResponse> searchInvoicesByStatus(String search, InvoiceStatus status, int page, int size);
+    Page<InvoiceResponse> searchInvoicesByStatus(
+            String search, InvoiceStatus status, int page, int size, String cinemaId);
 
-    InvoiceStatisticsResponse getStatistics();
+    InvoiceStatisticsResponse getStatistics(String cinemaId);
 }

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
+import { useNotificationStore } from "@/stores";
 import {
   createEquipment,
   updateEquipment,
@@ -30,6 +31,7 @@ export default function EquipmentModal({
   onClose,
   onSave,
 }: EquipmentModalProps) {
+  const addNotification = useNotificationStore((state) => state.addNotification);
   const [formData, setFormData] = useState<
     CreateEquipmentRequest | UpdateEquipmentRequest
   >(
@@ -99,8 +101,18 @@ export default function EquipmentModal({
 
       if (equipment) {
         await updateEquipment(equipment.id, formData as UpdateEquipmentRequest);
+        addNotification({
+          type: "success",
+          title: "Success",
+          message: "Equipment updated successfully.",
+        });
       } else {
         await createEquipment(formData as CreateEquipmentRequest);
+        addNotification({
+          type: "success",
+          title: "Success",
+          message: "Equipment added successfully.",
+        });
       }
 
       await onSave();

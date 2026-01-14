@@ -77,13 +77,15 @@ export default function BookingSuccessPage() {
           });
         }
 
-        // Create showtime object from summary
+        // Create showtime object from summary with safe pricing
+        const seatCount = Array.isArray(summary.seats) ? summary.seats.length : 0;
+        const unitSeatPrice = seatCount > 0 ? summary.seatSubtotal / seatCount : 0;
         setShowtime({
           id: 'current',
           movieId: summary.movie?.id || '',
           time: summary.startTime || '',
           format: 'Standard',
-          price: summary.seatSubtotal / summary.seats.length,
+          price: unitSeatPrice,
           availableSeats: 0,
         });
       } catch (err) {
@@ -108,7 +110,7 @@ export default function BookingSuccessPage() {
       <div className="min-h-screen bg-background dark:bg-slate-950 flex items-center justify-center">
         <div className="text-center">
           <Loader className="w-12 h-12 text-purple-600 mx-auto mb-4 animate-spin" />
-          <p className="text-lg text-muted-foreground">Đang tải vé của bạn...</p>
+          <p className="text-lg text-muted-foreground">Loading your ticket...</p>
         </div>
       </div>
     );
@@ -130,6 +132,8 @@ export default function BookingSuccessPage() {
   }
 
   // Map booking summary to Seat format
+  const seatCount = Array.isArray(bookingSummary.seats) ? bookingSummary.seats.length : 0;
+  const unitSeatPrice = seatCount > 0 ? bookingSummary.seatSubtotal / seatCount : 0;
   const selectedSeats: Seat[] = bookingSummary.seats.map((seat) => ({
     id: seat.seatName,
     row: seat.rowChair,
@@ -137,7 +141,7 @@ export default function BookingSuccessPage() {
     isAvailable: true,
     isSelected: true,
     type: 'standard',
-    price: bookingSummary.seatSubtotal / bookingSummary.seats.length,
+    price: unitSeatPrice,
   }));
 
   // Map combos to ComboItem format
@@ -160,6 +164,7 @@ export default function BookingSuccessPage() {
           selectedCombos={selectedCombos}
           total={bookingSummary.totalAmount}
           bookingId={bookingId}
+          status={bookingSummary.status}
         />
       </div>
     </div>

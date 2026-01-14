@@ -44,6 +44,86 @@ public class RevenueAggregationService {
     private final ScreeningSeatRepository screeningSeatRepository;
     private final DailyRevenueSummaryRepository dailyRevenueSummaryRepository;
     private final MovieRevenueRepository movieRevenueRepository;
+    private final com.theatermgnt.theatermgnt.payment.repository.PaymentRepository paymentRepository;
+
+    /**
+     * Process invoice refund and subtract revenue.
+     * This method processes refund by subtracting revenue for the given invoice.
+     *
+     * @param invoiceId The invoice ID that was refunded
+     */
+    public void processInvoiceRefundForRevenue(String invoiceId) {
+        log.info("Processing invoice refund {} for revenue subtraction", invoiceId);
+
+        try {
+            // Resolve invoice and booking
+            Invoice invoice = invoiceRepository
+                    .findById(invoiceId)
+                    .orElseThrow(() -> new IllegalStateException("Invoice not found: " + invoiceId));
+
+            Booking booking = bookingRepository
+                    .findById(UUID.fromString(invoice.getBookingId()))
+                    .orElseThrow(() -> new IllegalStateException("Booking not found: " + invoice.getBookingId()));
+
+            Screening screening = booking.getScreening();
+            String cinemaId = screening.getRoom().getCinema().getId();
+            String movieId = screening.getMovie().getId();
+
+            // Find original payment date to subtract revenue from the same date
+            LocalDate reportDate = paymentRepository.findByInvoiceId(invoiceId).stream()
+                    .filter(p -> p.getPaymentType() == com.theatermgnt.theatermgnt.payment.entity.PaymentType.BOOKING
+                            && p.getStatus() == PaymentStatus.SUCCESS)
+                    .findFirst()
+                    .map(p -> p.getPaymentDate() != null ? p.getPaymentDate().toLocalDate() : LocalDate.now())
+                    .orElse(LocalDate.now());
+
+            // Count tickets sold (screening seats booked)
+            int ticketsSold = screeningSeatRepository
+                    .findByBooking(booking.getId().toString())
+                    .size();
+
+            // Calculate ticket revenue (totalAmount after discount - combo)
+            List<BookingCombo> combos =
+                    bookingComboRepository.findByBookingId(booking.getId().toString());
+            BigDecimal comboRevenue =
+                    combos.stream().map(BookingCombo::getSubtotal).reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal ticketRevenue = booking.getTotalAmount().subtract(comboRevenue);
+
+            // Refund: subtract revenue (multiply by -1)
+            int ticketMultiplier = -1;
+            BigDecimal revenueMultiplier = BigDecimal.valueOf(-1);
+
+            // Upsert DailyRevenueSummary
+            upsertDailyRevenueSummary(
+                    cinemaId,
+                    reportDate,
+                    ticketRevenue.multiply(revenueMultiplier),
+                    comboRevenue.multiply(revenueMultiplier),
+                    ticketMultiplier);
+
+            // Upsert MovieRevenue
+            upsertMovieRevenue(
+                    movieId,
+                    cinemaId,
+                    reportDate,
+                    ticketRevenue.multiply(revenueMultiplier),
+                    ticketsSold * ticketMultiplier);
+
+            log.info(
+                    "Revenue refund completed for invoice {}: cinema={}, movie={}, date={}, tickets={}, ticketRev={}, comboRev={}",
+                    invoiceId,
+                    cinemaId,
+                    movieId,
+                    reportDate,
+                    ticketsSold,
+                    ticketRevenue,
+                    comboRevenue);
+
+        } catch (Exception e) {
+            log.error("Error processing invoice refund {} for revenue", invoiceId, e);
+            throw e;
+        }
+    }
 
     /**
      * Process payment event and aggregate revenue data.
@@ -73,19 +153,21 @@ public class RevenueAggregationService {
             Screening screening = booking.getScreening();
             String cinemaId = screening.getRoom().getCinema().getId();
             String movieId = screening.getMovie().getId();
-            LocalDate reportDate = screening.getStartTime().toLocalDate();
+            // Use payment date instead of screening date for revenue reporting
+            LocalDate reportDate =
+                    payment.getPaymentDate() != null ? payment.getPaymentDate().toLocalDate() : LocalDate.now();
 
             // Count tickets sold (screening seats booked)
             int ticketsSold = screeningSeatRepository
                     .findByBooking(booking.getId().toString())
                     .size();
 
-            // Calculate ticket revenue (subtotal - combo)
+            // Calculate ticket revenue (totalAmount after discount - combo)
             List<BookingCombo> combos =
                     bookingComboRepository.findByBookingId(booking.getId().toString());
             BigDecimal comboRevenue =
                     combos.stream().map(BookingCombo::getSubtotal).reduce(BigDecimal.ZERO, BigDecimal::add);
-            BigDecimal ticketRevenue = booking.getSubtotal().subtract(comboRevenue);
+            BigDecimal ticketRevenue = booking.getTotalAmount().subtract(comboRevenue);
 
             // Handle SUCCESS or REFUND
             boolean isRefund = payment.getStatus() == PaymentStatus.REFUNDED;

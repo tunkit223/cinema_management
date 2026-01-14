@@ -65,7 +65,7 @@ export function ContactSection() {
               <Mail className="text-pink-400" size={24} />
             </div>
             <h3 className="text-lg font-bold text-white mb-2">Email</h3>
-            <p className="text-slate-400">support@cineplex.com</p>
+            <p className="text-slate-400">support@cifastar.com</p>
             <p className="text-slate-500 text-sm mt-2">We'll reply within 24 hours</p>
           </div>
 

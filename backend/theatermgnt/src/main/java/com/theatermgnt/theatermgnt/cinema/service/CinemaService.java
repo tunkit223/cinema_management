@@ -3,6 +3,7 @@ package com.theatermgnt.theatermgnt.cinema.service;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import com.theatermgnt.theatermgnt.cinema.dto.request.CinemaCreationRequest;
@@ -13,6 +14,7 @@ import com.theatermgnt.theatermgnt.cinema.mapper.CinemaMapper;
 import com.theatermgnt.theatermgnt.cinema.repository.CinemaRepository;
 import com.theatermgnt.theatermgnt.common.exception.AppException;
 import com.theatermgnt.theatermgnt.common.exception.ErrorCode;
+import com.theatermgnt.theatermgnt.constant.PredefinedRole;
 import com.theatermgnt.theatermgnt.room.entity.Room;
 import com.theatermgnt.theatermgnt.room.repository.RoomRepository;
 import com.theatermgnt.theatermgnt.staff.entity.Staff;
@@ -89,6 +91,46 @@ public class CinemaService {
                 cinema.setManager(manager);
             }
         }
+        return cinemaMapper.toCinemaResponse(cinemaRepository.save(cinema));
+    }
+
+    public List<CinemaResponse> getCinemasForBufferManagement() {
+        var context = SecurityContextHolder.getContext();
+        var authentication = context.getAuthentication();
+
+        // Check if user is admin
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_" + PredefinedRole.ADMIN_ROLE));
+
+        if (isAdmin) {
+            // Admin sees all cinemas
+            return cinemaRepository.findAll().stream()
+                    .map(cinemaMapper::toCinemaResponse)
+                    .toList();
+        } else {
+            // Manager sees only their cinema
+            String accountId = authentication.getName();
+            Staff staff = staffRepository
+                    .findByAccountId(accountId)
+                    .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+            if (staff.getCinemaId() == null) {
+                throw new AppException(ErrorCode.UNAUTHORIZED);
+            }
+
+            Cinema cinema = cinemaRepository
+                    .findById(staff.getCinemaId())
+                    .orElseThrow(() -> new AppException(ErrorCode.CINEMA_NOT_EXISTED));
+
+            return List.of(cinemaMapper.toCinemaResponse(cinema));
+        }
+    }
+
+    public CinemaResponse updateCinemaBuffer(String cinemaId, Integer buffer) {
+        Cinema cinema =
+                cinemaRepository.findById(cinemaId).orElseThrow(() -> new AppException(ErrorCode.CINEMA_NOT_EXISTED));
+
+        cinema.setBuffer(buffer);
         return cinemaMapper.toCinemaResponse(cinemaRepository.save(cinema));
     }
 }

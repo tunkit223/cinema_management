@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { use } from "react";
-import { ChevronLeft, Clock, MapPin, Calendar } from "lucide-react";
+import { ChevronLeft, Clock, MapPin, Calendar as CalendarIcon } from "lucide-react";
 import type { Showtime } from "@/lib/types";
 import { getMovieById, mapMovieForDisplay, getScreeningsByMovieId, mapScreeningToShowtime, getAllCinemas } from "@/lib/api-movie";
 import {
@@ -13,6 +13,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { ReviewsSection } from "./reviews-section";
 
 export default function MovieDetailPage({
@@ -60,15 +68,28 @@ export default function MovieDetailPage({
           .filter(Boolean) as Showtime[];
         setAllShowtimes(mapped);
 
-        // Default selection
+        // Default selection: All cinemas and today's date
         if (mapped.length > 0) {
-          const firstDate = mapped
+          const today = new Date().toISOString().split('T')[0]; // Today's date in YYYY-MM-DD format
+          const now = new Date();
+          
+          // Get only future dates (today or later)
+          const futureDates = mapped
+            .filter((st) => {
+              const start = st.startDateTime ? new Date(st.startDateTime) : new Date(`${st.date}T${st.time}`);
+              return start.getTime() >= now.getTime();
+            })
             .map((st) => st.date)
-            .filter(Boolean)
-            .sort()[0];
-          const firstCinema = mapped[0].cinemaId;
-          if (firstDate) setSelectedDate((prev) => prev || firstDate);
-          if (firstCinema) setSelectedCinema((prev) => prev || firstCinema);
+            .filter(Boolean);
+          
+          const availableDates = Array.from(new Set(futureDates)).sort();
+          
+          // Set to today if available, otherwise first available future date
+          const defaultDate = availableDates.includes(today) ? today : availableDates[0];
+          
+          // Always set to today or first available future date
+          setSelectedDate(defaultDate);
+          setSelectedCinema("all"); // "all" = All Cinemas
         }
       } catch (error) {
         console.error("Error fetching screenings", error);
@@ -105,7 +126,7 @@ export default function MovieDetailPage({
     return allShowtimes
       .filter((st) => {
         // filter by cinema/date
-        if (selectedCinema && st.cinemaId !== selectedCinema) return false;
+        if (selectedCinema && selectedCinema !== "all" && st.cinemaId !== selectedCinema) return false;
         if (selectedDate && st.date !== selectedDate) return false;
 
         // remove past showtimes (including same-day already ended)
@@ -350,6 +371,12 @@ export default function MovieDetailPage({
                     </div>
 
                     <SelectContent className="bg-card dark:bg-slate-900 border-border dark:border-slate-800">
+                      {/* All Cinemas option */}
+                      <SelectItem value="all" className="cursor-pointer hover:bg-purple-500/10 py-3">
+                        <div className="flex flex-col">
+                          <span className="font-semibold text-base">All Cinemas</span>
+                        </div>
+                      </SelectItem>
                       {availableCinemas.map((cinema) => (
                         <SelectItem key={cinema.id} value={cinema.id} className="cursor-pointer hover:bg-purple-500/10 py-3">
                           <div className="flex flex-col">
@@ -365,24 +392,68 @@ export default function MovieDetailPage({
                 </div>
               )}
 
-              {/* Date Filter (Calendar) */}
+              {/* Date Filter (Calendar with disabled dates) */}
               {availableDates.length > 0 && (
                 <div>
                   <label className="block text-sm font-semibold mb-3 flex items-center gap-2">
-                    <Calendar size={18} className="text-purple-600" />
+                    <CalendarIcon size={18} className="text-purple-600" />
                     Select Date
                   </label>
-                  <input
-                    type="date"
-                    value={selectedDate}
-                    min={availableDates[0]}
-                    max={availableDates[availableDates.length - 1]}
-                    onChange={(e) => {
-                      setSelectedDate(e.target.value);
-                      setSelectedShowtime(null);
-                    }}
-                    className="w-full h-12 rounded-lg border border-border dark:border-slate-800 bg-card dark:bg-slate-900 px-4 py-2 text-base"
-                  />
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <div className="w-full h-12 rounded-lg border border-border bg-card px-4 flex items-center cursor-pointer hover:border-purple-400 transition-colors">
+                        <Button
+                          variant="ghost"
+                          className={cn(
+                            "w-full h-full justify-start text-left p-0 font-semibold text-base hover:bg-transparent",
+                            !selectedDate && "text-muted-foreground"
+                          )}
+                        >
+                          {selectedDate ? (
+                            (() => {
+                              const [year, month, day] = selectedDate.split('-').map(Number);
+                              const dateObj = new Date(year, month - 1, day);
+                              return dateObj.toLocaleDateString('en-US', {
+                                weekday: 'short',
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                              });
+                            })()
+                          ) : (
+                            <span>Pick a date</span>
+                          )}
+                        </Button>
+                      </div>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={selectedDate ? (() => {
+                          const [year, month, day] = selectedDate.split('-').map(Number);
+                          return new Date(year, month - 1, day);
+                        })() : undefined}
+                        onSelect={(date) => {
+                          if (date) {
+                            const year = date.getFullYear();
+                            const month = String(date.getMonth() + 1).padStart(2, '0');
+                            const day = String(date.getDate()).padStart(2, '0');
+                            const dateStr = `${year}-${month}-${day}`;
+                            setSelectedDate(dateStr);
+                            setSelectedShowtime(null);
+                          }
+                        }}
+                        disabled={(date) => {
+                          const year = date.getFullYear();
+                          const month = String(date.getMonth() + 1).padStart(2, '0');
+                          const day = String(date.getDate()).padStart(2, '0');
+                          const dateStr = `${year}-${month}-${day}`;
+                          return !availableDates.includes(dateStr);
+                        }}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
               )}
             </div>

@@ -18,7 +18,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Film, Clock, DoorOpen, MapPin } from "lucide-react";
-import { getAllMovies, type Movie } from "@/services/movieService";
+import { getAllMovies } from "@/services/movieService";
+import type { MovieSimple } from "@/types/MovieType/Movie";
 import type { Room } from "@/types/RoomType/room";
 import {
   getShowtimesByRoom,
@@ -33,6 +34,7 @@ interface CreateShowtimeDialogProps {
   onClose: () => void;
   cinemaId: string;
   cinemaName: string;
+  cinemaBuffer?: number | null;
   rooms: Room[];
   onSuccess: () => void;
 }
@@ -42,13 +44,14 @@ export function CreateShowtimeDialog({
   onClose,
   cinemaId,
   cinemaName,
+  cinemaBuffer,
   rooms,
   onSuccess,
 }: CreateShowtimeDialogProps) {
   const addNotification = useNotificationStore((state) => state.addNotification);
 
   const [loading, setLoading] = useState(false);
-  const [movies, setMovies] = useState<Movie[]>([]);
+  const [movies, setMovies] = useState<MovieSimple[]>([]);
   const [existingShowtimes, setExistingShowtimes] = useState<ShowtimeResponse[]>([]);
 
   const [selectedMovieId, setSelectedMovieId] = useState("");
@@ -60,8 +63,9 @@ export function CreateShowtimeDialog({
     if (open) {
       loadMovies();
       resetForm();
+      console.log('CreateShowtimeDialog - cinemaBuffer:', cinemaBuffer);
     }
-  }, [open]);
+  }, [open, cinemaBuffer]);
 
   useEffect(() => {
     if (selectedRoomId) {
@@ -71,14 +75,16 @@ export function CreateShowtimeDialog({
     }
   }, [selectedRoomId]);
 
-  // Auto-calculate end time based on movie duration
+  // Auto-calculate end time based on movie duration + buffer
   useEffect(() => {
     const selectedMovie = movies.find((m) => m.id === selectedMovieId);
-    if (selectedMovie && startTime && selectedMovie.duration) {
+    if (selectedMovie && startTime && selectedMovie.durationMinutes) {
       try {
         const start = parse(startTime, "yyyy-MM-dd'T'HH:mm", new Date());
         if (!isNaN(start.getTime())) {
-          const end = addMinutes(start, selectedMovie.duration);
+          const buffer = cinemaBuffer || 0;
+          const totalMinutes = selectedMovie.durationMinutes + buffer;
+          const end = addMinutes(start, totalMinutes);
           const endTimeStr = format(end, "yyyy-MM-dd'T'HH:mm");
           setEndTime(endTimeStr);
         }
@@ -86,7 +92,7 @@ export function CreateShowtimeDialog({
         console.error("Error calculating end time:", error);
       }
     }
-  }, [selectedMovieId, startTime, movies]);
+  }, [selectedMovieId, startTime, movies, cinemaBuffer]);
 
   const loadMovies = async () => {
     try {
@@ -220,7 +226,7 @@ export function CreateShowtimeDialog({
               <SelectContent>
                 {movies.map((movie) => (
                   <SelectItem key={movie.id} value={movie.id}>
-                    {movie.title} ({movie.duration} min)
+                    {movie.title} ({movie.durationMinutes} min)
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -279,7 +285,10 @@ export function CreateShowtimeDialog({
             />
             {selectedMovie && (
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                Auto-calculated based on movie duration ({selectedMovie.duration} min)
+                {cinemaBuffer !== undefined && cinemaBuffer !== null
+                  ? `Auto-calculated: ${selectedMovie.durationMinutes} min (movie) + ${cinemaBuffer} min (buffer)`
+                  : `Auto-calculated based on movie duration (${selectedMovie.durationMinutes} min)`
+                }
               </p>
             )}
           </div>

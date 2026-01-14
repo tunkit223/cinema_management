@@ -28,10 +28,12 @@ public class InvoiceController {
     @GetMapping
     @PreAuthorize("hasAuthority('INVOICE_READ')")
     public ApiResponse<Page<InvoiceResponse>> getAllInvoices(
-            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String cinemaId) {
         log.info("Getting all invoices - page: {}, size: {}", page, size);
         return ApiResponse.<Page<InvoiceResponse>>builder()
-                .result(invoiceService.getAllInvoices(page, size))
+                .result(invoiceService.getAllInvoices(page, size, cinemaId))
                 .build();
     }
 
@@ -40,15 +42,16 @@ public class InvoiceController {
     public ApiResponse<Page<InvoiceResponse>> searchInvoices(
             @RequestParam String query,
             @RequestParam(required = false) InvoiceStatus status,
+            @RequestParam(required = false) String cinemaId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         log.info("Searching invoices: {} with status: {} - page: {}, size: {}", query, status, page, size);
 
         Page<InvoiceResponse> result;
         if (status != null) {
-            result = invoiceService.searchInvoicesByStatus(query, status, page, size);
+            result = invoiceService.searchInvoicesByStatus(query, status, page, size, cinemaId);
         } else {
-            result = invoiceService.searchInvoices(query, page, size);
+            result = invoiceService.searchInvoices(query, page, size, cinemaId);
         }
 
         return ApiResponse.<Page<InvoiceResponse>>builder().result(result).build();
@@ -58,11 +61,12 @@ public class InvoiceController {
     @PreAuthorize("hasAuthority('INVOICE_READ')")
     public ApiResponse<Page<InvoiceResponse>> getInvoicesByStatus(
             @PathVariable InvoiceStatus status,
+            @RequestParam(required = false) String cinemaId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         log.info("Getting invoices by status: {} - page: {}, size: {}", status, page, size);
         return ApiResponse.<Page<InvoiceResponse>>builder()
-                .result(invoiceService.getInvoicesByStatus(status, page, size))
+                .result(invoiceService.getInvoicesByStatus(status, page, size, cinemaId))
                 .build();
     }
 
@@ -71,20 +75,21 @@ public class InvoiceController {
     public ApiResponse<Page<InvoiceResponse>> getInvoicesByDateRange(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
+            @RequestParam(required = false) String cinemaId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         log.info("Getting invoices by date range: {} to {} - page: {}, size: {}", startDate, endDate, page, size);
         return ApiResponse.<Page<InvoiceResponse>>builder()
-                .result(invoiceService.getInvoicesByDateRange(startDate, endDate, page, size))
+                .result(invoiceService.getInvoicesByDateRange(startDate, endDate, page, size, cinemaId))
                 .build();
     }
 
     @GetMapping("/statistics")
     @PreAuthorize("hasAuthority('INVOICE_READ')")
-    public ApiResponse<InvoiceStatisticsResponse> getStatistics() {
-        log.info("Getting invoice statistics");
+    public ApiResponse<InvoiceStatisticsResponse> getStatistics(@RequestParam(required = false) String cinemaId) {
+        log.info("Getting invoice statistics for cinemaId: {}", cinemaId);
         return ApiResponse.<InvoiceStatisticsResponse>builder()
-                .result(invoiceService.getStatistics())
+                .result(invoiceService.getStatistics(cinemaId))
                 .build();
     }
 

@@ -44,6 +44,7 @@ import { ReviewList } from "@/pages/Reviews";
 import MediaLibrary from "@/pages/Medias/MediaLibrary";
 import { ChatbotConfig } from "@/pages/ChatbotConfig";
 import { ForgotPassword } from "@/pages/ForgotPassword";
+import { BufferSettings } from "@/pages/Settings/BufferSettings";
 
 export const routes = [
   {
@@ -76,6 +77,10 @@ export const routes = [
           {
             path: `${ROUTES.SETTINGS_PROFILE}`,
             element: <Profile />,
+          },
+          {
+            path: `${ROUTES.SETTINGS_BUFFER}`,
+            element: <BufferSettings />,
           },
           {
             path: `${ROUTES.MOVIES}`,

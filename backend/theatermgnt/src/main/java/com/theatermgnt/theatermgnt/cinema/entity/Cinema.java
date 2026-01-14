@@ -26,6 +26,7 @@ public class Cinema extends BaseEntity {
     String address;
     String city;
     String phoneNumber;
+    Integer buffer;
 
     @OneToOne
     @JoinColumn(name = "managerId", referencedColumnName = "id")
