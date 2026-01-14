@@ -8,9 +8,9 @@ import java.util.Optional;
 
 public interface ShiftTypeRepository extends JpaRepository<ShiftType, String> {
 
-    List<ShiftType> findByCinemaId(String cinemaId);
+    List<ShiftType> findByCinemaIdAndDeletedFalse(String cinemaId);
 
-    Optional<ShiftType> findByIdAndCinemaId(String id, String cinemaId);
+    Optional<ShiftType> findByIdAndCinemaIdAndDeletedFalse(String id, String cinemaId);
 
-    boolean existsByCinemaIdAndNameIgnoreCase(String cinemaId, String name);
+    boolean existsByCinemaIdAndNameIgnoreCaseAndDeletedFalse(String cinemaId, String name);
 }

@@ -18,4 +18,5 @@ public class ShiftTypeResponse {
     String name;
     LocalTime startTime;
     LocalTime endTime;
+    boolean deleted;
 }
