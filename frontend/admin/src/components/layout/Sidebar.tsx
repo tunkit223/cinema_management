@@ -7,7 +7,6 @@ import {
   ChevronDown,
   ChevronRight,
   User,
-  Bell,
   Shield,
   ShieldCheck,
   DollarSign,

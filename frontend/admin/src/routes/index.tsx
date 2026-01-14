@@ -18,6 +18,15 @@ import { RoomList, CreateRoom, EditRoom } from "@/pages/Rooms";
 import { TicketList } from "@/pages/Tickets";
 import { CustomerList } from "@/pages/Customers";
 import { StaffList } from "@/pages/Staff";
+import {
+  NotificationList,
+  SendNotification,
+  ViewNotification,
+  AddTemplate,
+  EditTemplate,
+  TemplateList,
+  LogList,
+} from "@/pages/Notification";
 import { BookingList } from "@/pages/Bookings";
 import { ComboList } from "@/pages/Combos";
 import { InvoiceList } from "@/pages/Invoices";
@@ -320,6 +329,46 @@ export const routes = [
               {
                 index: true,
                 element: <BookingList />,
+              },
+            ],
+          },
+          {
+            path: `${ROUTES.NOTIFICATIONS}`,
+            element: (
+              <ProtectedRoute requiredPermissions={[PERMISSIONS.STAFF_READ]} />
+            ),
+            children: [
+              {
+                index: true,
+                element: <Navigate to={ROUTES.NOTIFICATIONS_LIST} replace />,
+              },
+              {
+                path: "list",
+                element: <NotificationList />,
+              },
+              {
+                path: "templates",
+                element: <TemplateList />,
+              },
+              {
+                path: "logs",
+                element: <LogList />,
+              },
+              {
+                path: "send",
+                element: <SendNotification />,
+              },
+              {
+                path: "view/:id",
+                element: <ViewNotification />,
+              },
+              {
+                path: "templates/add",
+                element: <AddTemplate />,
+              },
+              {
+                path: "templates/edit/:id",
+                element: <EditTemplate />,
               },
             ],
           },

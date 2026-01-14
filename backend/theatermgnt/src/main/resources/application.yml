@@ -73,7 +73,7 @@ outbound:
 jwt:
   signerKey: "+PAV/uNVIsN2N1peTkAViUZSSc+t8/wOZQDw8M2+HxBD/2dFy9segSiMPHBr+q97"
   refreshable-duration: 36000
-  valid-duration: 3600
+  valid-duration: 36000
 otp:
   valid-duration: 10
 
@@ -93,3 +93,7 @@ cloudinary:
   cloud-name: ${CLOUDINARY_CLOUD_NAME}
   api-key: ${CLOUDINARY_API_KEY}
   api-secret: ${CLOUDINARY_API_SECRET}
+
+socketio:
+  host: localhost
+  port: 9092
