@@ -41,7 +41,7 @@ public class AdminNotificationController {
      */
     @GetMapping
     public ApiResponse<Page<NotificationDetailResponse>> getAllNotifications(
-            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "50") int size) {
         log.info("Admin getting all notifications - page: {}, size: {}", page, size);
 
         Pageable pageable = PageRequest.of(page, size);
