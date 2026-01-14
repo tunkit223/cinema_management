@@ -12,7 +12,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ArrowLeft, Clock, Film, MapPin } from "lucide-react";
-import { getAllMovies, type Movie } from "@/services/movieService";
+import { getAllMovies } from "@/services/movieService";
+import type { MovieSimple } from "@/types/MovieType/Movie";
 import { getAllCinemas, type Cinema } from "@/services/cinemaService";
 import { getRoomsByCinema, type Room } from "@/services/roomService";
 import { getShowtimesByRoom, createShowtime, type ShowtimeResponse } from "@/services/showtimeService";
@@ -27,12 +28,12 @@ export function CreateShowtime() {
   );
 
   const [loading, setLoading] = useState(false);
-  const [movies, setMovies] = useState<Movie[]>([]);
+  const [movies, setMovies] = useState<MovieSimple[]>([]);
   const [cinemas, setCinemas] = useState<Cinema[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [existingShowtimes, setExistingShowtimes] = useState<ShowtimeResponse[]>([]);
 
-  const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
+  const [selectedMovie, setSelectedMovie] = useState<MovieSimple | null>(null);
   const [selectedCinema, setSelectedCinema] = useState<Cinema | null>(null);
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [startTime, setStartTime] = useState("");
@@ -99,15 +100,17 @@ export function CreateShowtime() {
     }
   };
 
-  // Auto-calculate end time based on movie duration
+  // Auto-calculate end time based on movie duration + cinema buffer
   useEffect(() => {
     if (selectedMovie && startTime) {
-      if (selectedMovie.duration) {
+      if (selectedMovie.durationMinutes) {
         try {
           const start = parse(startTime, "yyyy-MM-dd'T'HH:mm", new Date());
           
           if (!isNaN(start.getTime())) {
-            const end = addMinutes(start, selectedMovie.duration);
+            const buffer = selectedCinema?.buffer || 0;
+            const totalMinutes = selectedMovie.durationMinutes + buffer;
+            const end = addMinutes(start, totalMinutes);
             const endTimeStr = format(end, "yyyy-MM-dd'T'HH:mm");
             setEndTime(endTimeStr);
           } else {
@@ -118,7 +121,7 @@ export function CreateShowtime() {
         }
       }
     }
-  }, [selectedMovie, startTime]);
+  }, [selectedMovie, startTime, selectedCinema]);
 
   const handleMovieChange = (movieId: string) => {
     const movie = movies.find((m) => m.id === movieId);
@@ -245,14 +248,15 @@ export function CreateShowtime() {
               <SelectContent>
                 {movies.map((movie) => (
                   <SelectItem key={movie.id} value={movie.id}>
-                    {movie.title} ({movie.duration} min)
+                    {movie.title} ({movie.durationMinutes} min)
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             {selectedMovie && (
               <p className="text-sm text-muted-foreground">
-                Duration: {selectedMovie.duration} minutes
+                Duration: {selectedMovie.durationMinutes} minutes
+                {selectedCinema?.buffer ? ` + ${selectedCinema.buffer} min buffer` : ""}
               </p>
             )}
           </div>
@@ -338,7 +342,11 @@ export function CreateShowtime() {
               required
             />
             <p className="text-sm text-muted-foreground">
-              {selectedMovie ? `Auto-calculated based on movie duration (${selectedMovie.duration} min)` : "Select a movie to auto-calculate"}
+              {selectedMovie ? (
+                selectedCinema?.buffer 
+                  ? `Auto-calculated: ${selectedMovie.durationMinutes} min (movie) + ${selectedCinema.buffer} min (buffer)`
+                  : `Auto-calculated based on movie duration (${selectedMovie.durationMinutes} min)`
+              ) : "Select a movie to auto-calculate"}
             </p>
           </div>
 

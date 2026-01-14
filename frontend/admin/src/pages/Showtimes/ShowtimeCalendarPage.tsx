@@ -31,7 +31,7 @@ export function ShowtimeCalendarPage() {
   );
   const [allShowtimes, setAllShowtimes] = useState<ShowtimeResponse[]>([]);
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
-  const [selectedShowtime, setSelectedShowtime] = useState<ShowtimeResponse | null>(null);
+  const [selectedShowtimeId, setSelectedShowtimeId] = useState<string | null>(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
 
   // Dialog states
@@ -157,13 +157,13 @@ export function ShowtimeCalendarPage() {
   };
 
   const handleShowtimeClick = (showtime: ShowtimeResponse) => {
-    setSelectedShowtime(showtime);
+    setSelectedShowtimeId(showtime.id);
     setDetailModalOpen(true);
   };
 
   const handleCloseDetailModal = () => {
     setDetailModalOpen(false);
-    setSelectedShowtime(null);
+    setSelectedShowtimeId(null);
   };
 
   const selectedCinema = cinemas.find((c) => c.id === selectedCinemaId);
@@ -290,7 +290,7 @@ export function ShowtimeCalendarPage() {
 
       {/* Showtime Detail Modal */}
       <ShowtimeDetailModal
-        showtime={selectedShowtime}
+        showtimeId={selectedShowtimeId}
         open={detailModalOpen}
         onClose={handleCloseDetailModal}
       />
@@ -302,6 +302,7 @@ export function ShowtimeCalendarPage() {
           onClose={() => setCreateDialogOpen(false)}
           cinemaId={selectedCinemaId}
           cinemaName={selectedCinema.name}
+          cinemaBuffer={selectedCinema.buffer}
           rooms={rooms}
           onSuccess={loadShowtimes}
         />
@@ -313,6 +314,7 @@ export function ShowtimeCalendarPage() {
           open={editDialogOpen}
           onClose={() => setEditDialogOpen(false)}
           cinemaName={selectedCinema.name}
+          cinemaBuffer={selectedCinema.buffer}
           rooms={rooms}
           showtimes={allShowtimes}
           onSuccess={loadShowtimes}

@@ -17,6 +17,7 @@ public interface CinemaMapper {
     @Mapping(target = "managerId", source = "manager.id")
     @Mapping(target = "managerName", expression = "java(getManagerFullName(cinema))")
     @Mapping(target = "managerDob", source = "manager.dob")
+    @Mapping(target = "buffer", source = "buffer")
     CinemaResponse toCinemaResponse(Cinema cinema);
 
     @Mapping(target = "manager", ignore = true)

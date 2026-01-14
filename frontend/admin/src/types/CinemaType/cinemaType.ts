@@ -4,6 +4,7 @@ export interface Cinema {
   address: string;
   city: string;
   phoneNumber: string;
+  buffer?: number | null;
   managerId?: string;
   managerName?: string;
   managerDob?: string;
@@ -14,6 +15,7 @@ export interface CreateCinemaRequest {
   address: string;
   city: string;
   phoneNumber: string;
+  buffer?: number | null;
   managerId?: string | undefined;
 }
 
@@ -22,6 +24,7 @@ export interface UpdateCinemaRequest {
   address: string;
   city: string;
   phoneNumber: string;
+  buffer?: number | null;
   managerId?: string | undefined;
 }
 

@@ -27,6 +27,9 @@ public interface ScreeningSeatRepository extends JpaRepository<ScreeningSeat, St
     @Query("SELECT COUNT(s) > 0 FROM ScreeningSeat s WHERE s.screening.id = :screeningId AND s.status = 'SOLD'")
     boolean existsSoldSeat(String screeningId);
 
+    @Query("SELECT COUNT(s) FROM ScreeningSeat s WHERE s.screening.id = :screeningId AND s.status = 'SOLD'")
+    Integer countBookedSeats(String screeningId);
+
     @Modifying
     @Query(
             """

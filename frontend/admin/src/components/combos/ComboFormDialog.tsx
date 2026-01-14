@@ -3,9 +3,8 @@ import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { ImageUploader } from "@/components/fileStorage/ImageUploader";
 import type { ComboWithItems, CreateComboRequest } from "@/types/ComboType/comboType";
-import { Package, FileText, ImageIcon, Plus, Trash2, Hash, Upload } from "lucide-react";
+import { Package, FileText, ImageIcon, Plus, Trash2, Hash } from "lucide-react";
 
 interface ComboFormDialogProps {
   isOpen: boolean;
@@ -143,10 +142,6 @@ export function ComboFormDialog({
     }
   };
 
-  const handleImageUploadSuccess = (url: string) => {
-    setFormData((prev) => ({ ...prev, imageUrl: url }));
-  };
-
   const handleItemChange = (index: number, field: keyof ComboItemForm, value: string | number) => {
     setItems((prev) => {
       const newItems = [...prev];
@@ -268,39 +263,45 @@ export function ComboFormDialog({
             )}
           </div>
 
-          {/* Image Upload */}
+          {/* Image URL */}
           <div className="space-y-1.5">
-            <Label className="flex items-center gap-2">
-              <Upload className="h-4 w-4 text-muted-foreground" />
-              Combo Image <span className="text-sm text-muted-foreground">(Optional)</span>
+            <Label htmlFor="imageUrl" className="flex items-center gap-2">
+              <ImageIcon className="h-4 w-4 text-muted-foreground" />
+              Image URL <span className="text-sm text-muted-foreground">(Optional)</span>
             </Label>
-            <div className="border border-dashed border-border rounded-lg p-3 bg-muted/20">
-              <ImageUploader 
-                onUploadSuccess={handleImageUploadSuccess}
-              />
-              {formData.imageUrl && (
-                <div className="mt-3">
-                  <p className="text-sm text-muted-foreground mb-2">Current image:</p>
-                  <div className="relative inline-block">
-                    <img 
-                      src={formData.imageUrl} 
-                      alt="Combo preview" 
-                      className="h-32 w-32 object-cover rounded-lg border border-border"
-                    />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
-                      onClick={() => handleComboChange("imageUrl", "")}
-                      disabled={isLoading}
-                    >
-                      ×
-                    </Button>
-                  </div>
+            <Input
+              id="imageUrl"
+              type="url"
+              value={formData.imageUrl}
+              onChange={(e) => handleComboChange("imageUrl", e.target.value)}
+              placeholder="https://example.com/combo-image.jpg"
+              disabled={isLoading}
+            />
+            {formData.imageUrl && (
+              <div className="mt-3">
+                <p className="text-sm text-muted-foreground mb-2">Preview:</p>
+                <div className="relative inline-block">
+                  <img 
+                    src={formData.imageUrl} 
+                    alt="Combo preview" 
+                    className="h-32 w-32 object-cover rounded-lg border border-border"
+                    onError={(e) => {
+                      e.currentTarget.src = 'https://via.placeholder.com/128?text=Invalid+URL';
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
+                    onClick={() => handleComboChange("imageUrl", "")}
+                    disabled={isLoading}
+                  >
+                    ×
+                  </Button>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
           </div>
 
