@@ -34,9 +34,10 @@ public class SecurityConfig {
         "/auth/outbound/authenticate",
         "/movies/**",
         "/genres/**",
-        "/showtimes/**",
+        "/screenings/**",
         "/payment/**",
         "/reviews/**",
+        "/cinemas/**"
     };
 
     @Autowired
@@ -47,7 +48,7 @@ public class SecurityConfig {
         httpSecurity.authorizeHttpRequests(request -> request.requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS)
                 .permitAll()
                 .requestMatchers(
-                        HttpMethod.GET, "/movies/**", "/genres/**", "/showtimes/**", "/payment/**", "/reviews/**")
+                        HttpMethod.GET, "/movies/**", "/genres/**", "/screenings/**", "/payment/**", "/reviews/**", "/cinemas/**")
                 .permitAll()
                 .anyRequest()
                 .authenticated());
