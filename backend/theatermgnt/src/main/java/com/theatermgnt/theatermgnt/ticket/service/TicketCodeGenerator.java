@@ -1,8 +1,8 @@
 package com.theatermgnt.theatermgnt.ticket.service;
 
-import org.springframework.stereotype.Component;
-
 import java.util.UUID;
+
+import org.springframework.stereotype.Component;
 
 @Component
 public class TicketCodeGenerator {

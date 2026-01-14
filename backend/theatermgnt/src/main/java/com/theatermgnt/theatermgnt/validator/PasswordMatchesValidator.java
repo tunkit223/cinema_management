@@ -1,8 +1,9 @@
 package com.theatermgnt.theatermgnt.validator;
 
-import com.theatermgnt.theatermgnt.account.dto.request.PasswordCreationRequest;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
+
+import com.theatermgnt.theatermgnt.account.dto.request.PasswordCreationRequest;
 
 public class PasswordMatchesValidator implements ConstraintValidator<PasswordMatches, PasswordCreationRequest> {
 

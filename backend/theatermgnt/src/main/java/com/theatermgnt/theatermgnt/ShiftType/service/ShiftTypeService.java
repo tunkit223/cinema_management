@@ -1,10 +1,10 @@
 package com.theatermgnt.theatermgnt.ShiftType.service;
 
+import java.util.List;
+
 import com.theatermgnt.theatermgnt.ShiftType.dto.request.CreateShiftTypeRequest;
 import com.theatermgnt.theatermgnt.ShiftType.dto.request.UpdateShiftTypeRequest;
 import com.theatermgnt.theatermgnt.ShiftType.dto.response.ShiftTypeResponse;
-
-import java.util.List;
 
 public interface ShiftTypeService {
 

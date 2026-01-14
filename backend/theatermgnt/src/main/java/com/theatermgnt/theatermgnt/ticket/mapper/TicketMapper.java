@@ -1,9 +1,10 @@
 package com.theatermgnt.theatermgnt.ticket.mapper;
 
-import com.theatermgnt.theatermgnt.ticket.dto.response.TicketResponse;
-import com.theatermgnt.theatermgnt.ticket.entity.Ticket;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+
+import com.theatermgnt.theatermgnt.ticket.dto.response.TicketResponse;
+import com.theatermgnt.theatermgnt.ticket.entity.Ticket;
 
 @Mapper(componentModel = "spring")
 public interface TicketMapper {
