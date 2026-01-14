@@ -29,6 +29,7 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
 		LEFT JOIN b.screening s
 		LEFT JOIN s.movie m
 		LEFT JOIN s.room r
+		LEFT JOIN r.cinema ci
 		WHERE (:status IS NULL OR b.status = :status)
 		AND (:customerSearch IS NULL OR c IS NOT NULL AND (
 			LOWER(c.firstName) LIKE LOWER(CONCAT('%', CAST(:customerSearch AS string), '%'))
@@ -36,11 +37,13 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
 		))
 		AND (:emailSearch IS NULL OR a IS NOT NULL AND LOWER(a.email) LIKE LOWER(CONCAT('%', CAST(:emailSearch AS string), '%')))
 		AND (:movieSearch IS NULL OR LOWER(m.title) LIKE LOWER(CONCAT('%', CAST(:movieSearch AS string), '%')))
+		AND (:cinemaId IS NULL OR ci.id = :cinemaId)
 		""")
     Page<Booking> findBookings(
             @Param("status") BookingStatus status,
             @Param("customerSearch") String customerSearch,
             @Param("emailSearch") String emailSearch,
             @Param("movieSearch") String movieSearch,
+            @Param("cinemaId") String cinemaId,
             Pageable pageable);
 }

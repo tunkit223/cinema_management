@@ -31,7 +31,8 @@ public interface ScreeningMapper {
     @Mapping(target = "totalSeats", source = "totalSeats")
     @Mapping(target = "bookedSeats", source = "bookedSeats")
     @Mapping(target = "availableSeats", source = "availableSeats")
-    ScreeningDetailResponse toScreeningDetailResponse(Screening screening, Integer totalSeats, Integer bookedSeats, Integer availableSeats);
+    ScreeningDetailResponse toScreeningDetailResponse(
+            Screening screening, Integer totalSeats, Integer bookedSeats, Integer availableSeats);
 
     void updateScreening(@MappingTarget Screening screening, ScreeningUpdateRequest request);
 }

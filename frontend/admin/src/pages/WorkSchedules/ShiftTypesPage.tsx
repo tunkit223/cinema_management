@@ -45,7 +45,9 @@ export function ShiftTypesPage() {
   const normalizeTime = (time?: string) => (time || "").slice(0, 5);
 
   const sortedTemplates = useMemo(
-    () => [...templates].sort((a, b) => normalizeTime(a.startTime).localeCompare(normalizeTime(b.startTime))),
+    () => [...templates]
+      .filter((t) => !t.deleted)
+      .sort((a, b) => normalizeTime(a.startTime).localeCompare(normalizeTime(b.startTime))),
     [templates]
   );
 

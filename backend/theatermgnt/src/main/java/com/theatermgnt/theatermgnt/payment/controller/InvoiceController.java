@@ -86,8 +86,7 @@ public class InvoiceController {
 
     @GetMapping("/statistics")
     @PreAuthorize("hasAuthority('INVOICE_READ')")
-    public ApiResponse<InvoiceStatisticsResponse> getStatistics(
-            @RequestParam(required = false) String cinemaId) {
+    public ApiResponse<InvoiceStatisticsResponse> getStatistics(@RequestParam(required = false) String cinemaId) {
         log.info("Getting invoice statistics for cinemaId: {}", cinemaId);
         return ApiResponse.<InvoiceStatisticsResponse>builder()
                 .result(invoiceService.getStatistics(cinemaId))

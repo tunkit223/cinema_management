@@ -17,6 +17,7 @@ export interface ShiftTemplate {
   name: string;
   startTime: string;
   endTime: string;
+  deleted?: boolean;
 }
 
 export interface CreateShiftTemplatePayload {

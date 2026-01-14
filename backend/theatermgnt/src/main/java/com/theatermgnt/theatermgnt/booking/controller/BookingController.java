@@ -78,11 +78,13 @@ public class BookingController {
             @RequestParam(required = false) String customerSearch,
             @RequestParam(required = false) String emailSearch,
             @RequestParam(required = false) String movieSearch,
+            @RequestParam(required = false) String cinemaId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         Pageable pageable = PageRequest.of(page, size);
         return ApiResponse.<BookingListResponse>builder()
-                .result(bookingService.getBookings(status, customerSearch, emailSearch, movieSearch, pageable))
+                .result(bookingService.getBookings(
+                        status, customerSearch, emailSearch, movieSearch, cinemaId, pageable))
                 .build();
     }
 }

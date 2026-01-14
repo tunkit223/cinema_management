@@ -66,21 +66,21 @@ public class ScreeningService {
         Movie movie = movieRepository
                 .findById(request.getMovieId())
                 .orElseThrow(() -> new AppException(ErrorCode.MOVIE_NOT_EXISTED));
-        // code smell
+        //        // code smell
+        //
+        //        if (!request.getStartTime().isAfter(LocalDateTime.now()))
+        //            throw new AppException(ErrorCode.SCREENING_TIME_INVALID);
+        //
+        //        if (!request.getEndTime().isAfter(request.getStartTime()))
+        //            throw new AppException(ErrorCode.SCREENING_TIME_INVALID);
+        //
+        //        boolean overlap = screeningRepository.isTimeOverlap(
+        //                request.getRoomId(), request.getStartTime(), request.getEndTime(), null);
+        //
+        //        if (overlap) throw new AppException(ErrorCode.SCREENING_TIME_OVERLAP);
 
-        if (!request.getStartTime().isAfter(LocalDateTime.now()))
-            throw new AppException(ErrorCode.SCREENING_TIME_INVALID);
-
-        if (!request.getEndTime().isAfter(request.getStartTime()))
-            throw new AppException(ErrorCode.SCREENING_TIME_INVALID);
-
-        boolean overlap = screeningRepository.isTimeOverlap(
-                request.getRoomId(), request.getStartTime(), request.getEndTime(), null);
-
-        if (overlap) throw new AppException(ErrorCode.SCREENING_TIME_OVERLAP);
-
-        //        validateScreeningTime(request.getStartTime(), request.getEndTime());
-        //        validateOverlap(request.getRoomId(), request.getStartTime(), request.getEndTime(), null);
+        validateScreeningTime(request.getStartTime(), request.getEndTime());
+        validateOverlap(request.getRoomId(), request.getStartTime(), request.getEndTime(), null);
 
         Screening screening = screeningMapper.toScreening(request);
         screening.setRoom(room);

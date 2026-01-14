@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import jakarta.transaction.Transactional;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -23,10 +24,9 @@ import com.theatermgnt.theatermgnt.payment.dto.response.InvoiceResponse;
 import com.theatermgnt.theatermgnt.payment.dto.response.InvoiceStatisticsResponse;
 import com.theatermgnt.theatermgnt.payment.entity.Invoice;
 import com.theatermgnt.theatermgnt.payment.entity.InvoiceStatus;
+import com.theatermgnt.theatermgnt.payment.event.InvoiceRefundedEvent;
 import com.theatermgnt.theatermgnt.payment.mapper.InvoiceMapper;
 import com.theatermgnt.theatermgnt.payment.repository.InvoiceRepository;
-import org.springframework.context.ApplicationEventPublisher;
-import com.theatermgnt.theatermgnt.payment.event.InvoiceRefundedEvent;
 import com.theatermgnt.theatermgnt.revenue.service.RevenueAggregationService;
 import com.theatermgnt.theatermgnt.ticket.service.TicketService;
 
@@ -133,7 +133,7 @@ public class InvoiceServiceImpl implements InvoiceService {
                 try {
                     bookingService.refundBooking(bookingId);
                     log.info("Booking {} refunded due to invoice refund", bookingId);
-                    
+
                     // Expire all active tickets for this booking
                     try {
                         UUID bookingUuid = UUID.fromString(bookingId);
@@ -224,7 +224,8 @@ public class InvoiceServiceImpl implements InvoiceService {
     }
 
     @Override
-    public Page<InvoiceResponse> searchInvoicesByStatus(String search, InvoiceStatus status, int page, int size, String cinemaId) {
+    public Page<InvoiceResponse> searchInvoicesByStatus(
+            String search, InvoiceStatus status, int page, int size, String cinemaId) {
         log.info("Searching invoices by status: {} search: {} - page: {}, size: {}", status, search, page, size);
         Pageable pageable = PageRequest.of(page, size);
         Page<Invoice> invoices = (cinemaId != null && !cinemaId.isBlank())
@@ -294,8 +295,10 @@ public class InvoiceServiceImpl implements InvoiceService {
             refundedInvoices = invoiceRepository.countByCinemaAndStatus(cinemaId, InvoiceStatus.REFUNDED.toString());
 
             totalRevenue = invoiceRepository.sumTotalAmountByCinemaAndStatus(cinemaId, InvoiceStatus.PAID.toString());
-            pendingAmount = invoiceRepository.sumTotalAmountByCinemaAndStatus(cinemaId, InvoiceStatus.PENDING.toString());
-            refundedAmount = invoiceRepository.sumTotalAmountByCinemaAndStatus(cinemaId, InvoiceStatus.REFUNDED.toString());
+            pendingAmount =
+                    invoiceRepository.sumTotalAmountByCinemaAndStatus(cinemaId, InvoiceStatus.PENDING.toString());
+            refundedAmount =
+                    invoiceRepository.sumTotalAmountByCinemaAndStatus(cinemaId, InvoiceStatus.REFUNDED.toString());
         } else {
             // Global statistics
             totalInvoices = invoiceRepository.count();

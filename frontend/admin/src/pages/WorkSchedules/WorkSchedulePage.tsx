@@ -204,7 +204,7 @@ export function WorkSchedulePage() {
           .map(mapStaffProfileToMember)
           .filter((member) => member.cinemaId === cinemaId);
 
-        const templates = templatesData ?? [];
+        const templates = (templatesData ?? []).filter((t) => !t.deleted);
         const schedules = scheduleData ?? [];
 
         setStaffPool(filteredStaff);

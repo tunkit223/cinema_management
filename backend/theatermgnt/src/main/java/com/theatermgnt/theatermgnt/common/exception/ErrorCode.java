@@ -15,7 +15,10 @@ public enum ErrorCode {
     PHONE_NUMBER_EXISTED(1005, "Phone number has existed", HttpStatus.BAD_REQUEST),
     UNAUTHENTICATED(1006, "Unauthenticated", HttpStatus.UNAUTHORIZED), // 401
     ROLE_NOT_FOUND(1007, "Role not found", HttpStatus.NOT_FOUND), // 401
-    ROLE_IN_USE(1026, "Cannot delete role. This role is currently assigned to one or more staff members", HttpStatus.BAD_REQUEST),
+    ROLE_IN_USE(
+            1026,
+            "Cannot delete role. This role is currently assigned to one or more staff members",
+            HttpStatus.BAD_REQUEST),
     INVALID_TYPING(1008, "WRONG IN YOUR CODE", HttpStatus.BAD_REQUEST),
     INVALID_USERNAME(1009, "Username must be at least {min} characters", HttpStatus.BAD_REQUEST),
     INVALID_PASSWORD(1010, "Password must be at least {min} characters", HttpStatus.BAD_REQUEST),
@@ -47,8 +50,8 @@ public enum ErrorCode {
     PRICECONFIG_EXISTED(2008, "Price config existed", HttpStatus.BAD_REQUEST),
     SEAT_NOT_EXISTED(2009, "Seat not existed", HttpStatus.BAD_REQUEST),
     SEAT_EXISTED(2010, "Seat existed", HttpStatus.BAD_REQUEST),
-    COMBO_EXISTED(2011, "Seat existed", HttpStatus.BAD_REQUEST),
-    COMBO_NOT_EXISTED(2012, "Seat not existed", HttpStatus.BAD_REQUEST),
+    COMBO_EXISTED(2011, "Combo existed", HttpStatus.BAD_REQUEST),
+    COMBO_NOT_EXISTED(2012, "Combo not existed", HttpStatus.BAD_REQUEST),
     COMBO_ITEM_EXISTED(2011, "Seat existed", HttpStatus.BAD_REQUEST),
     COMBO_ITEM_NOT_EXISTED(2012, "Seat not existed", HttpStatus.BAD_REQUEST),
     SCREENING_EXISTED(2013, "Screening existed", HttpStatus.BAD_REQUEST),
@@ -89,7 +92,8 @@ public enum ErrorCode {
     INVALID_POSTER_URL(2033, "Poster URL must be a valid URL", HttpStatus.BAD_REQUEST),
     INVALID_TRAILER_URL(2034, "Trailer URL must be a valid URL", HttpStatus.BAD_REQUEST),
     INVALID_MOVIE_GENRES(2035, "Movie must have between {min} and {max} genres", HttpStatus.BAD_REQUEST),
-    MOVIE_HAS_SCHEDULED_SCREENINGS(2036, "Cannot archive movie because it has scheduled screenings", HttpStatus.BAD_REQUEST),
+    MOVIE_HAS_SCHEDULED_SCREENINGS(
+            2036, "Cannot archive movie because it has scheduled screenings", HttpStatus.BAD_REQUEST),
 
     // Work Schedule
     WORK_SCHEDULE_NOT_FOUND(2040, "Work schedule not found", HttpStatus.BAD_REQUEST),

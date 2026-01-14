@@ -6,6 +6,7 @@ import java.util.List;
 
 import jakarta.transaction.Transactional;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import com.theatermgnt.theatermgnt.ShiftType.entity.ShiftType;
@@ -40,6 +41,7 @@ public class WorkScheduleServiceImpl implements WorkScheduleService {
 
     @Override
     @Transactional
+    @PreAuthorize("hasRole('MANAGER')")
     public List<WorkScheduleResponse> createSchedules(String cinemaId, CreateWorkScheduleRequest req) {
 
         if (req.getWorkDate() == null || req.getShiftTypeId() == null || req.getUserIds() == null) {
@@ -84,6 +86,7 @@ public class WorkScheduleServiceImpl implements WorkScheduleService {
     }
 
     @Transactional
+    @PreAuthorize("hasRole('MANAGER')")
     public List<WorkScheduleResponse> updateSchedules(
             String cinemaId, String shiftTypeId, LocalDate workDate, UpdateWorkScheduleRequest req) {
 
@@ -145,6 +148,7 @@ public class WorkScheduleServiceImpl implements WorkScheduleService {
 
     @Override
     @Transactional
+    @PreAuthorize("hasRole('MANAGER')")
     public void deleteSchedules(String cinemaId, String shiftTypeId, LocalDate date) {
         List<WorkSchedule> schedules =
                 workScheduleRepository.findAllByCinemaIdAndShiftTypeIdAndWorkDate(cinemaId, shiftTypeId, date);
@@ -159,6 +163,7 @@ public class WorkScheduleServiceImpl implements WorkScheduleService {
 
     @Override
     @Transactional
+    @PreAuthorize("hasRole('MANAGER')")
     public void deleteSchedule(String cinemaId, String scheduleId) {
         WorkSchedule schedule = workScheduleRepository
                 .findById(scheduleId)

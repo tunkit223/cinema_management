@@ -1,9 +1,9 @@
 package com.theatermgnt.theatermgnt.ShiftType.dto.response;
 
+import java.time.LocalTime;
+
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-
-import java.time.LocalTime;
 
 @Data
 @Builder
@@ -18,4 +18,5 @@ public class ShiftTypeResponse {
     String name;
     LocalTime startTime;
     LocalTime endTime;
+    boolean deleted;
 }

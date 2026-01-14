@@ -1,18 +1,19 @@
 package com.theatermgnt.theatermgnt.ticket.controller;
 
+import java.util.List;
+import java.util.UUID;
+
+import org.springframework.web.bind.annotation.*;
+
 import com.theatermgnt.theatermgnt.common.dto.response.ApiResponse;
 import com.theatermgnt.theatermgnt.ticket.dto.request.TicketCheckInRequest;
-import com.theatermgnt.theatermgnt.ticket.dto.response.TicketCheckInResponse;
 import com.theatermgnt.theatermgnt.ticket.dto.response.TicketCheckInViewResponse;
 import com.theatermgnt.theatermgnt.ticket.dto.response.TicketResponse;
 import com.theatermgnt.theatermgnt.ticket.entity.Ticket;
 import com.theatermgnt.theatermgnt.ticket.mapper.TicketMapper;
 import com.theatermgnt.theatermgnt.ticket.service.TicketService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/tickets")
@@ -25,7 +26,8 @@ public class TicketController {
     public ApiResponse<List<TicketResponse>> getTicketsByBooking(@PathVariable UUID bookingId) {
 
         return ApiResponse.<List<TicketResponse>>builder()
-                .result(ticketService.getTicketsByBooking(bookingId)).build();
+                .result(ticketService.getTicketsByBooking(bookingId))
+                .build();
     }
 
     @GetMapping("/{ticketCode}")
@@ -34,13 +36,15 @@ public class TicketController {
         Ticket ticket = ticketService.getTicketByCode(ticketCode);
 
         return ApiResponse.<TicketResponse>builder()
-                .result(ticketMapper.toResponse(ticket)).build();
+                .result(ticketMapper.toResponse(ticket))
+                .build();
     }
 
     @GetMapping("/check-in/{ticketCode}")
-    public ApiResponse<TicketCheckInViewResponse> getTicketForCheckIn(@PathVariable String ticketCode){
+    public ApiResponse<TicketCheckInViewResponse> getTicketForCheckIn(@PathVariable String ticketCode) {
         return ApiResponse.<TicketCheckInViewResponse>builder()
-                .result(ticketService.getTicketCheckInViewByCode(ticketCode)).build();
+                .result(ticketService.getTicketCheckInViewByCode(ticketCode))
+                .build();
     }
 
     @GetMapping("/my-tickets/{customerId}")
@@ -50,13 +54,16 @@ public class TicketController {
     }
 
     @PostMapping("/check-in/{ticketCode}")
-    public ApiResponse<String> checkInTicket(@PathVariable String ticketCode, @RequestBody(required = false) TicketCheckInRequest request) {
+    public ApiResponse<String> checkInTicket(
+            @PathVariable String ticketCode, @RequestBody(required = false) TicketCheckInRequest request) {
         if (request == null) {
             request = TicketCheckInRequest.builder().ticketCode(ticketCode).build();
         } else {
             request.setTicketCode(ticketCode);
         }
         ticketService.checkInTicket(request);
-        return ApiResponse.<String>builder().result("Ticket checked in successfully").build();
+        return ApiResponse.<String>builder()
+                .result("Ticket checked in successfully")
+                .build();
     }
 }

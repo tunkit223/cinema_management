@@ -41,16 +41,16 @@ public class DailyRevenueInitializerService {
     @Transactional
     public void initializeOnStartup() {
         log.info("Checking if daily revenue summaries need initialization on startup");
-        
+
         LocalDate today = LocalDate.now();
-        
+
         // Check if today has any DailyRevenueSummary
         long existingCount = cinemaRepository.findAll().stream()
-            .filter(cinema -> dailyRevenueSummaryRepository
-                .findByCinemaIdAndReportDate(cinema.getId(), today)
-                .isPresent())
-            .count();
-        
+                .filter(cinema -> dailyRevenueSummaryRepository
+                        .findByCinemaIdAndReportDate(cinema.getId(), today)
+                        .isPresent())
+                .count();
+
         if (existingCount == 0) {
             log.info("No revenue summaries found for today, initializing...");
             try {
@@ -91,8 +91,8 @@ public class DailyRevenueInitializerService {
         List<Cinema> cinemas = cinemaRepository.findAll();
 
         for (Cinema cinema : cinemas) {
-            Optional<DailyRevenueSummary> existing = dailyRevenueSummaryRepository
-                    .findByCinemaIdAndReportDate(cinema.getId(), reportDate);
+            Optional<DailyRevenueSummary> existing =
+                    dailyRevenueSummaryRepository.findByCinemaIdAndReportDate(cinema.getId(), reportDate);
 
             if (existing.isEmpty()) {
                 DailyRevenueSummary newSummary = DailyRevenueSummary.builder()
@@ -115,8 +115,8 @@ public class DailyRevenueInitializerService {
 
         for (Cinema cinema : cinemas) {
             for (Movie movie : movies) {
-                Optional<MovieRevenue> existing = movieRevenueRepository
-                        .findByMovieIdAndCinemaIdAndReportDate(movie.getId(), cinema.getId(), reportDate);
+                Optional<MovieRevenue> existing = movieRevenueRepository.findByMovieIdAndCinemaIdAndReportDate(
+                        movie.getId(), cinema.getId(), reportDate);
 
                 if (existing.isEmpty()) {
                     MovieRevenue newRevenue = MovieRevenue.builder()
@@ -127,8 +127,11 @@ public class DailyRevenueInitializerService {
                             .totalTicketsSold(0)
                             .build();
                     movieRevenueRepository.save(newRevenue);
-                    log.debug("Created MovieRevenue for movie {} in cinema {} on {}", 
-                            movie.getId(), cinema.getId(), reportDate);
+                    log.debug(
+                            "Created MovieRevenue for movie {} in cinema {} on {}",
+                            movie.getId(),
+                            cinema.getId(),
+                            reportDate);
                 }
             }
         }

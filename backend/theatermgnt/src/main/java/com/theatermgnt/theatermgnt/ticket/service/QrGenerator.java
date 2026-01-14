@@ -1,10 +1,12 @@
 package com.theatermgnt.theatermgnt.ticket.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
+import java.util.Map;
+
 import org.springframework.stereotype.Component;
 
-import java.util.Map;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
@@ -13,10 +15,7 @@ public class QrGenerator {
 
     public String generateQrContent(String ticketCode) {
         try {
-            Map<String, Object> payload = Map.of(
-                    "type", "TICKET",
-                    "ticketCode", ticketCode
-            );
+            Map<String, Object> payload = Map.of("type", "TICKET", "ticketCode", ticketCode);
             return objectMapper.writeValueAsString(payload);
         } catch (Exception e) {
             throw new RuntimeException("Failed to generate QR content", e);
