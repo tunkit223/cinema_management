@@ -18,6 +18,8 @@ import PaymentStep from "@/components/booking/payment-step"
 import SuccessStep from "@/components/booking/success-step"
 import BookingTimer from "@/components/booking/booking-timer"
 import { validateOrphanSeats } from "@/lib/seatValidation"
+import { ErrorNotification } from "@/components/error-notification"
+import { useErrorNotification } from "@/hooks/useErrorNotification"
 
 export default function BookingPage({
   params,
@@ -48,6 +50,8 @@ export default function BookingPage({
   const [pointsUsed, setPointsUsed] = useState(0)
   const [pointsDiscount, setPointsDiscount] = useState(0)
   const [paymentSuccess, setPaymentSuccess] = useState(false)
+  const [orphanSeatError, setOrphanSeatError] = useState<string | null>(null)
+  const [generalError, setGeneralError] = useState<{ title?: string; message: string } | null>(null)
   
   // Booking state
   const [bookingId, setBookingId] = useState<string | null>(null)
@@ -136,7 +140,7 @@ export default function BookingPage({
   }
 
   const handleBookingExpired = () => {
-    alert('Booking has expired. Please select seats again.')
+    setGeneralError({ title: 'Booking Expired', message: 'Booking has expired. Please select seats again.' })
     // Clear saved state
     clearBookingState()
     // Reset state
@@ -649,7 +653,7 @@ export default function BookingPage({
         console.log('Token:', token ? 'exists' : 'not found')
         
         if (!token) {
-          alert('Please sign in to continue booking')
+          setGeneralError({ title: 'Authentication Required', message: 'Please sign in to continue booking' })
           return
         }
 
@@ -666,7 +670,7 @@ export default function BookingPage({
           } catch (error: any) {
             console.error('Error fetching user info:', error)
             console.error('Error response:', error?.response?.data)
-            alert(`Unable to fetch user info: ${error?.response?.data?.message || error.message || 'Please sign in again.'}`)
+            setGeneralError({ title: 'User Info Error', message: `Unable to fetch user info: ${error?.response?.data?.message || error.message || 'Please sign in again.'}` })
             return
           }
         }
@@ -675,7 +679,7 @@ export default function BookingPage({
 
         if (!customerId) {
           console.error('UserInfo still invalid (missing id/customerId):', userInfo)
-          alert('User info not found. Please sign in again.')
+          setGeneralError({ title: 'Authentication Error', message: 'User info not found. Please sign in again.' })
           return
         }
 
@@ -688,7 +692,8 @@ export default function BookingPage({
         )
 
         if (!validation.isValid) {
-          alert(`⚠️ Invalid Seat Selection\n\n${validation.message}\n\nPlease adjust your seat selection.`)
+          setOrphanSeatError(validation.message)
+          setIsCreatingBooking(false)
           return
         }
 
@@ -718,7 +723,7 @@ export default function BookingPage({
         
         // Handle specific error: seats not available
         if (errorMessage.includes('not available') || errorMessage.includes('seats')) {
-          alert(`⚠️ Booking Error: ${errorMessage}\n\nSome seats may have been booked by other users. Please select seats again.`)
+          setGeneralError({ title: 'Booking Error', message: `${errorMessage}. Some seats may have been booked by other users. Please select seats again.` })
           
           // Reload seats from API
           try {
@@ -752,14 +757,14 @@ export default function BookingPage({
           // Clear selected seats
           setSelectedSeats([])
         } else {
-          alert(`Unable to create booking: ${errorMessage}`)
+          setGeneralError({ title: 'Booking Error', message: `Unable to create booking: ${errorMessage}` })
         }
       } finally {
         setIsCreatingBooking(false)
       }
     } else if (currentStep === 2) {
       if (!bookingId) {
-        alert('Please create a booking first by selecting seats.')
+        setGeneralError({ title: 'Booking Not Found', message: 'Please create a booking first by selecting seats.' })
         return
       }
 
@@ -776,13 +781,13 @@ export default function BookingPage({
         setCurrentStep(currentStep + 1)
       } catch (error: any) {
         console.error('Error updating combos:', error)
-        alert(`Unable to update combos: ${error?.response?.data?.message || error.message || 'Please try again.'}`)
+        setGeneralError({ title: 'Combo Update Error', message: `Unable to update combos: ${error?.response?.data?.message || error.message || 'Please try again.'}` })
       } finally {
         setIsUpdatingCombos(false)
       }
     } else if (currentStep === 3) {
       if (!bookingId) {
-        alert('Booking not found. Please go back and create booking again.')
+        setGeneralError({ title: 'Booking Not Found', message: 'Booking not found. Please go back and create booking again.' })
         return
       }
 
@@ -802,7 +807,7 @@ export default function BookingPage({
         setCurrentStep(currentStep + 1)
       } catch (error: any) {
         console.error('Error redeeming points:', error)
-        alert(`Unable to redeem points: ${error?.response?.data?.message || error.message || 'Please try again.'}`)
+        setGeneralError({ title: 'Points Redemption Error', message: `Unable to redeem points: ${error?.response?.data?.message || error.message || 'Please try again.'}` })
       } finally {
         setIsLoadingSummary(false)
       }
@@ -822,6 +827,30 @@ export default function BookingPage({
 
   return (
     <div className="min-h-screen bg-background dark:bg-slate-950 pt-20 pb-12">
+      {/* Orphan Seat Error Notification */}
+      {orphanSeatError && (
+        <div className="fixed top-20 left-4 right-4 z-50 max-w-lg md:max-w-md md:left-auto md:right-4">
+          <ErrorNotification
+            title="Invalid Seat Selection"
+            message={orphanSeatError}
+            onClose={() => setOrphanSeatError(null)}
+            isVisible={!!orphanSeatError}
+          />
+        </div>
+      )}
+
+      {/* General Error Notification */}
+      {generalError && (
+        <div className="fixed top-20 left-4 right-4 z-50 max-w-lg md:max-w-md md:left-auto md:right-4">
+          <ErrorNotification
+            title={generalError.title || 'Error'}
+            message={generalError.message}
+            onClose={() => setGeneralError(null)}
+            isVisible={!!generalError}
+          />
+        </div>
+      )}
+
       {bookingExpiredAt && currentStep > 1 && currentStep < 5 && (
         <div className="fixed top-16 md:top-20 left-1/2 -translate-x-1/2 z-50">
           <BookingTimer expiredAt={bookingExpiredAt} onExpired={handleBookingExpired} />

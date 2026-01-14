@@ -15,6 +15,7 @@ import com.theatermgnt.theatermgnt.room.entity.Room;
 import com.theatermgnt.theatermgnt.room.repository.RoomRepository;
 import com.theatermgnt.theatermgnt.screening.dto.request.ScreeningCreationRequest;
 import com.theatermgnt.theatermgnt.screening.dto.request.ScreeningUpdateRequest;
+import com.theatermgnt.theatermgnt.screening.dto.response.ScreeningDetailResponse;
 import com.theatermgnt.theatermgnt.screening.dto.response.ScreeningResponse;
 import com.theatermgnt.theatermgnt.screening.entity.Screening;
 import com.theatermgnt.theatermgnt.screening.enums.ScreeningStatus;
@@ -131,6 +132,24 @@ public class ScreeningService {
                 .findById(screeningId)
                 .orElseThrow(() -> new AppException(ErrorCode.SCREENING_NOT_EXISTED));
         return screeningMapper.toScreeningResponse(screening);
+    }
+
+    public ScreeningDetailResponse getScreeningDetail(String screeningId) {
+        Screening screening = screeningRepository
+                .findById(screeningId)
+                .orElseThrow(() -> new AppException(ErrorCode.SCREENING_NOT_EXISTED));
+
+        // Get total seats from room
+        Integer totalSeats = screening.getRoom().getTotalSeats();
+
+        // Count booked seats (seats with status SOLD)
+        Integer bookedSeats = screeningSeatRepository.countBookedSeats(screeningId);
+
+        // Calculate available seats
+        Integer availableSeats = totalSeats - bookedSeats;
+
+        // Use mapper to convert
+        return screeningMapper.toScreeningDetailResponse(screening, totalSeats, bookedSeats, availableSeats);
     }
 
     public ScreeningResponse updateScreening(String screeningId, ScreeningUpdateRequest request) {

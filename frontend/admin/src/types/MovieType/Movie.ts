@@ -19,6 +19,8 @@ export interface MovieSimple {
   status: "now_showing" | "coming_soon" | "archived";
   ageRatingCode: string;
   director: string;
+  needsArchiveWarning?: boolean;
+
 }
 
 // Full response for detail view
@@ -28,7 +30,7 @@ export interface Movie {
   description: string;
   durationMinutes: number;
   director: string;
-  cast: string;
+  castMembers: string;
   posterUrl: string;
   trailerUrl: string;
   releaseDate: string;
@@ -45,7 +47,7 @@ export interface CreateMovieRequest {
   description: string;
   durationMinutes: number;
   director: string;
-  cast: string;
+  castMembers: string;
   posterUrl: string;
   trailerUrl: string;
   releaseDate: string;

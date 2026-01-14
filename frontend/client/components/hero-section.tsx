@@ -51,7 +51,7 @@ export function HeroSection() {
             <div className="space-y-4">
               <div className="inline-block px-4 py-2 rounded-full bg-purple-500/20 border border-purple-500/50">
                 <span className="text-purple-600 dark:text-purple-300 text-sm font-semibold">
-                  Welcome to CINEPLEX
+                  Welcome to Cifastar
                 </span>
               </div>
 

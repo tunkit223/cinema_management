@@ -11,6 +11,8 @@ import jakarta.transaction.Transactional;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +21,8 @@ import com.theatermgnt.theatermgnt.account.repository.AccountRepository;
 import com.theatermgnt.theatermgnt.authentication.enums.AccountType;
 import com.theatermgnt.theatermgnt.booking.dto.request.CreateBookingRequest;
 import com.theatermgnt.theatermgnt.booking.dto.request.DiscountPointRequest;
+import com.theatermgnt.theatermgnt.booking.dto.response.BookingListItemResponse;
+import com.theatermgnt.theatermgnt.booking.dto.response.BookingListResponse;
 import com.theatermgnt.theatermgnt.booking.dto.response.BookingSummaryResponse;
 import com.theatermgnt.theatermgnt.booking.dto.response.CreateBookingResponse;
 import com.theatermgnt.theatermgnt.booking.entity.Booking;
@@ -451,5 +455,53 @@ public class BookingServiceImpl implements BookingService {
             return 1; // ra khỏi dãy ghế
         }
         return map[index];
+    }
+
+    @Override
+    public BookingListResponse getBookings(
+            BookingStatus status, String customerSearch, String emailSearch, String movieSearch, Pageable pageable) {
+        Page<Booking> page = bookingRepository.findBookings(status, customerSearch, emailSearch, movieSearch, pageable);
+
+        List<BookingListItemResponse> items =
+                page.getContent().stream().map(this::mapToBookingListItem).collect(Collectors.toList());
+
+        return BookingListResponse.builder()
+                .bookings(items)
+                .totalElements(page.getTotalElements())
+                .totalPages(page.getTotalPages())
+                .currentPage(page.getNumber())
+                .pageSize(page.getSize())
+                .build();
+    }
+
+    private BookingListItemResponse mapToBookingListItem(Booking booking) {
+        return BookingListItemResponse.builder()
+                .id(booking.getId())
+                .bookingCode("BK-" + booking.getId().toString().substring(0, 8).toUpperCase())
+                .customerId(
+                        booking.getCustomer() != null
+                                ? UUID.fromString(booking.getCustomer().getId())
+                                : null)
+                .customerName(
+                        booking.getCustomer() != null
+                                ? (booking.getCustomer().getFirstName() + " "
+                                                + booking.getCustomer().getLastName())
+                                        .trim()
+                                : "Guest")
+                .email(
+                        booking.getCustomer() != null
+                                ? booking.getCustomer().getAccount().getEmail()
+                                : "")
+                .phone(booking.getCustomer() != null ? booking.getCustomer().getPhoneNumber() : "")
+                .movieTitle(booking.getScreening().getMovie().getTitle())
+                .roomName(booking.getScreening().getRoom().getName())
+                .screeningTime(booking.getScreening().getStartTime().toString())
+                .seatCount((int)
+                        screeningSeatRepository.countByBooking(booking.getId().toString()))
+                .totalAmount(booking.getTotalAmount())
+                .status(booking.getStatus())
+                .createdAt(booking.getCreatedAt())
+                .expiredAt(booking.getExpiredAt())
+                .build();
     }
 }

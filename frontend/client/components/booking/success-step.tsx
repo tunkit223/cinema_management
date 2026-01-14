@@ -221,7 +221,7 @@ export default function SuccessStep({ movie, showtime, selectedSeats, selectedCo
                   {/* Show at entrance notice */}
                   <div className="mt-6 bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700 rounded-lg p-3">
                     <p className="text-sm text-center font-semibold text-yellow-800 dark:text-yellow-200">
-                      📱 Show this QR code at the entrance
+                      Show this QR code at the entrance
                     </p>
                   </div>
                 </div>

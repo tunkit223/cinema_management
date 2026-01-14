@@ -7,12 +7,23 @@ spring:
   application:
     name: theater-mgnt
   datasource:
-    url: jdbc:postgresql://db.yzdfmfunqtrohvaspglg.supabase.co:5432/postgres
-    username: postgres
+    #    url: jdbc:postgresql://db.yzdfmfunqtrohvaspglg.supabase.co:5432/postgres
+    #    username: postgres
+    #    password: TTKtao@223
+
+    url: jdbc:postgresql://aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres?prepareThreshold=0
+    username: postgres.yzdfmfunqtrohvaspglg
     password: TTKtao@223
+
     driver-class-name: org.postgresql.Driver
-    initialization-mode: always
-    continue-on-error: true
+
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 1
+      idle-timeout: 30000
+      connection-timeout: 20000
+      max-lifetime: 1800000
+
 
 
   jpa:

@@ -12,6 +12,25 @@ export interface ShowtimeResponse {
   startTime: string;
   endTime: string;
   status: "SCHEDULED" | "ONGOING" | "COMPLETED";
+  totalSeats?: number;      // Tổng số ghế
+  bookedSeats?: number;     // Số ghế đã đặt
+  availableSeats?: number;  // Số ghế còn trống
+}
+
+export interface ShowtimeDetailResponse {
+  id: string;
+  movieId: string;
+  movieName: string;
+  roomId: string;
+  roomName: string;
+  cinemaId: string;
+  cinemaName: string;
+  startTime: string;
+  endTime: string;
+  status: "SCHEDULED" | "ONGOING" | "COMPLETED";
+  totalSeats: number;       // Tổng số ghế
+  bookedSeats: number;      // Số ghế đã đặt
+  availableSeats: number;   // Số ghế còn trống
 }
 
 export interface CreateShowtimeRequest {
@@ -49,6 +68,12 @@ export const getShowtimesByRoom = async (roomId: string): Promise<ShowtimeRespon
 // Get showtime by ID
 export const getShowtimeById = async (id: string): Promise<ShowtimeResponse> => {
   const response = await httpClient.get<ApiResponse<ShowtimeResponse>>(`/screenings/${id}`);
+  return response.data.result;
+};
+
+// Get showtime detail by ID (with ticket information)
+export const getShowtimeDetail = async (id: string): Promise<ShowtimeDetailResponse> => {
+  const response = await httpClient.get<ApiResponse<ShowtimeDetailResponse>>(`/screenings/${id}/detail`);
   return response.data.result;
 };
 

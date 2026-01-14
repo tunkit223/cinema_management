@@ -17,6 +17,7 @@ public class CinemaResponse {
     String address;
     String city;
     String phoneNumber;
+    Integer buffer;
     String managerId;
     String managerName;
     LocalDate managerDob;

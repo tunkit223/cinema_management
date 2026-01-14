@@ -207,8 +207,8 @@ export default function MyTicketsPage() {
               <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {paginatedTickets.map((ticket) => (
-                  <div 
-                    key={ticket.id} 
+                  <div
+                    key={ticket.id}
                     className={`relative rounded-xl p-6 transition-all hover:shadow-xl hover:-translate-y-1 border-2 bg-card ${
                       ticket.status === "ACTIVE"
                         ? "border-green-300 dark:border-green-700"
@@ -221,8 +221,8 @@ export default function MyTicketsPage() {
                       <div className="flex-1">
                         <h3 className="font-bold text-2xl text-purple-700 dark:text-purple-300 mb-3 line-clamp-2">{ticket.movieTitle}</h3>
                         <div className="space-y-1">
-                          <p className="text-xs text-slate-500 dark:text-slate-400"><span className="font-semibold">🎫 Ticket:</span> {ticket.ticketCode}</p>
-                          <p className="text-xs text-slate-500 dark:text-slate-400"><span className="font-semibold">💺 Seat:</span> {ticket.seatName}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400"><span className="font-semibold">Ticket:</span> {ticket.ticketCode}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400"><span className="font-semibold">Seat:</span> {ticket.seatName}</p>
                         </div>
                       </div>
                       <span
@@ -239,19 +239,19 @@ export default function MyTicketsPage() {
                     </div>
                     <div className="space-y-2.5 text-sm mb-4 pb-4 border-b-2 border-current border-opacity-20">
                       <div className="flex items-center justify-between">
-                        <span className="font-semibold text-slate-700 dark:text-slate-300">🎬 Showtime</span>
+                        <span className="font-semibold text-slate-700 dark:text-slate-300">Showtime</span>
                         <span className="text-right text-slate-600 dark:text-slate-300">{new Date(ticket.startTime).toLocaleString()}</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="font-semibold text-slate-700 dark:text-slate-300">💰 Price</span>
+                        <span className="font-semibold text-slate-700 dark:text-slate-300">Price</span>
                         <span className="text-right text-purple-600 dark:text-purple-400 font-bold">{ticket.price.toLocaleString()} VND</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="font-semibold text-slate-700 dark:text-slate-300">📅 Purchased</span>
+                        <span className="font-semibold text-slate-700 dark:text-slate-300">Purchased</span>
                         <span className="text-right text-slate-600 dark:text-slate-300 text-xs">{new Date(ticket.createdAt).toLocaleString()}</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="font-semibold text-slate-700 dark:text-slate-300">⏰ Expires</span>
+                        <span className="font-semibold text-slate-700 dark:text-slate-300">Expires</span>
                         <span className="text-right text-orange-600 dark:text-orange-400 font-semibold text-xs">{new Date(ticket.expiresAt).toLocaleString()}</span>
                       </div>
                     </div>

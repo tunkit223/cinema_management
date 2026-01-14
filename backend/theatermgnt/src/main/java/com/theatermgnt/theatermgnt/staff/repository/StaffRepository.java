@@ -37,4 +37,12 @@ public interface StaffRepository extends JpaRepository<Staff, String> {
           )
     """)
     List<Staff> findByRoleAndNotManagingAnyCinema(@Param("roleName") String roleName);
+
+    @Query("""
+        SELECT COUNT(s) > 0
+        FROM Staff s
+        JOIN s.roles r
+        WHERE r.name = :roleName
+    """)
+    boolean existsByRoleName(@Param("roleName") String roleName);
 }

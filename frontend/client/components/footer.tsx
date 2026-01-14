@@ -47,7 +47,7 @@ export function Footer() {
               <div className="w-8 h-8 gradient-primary rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-lg">C</span>
               </div>
-              <span className="gradient-text font-bold text-lg">CINEPLEX</span>
+              <span className="gradient-text font-bold text-lg">Cifastar</span>
             </Link>
             <p className="text-muted-foreground text-sm leading-relaxed">
               Experience premium cinema entertainment with cutting-edge technology and unforgettable moments.
@@ -102,7 +102,7 @@ export function Footer() {
         {/* Bottom Footer */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-muted-foreground text-sm">
-            &copy; {currentYear} CINEPLEX. All rights reserved. Crafted with passion for cinema lovers.
+            &copy; {currentYear} Cifastar. All rights reserved. Crafted with passion for cinema lovers.
           </p>
 
           {/* Newsletter Signup */}

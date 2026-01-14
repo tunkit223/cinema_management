@@ -34,7 +34,7 @@ public class UpdateMovieRequest {
     String director;
 
     @Size(max = 2000, message = "INVALID_MOVIE_CAST")
-    String cast;
+    String castMembers;
 
     @Pattern(regexp = "^https?://.*", message = "INVALID_POSTER_URL")
     String posterUrl;

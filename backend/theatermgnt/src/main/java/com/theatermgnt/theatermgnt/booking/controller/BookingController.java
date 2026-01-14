@@ -4,12 +4,16 @@ import java.util.UUID;
 
 import jakarta.validation.Valid;
 
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
 import com.theatermgnt.theatermgnt.booking.dto.request.CreateBookingRequest;
 import com.theatermgnt.theatermgnt.booking.dto.request.DiscountPointRequest;
+import com.theatermgnt.theatermgnt.booking.dto.response.BookingListResponse;
 import com.theatermgnt.theatermgnt.booking.dto.response.BookingSummaryResponse;
 import com.theatermgnt.theatermgnt.booking.dto.response.CreateBookingResponse;
+import com.theatermgnt.theatermgnt.booking.enums.BookingStatus;
 import com.theatermgnt.theatermgnt.booking.service.BookingService;
 import com.theatermgnt.theatermgnt.common.dto.response.ApiResponse;
 import com.theatermgnt.theatermgnt.payment.dto.request.CreateInvoiceRequest;
@@ -65,6 +69,20 @@ public class BookingController {
                 .result(invoiceService.createInvoice(CreateInvoiceRequest.builder()
                         .bookingId(bookingId.toString())
                         .build()))
+                .build();
+    }
+
+    @GetMapping
+    public ApiResponse<BookingListResponse> getBookings(
+            @RequestParam(required = false) BookingStatus status,
+            @RequestParam(required = false) String customerSearch,
+            @RequestParam(required = false) String emailSearch,
+            @RequestParam(required = false) String movieSearch,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return ApiResponse.<BookingListResponse>builder()
+                .result(bookingService.getBookings(status, customerSearch, emailSearch, movieSearch, pageable))
                 .build();
     }
 }

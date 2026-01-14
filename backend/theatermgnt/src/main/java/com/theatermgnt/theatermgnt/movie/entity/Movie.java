@@ -26,7 +26,6 @@ public class Movie extends BaseEntity {
     Integer durationMinutes;
     String director;
 
-    @Column(name = "movie_cast")
     String castMembers;
 
     String posterUrl;
