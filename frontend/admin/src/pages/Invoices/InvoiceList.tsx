@@ -28,6 +28,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { useNotificationStore } from "@/stores";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export const InvoiceList = () => {
@@ -48,23 +49,37 @@ export const InvoiceList = () => {
   const [filters, setFilters] = useState<{
     search: string;
     status: InvoiceStatus | "ALL";
+    cinemaId?: string;
   }>({
     search: "",
     status: "ALL",
+    cinemaId: undefined,
   });
 
   const addNotification = useNotificationStore((state) => state.addNotification);
+  const cinemaId = useAuthStore((s) => s.cinemaId);
+
+  // Debug log to check cinemaId
+  useEffect(() => {
+    console.log('[InvoiceList] Manager cinemaId:', cinemaId);
+  }, [cinemaId]);
 
   // Fetch invoices
   const fetchInvoices = async (page: number = 0) => {
     try {
       setLoading(true);
+      // Use filter's cinemaId if provided, otherwise use manager's cinemaId from auth
+      const selectedCinemaId = filters.cinemaId || cinemaId;
+
       const params = {
         page,
         size: pageSize,
         search: filters.search || undefined,
         status: filters.status !== "ALL" ? filters.status : undefined,
+        cinemaId: selectedCinemaId || undefined,
       };
+
+      console.log('[InvoiceList] Fetching with params:', params);
 
       const response = await searchInvoices(params);
       setInvoices(response.content);
@@ -85,7 +100,9 @@ export const InvoiceList = () => {
   const fetchStatistics = async () => {
     try {
       setStatisticsLoading(true);
-      const stats = await getInvoiceStatistics();
+      // Use filter's cinemaId if provided, otherwise use manager's cinemaId from auth
+      const selectedCinemaId = filters.cinemaId || cinemaId;
+      const stats = await getInvoiceStatistics(selectedCinemaId);
       setStatistics(stats);
     } catch (error) {
       addNotification({
@@ -115,6 +132,7 @@ export const InvoiceList = () => {
   const handleFilterChange = (newFilters: {
     search: string;
     status: InvoiceStatus | "ALL";
+    cinemaId?: string;
   }) => {
     setFilters(newFilters);
     setCurrentPage(0);
@@ -133,7 +151,7 @@ export const InvoiceList = () => {
 
   useEffect(() => {
     fetchStatistics();
-  }, []);
+  }, [filters]);
 
   // Pagination handlers
   const handlePageChange = (page: number) => {

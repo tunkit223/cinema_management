@@ -24,6 +24,7 @@ import com.theatermgnt.theatermgnt.ticket.mapper.TicketMapper;
 import com.theatermgnt.theatermgnt.ticket.repository.TicketRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -39,6 +40,7 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class TicketServiceImpl implements TicketService {
     private final TicketRepository ticketRepository;
     private final TicketMapper ticketMapper;
@@ -241,5 +243,25 @@ public class TicketServiceImpl implements TicketService {
         ticket.setStatus(TicketStatus.USED);
         ticket.setUsedAt(Instant.now());
         ticketRepository.save(ticket);
+    }
+
+    @Override
+    public void expireTicketsByBookingId(UUID bookingId) {
+        log.info("Expiring all active tickets for booking: {}", bookingId);
+        
+        List<Ticket> activeTickets = ticketRepository.findByBookingIdAndStatus(bookingId, TicketStatus.ACTIVE);
+        
+        if (activeTickets.isEmpty()) {
+            log.info("No active tickets found for booking: {}", bookingId);
+            return;
+        }
+        
+        activeTickets.forEach(ticket -> {
+            ticket.setStatus(TicketStatus.EXPIRED);
+            log.debug("Expiring ticket: {} for booking: {}", ticket.getTicketCode(), bookingId);
+        });
+        
+        ticketRepository.saveAll(activeTickets);
+        log.info("Expired {} tickets for booking: {}", activeTickets.size(), bookingId);
     }
 }

@@ -324,6 +324,34 @@ public class BookingServiceImpl implements BookingService {
         log.info("Booking {} confirmed", bookingId);
     }
 
+    @Override
+    public void refundBooking(String bookingId) {
+        log.info("Refunding booking: {}", bookingId);
+
+        Booking booking = bookingRepository
+                .findById(UUID.fromString(bookingId))
+                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_EXISTED));
+
+        // Update booking status to REFUNDED
+        booking.setStatus(BookingStatus.REFUNDED);
+        bookingRepository.save(booking);
+
+        // Return loyalty points if customer exists
+        if (booking.getCustomer() != null) {
+            int pointsEarned = discountService.calculateEarnedPoints(booking.getTotalAmount());
+            int pointDiscounted = discountService.caculateDiscountPoints(booking.getDiscount());
+            // Subtract points that were added during confirmation
+            customerService.addLoyaltyPoints(booking.getCustomer().getId(), -(pointsEarned - pointDiscounted));
+            log.info("Loyalty points reversed for customer {} in booking {}", booking.getCustomer().getId(), bookingId);
+        }
+
+        // Release seats back to available
+        screeningSeatRepository.releaseSeatsByBooking(bookingId);
+
+        log.info("Booking {} refunded", bookingId);
+    }
+
+
     private void validateScreeningSeat(Screening screening, List<String> screeningSeatIds) {
         List<ScreeningSeat> seats = screeningSeatRepository.findByScreeningId(screening.getId());
 

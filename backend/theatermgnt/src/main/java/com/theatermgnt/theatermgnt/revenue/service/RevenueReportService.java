@@ -86,16 +86,31 @@ public class RevenueReportService {
                 rows.stream().map(DailyRevenueSummary::getComboRevenue).reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal net = rows.stream().map(DailyRevenueSummary::getNetRevenue).reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        RevenueReport entity = RevenueReport.builder()
-                .cinemaId(request.getCinemaId())
-                .reportType(request.getReportType())
-                .startDate(request.getStartDate())
-                .endDate(request.getEndDate())
-                .totalTicketRevenue(totalTicket)
-                .totalComboRevenue(totalCombo)
-                .netRevenue(net)
-                .generatedAt(LocalDateTime.now())
-                .build();
+        // Check if report already exists (upsert logic)
+        List<RevenueReport> existing = revenueReportRepository.findByCinemaIdAndReportTypeAndStartDateAndEndDate(
+                request.getCinemaId(), request.getReportType(), request.getStartDate(), request.getEndDate());
+
+        RevenueReport entity;
+        if (!existing.isEmpty()) {
+            // Update existing report
+            entity = existing.get(0);
+            entity.setTotalTicketRevenue(totalTicket);
+            entity.setTotalComboRevenue(totalCombo);
+            entity.setNetRevenue(net);
+            entity.setGeneratedAt(LocalDateTime.now());
+        } else {
+            // Create new report
+            entity = RevenueReport.builder()
+                    .cinemaId(request.getCinemaId())
+                    .reportType(request.getReportType())
+                    .startDate(request.getStartDate())
+                    .endDate(request.getEndDate())
+                    .totalTicketRevenue(totalTicket)
+                    .totalComboRevenue(totalCombo)
+                    .netRevenue(net)
+                    .generatedAt(LocalDateTime.now())
+                    .build();
+        }
 
         return toResponse(revenueReportRepository.save(entity));
     }
@@ -106,8 +121,7 @@ public class RevenueReportService {
                 .map(cinema -> cinema.getId())
                 .toList();
 
-        // Generate report for each cinema and return the first one
-        // (or you could return a summary if needed)
+        // Generate report for each cinema (upsert logic)
         for (String cinemaId : cinemaIds) {
             List<DailyRevenueSummary> rows =
                     dailyRevenueSummaryRepository.findFiltered(cinemaId, request.getStartDate(), request.getEndDate());
@@ -119,16 +133,31 @@ public class RevenueReportService {
             BigDecimal net =
                     rows.stream().map(DailyRevenueSummary::getNetRevenue).reduce(BigDecimal.ZERO, BigDecimal::add);
 
-            RevenueReport entity = RevenueReport.builder()
-                    .cinemaId(cinemaId)
-                    .reportType(request.getReportType())
-                    .startDate(request.getStartDate())
-                    .endDate(request.getEndDate())
-                    .totalTicketRevenue(totalTicket)
-                    .totalComboRevenue(totalCombo)
-                    .netRevenue(net)
-                    .generatedAt(LocalDateTime.now())
-                    .build();
+            // Check if report already exists (upsert logic)
+            List<RevenueReport> existing = revenueReportRepository.findByCinemaIdAndReportTypeAndStartDateAndEndDate(
+                    cinemaId, request.getReportType(), request.getStartDate(), request.getEndDate());
+
+            RevenueReport entity;
+            if (!existing.isEmpty()) {
+                // Update existing report
+                entity = existing.get(0);
+                entity.setTotalTicketRevenue(totalTicket);
+                entity.setTotalComboRevenue(totalCombo);
+                entity.setNetRevenue(net);
+                entity.setGeneratedAt(LocalDateTime.now());
+            } else {
+                // Create new report
+                entity = RevenueReport.builder()
+                        .cinemaId(cinemaId)
+                        .reportType(request.getReportType())
+                        .startDate(request.getStartDate())
+                        .endDate(request.getEndDate())
+                        .totalTicketRevenue(totalTicket)
+                        .totalComboRevenue(totalCombo)
+                        .netRevenue(net)
+                        .generatedAt(LocalDateTime.now())
+                        .build();
+            }
 
             revenueReportRepository.save(entity);
         }

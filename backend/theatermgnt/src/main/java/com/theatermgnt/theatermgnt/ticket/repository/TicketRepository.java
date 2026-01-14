@@ -36,4 +36,7 @@ public interface TicketRepository extends JpaRepository<Ticket, UUID> {
     """)
     List<Ticket> findAllForEmail(@Param("ids") List<UUID> ids);
 
+    // Find all tickets for a booking
+    List<Ticket> findByBookingIdAndStatus(UUID bookingId, TicketStatus status);
+
 }

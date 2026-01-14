@@ -14,7 +14,7 @@ interface PaymentResult {
   txnRef?: string;
   amount?: number;
   orderInfo?: string;
-  bookingId?: string; // Align bookingId field
+  bookingId?: string;
 }
 
 export default function VNPayReturnPage() {
@@ -102,6 +102,9 @@ export default function VNPayReturnPage() {
 
         const data = await response.json();
         
+        // Clean URL to remove sensitive payment params from browser history
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
         // Try to get bookingId from sessionStorage (saved during booking process)
         if (!data.bookingId) {
           const savedBookingId = sessionStorage.getItem('current_booking_id');
@@ -147,10 +150,10 @@ export default function VNPayReturnPage() {
           <CardContent className="p-8">
           <Loader className="w-12 h-12 text-blue-600 mx-auto mb-4 animate-spin" />
           <h2 className="text-xl font-semibold text-gray-800 mb-2">
-            Đang xác thực thanh toán...
+            Verifying payment...
           </h2>
           <p className="text-gray-600">
-            Vui lòng chờ trong giây lát
+            Please wait a moment
           </p>
           </CardContent>
         </Card>
@@ -165,7 +168,7 @@ export default function VNPayReturnPage() {
           <CardContent className="p-8">
           <XCircle className="w-16 h-16 text-red-600 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-red-600 mb-2">
-            Lỗi xác thực
+            Verification Error
           </h2>
           <p className="text-gray-600 mb-6">
             {error}
@@ -183,7 +186,7 @@ export default function VNPayReturnPage() {
               }}
               className="w-full bg-red-600 hover:bg-red-700"
             >
-              Quay lại đặt vé
+              Back to Booking
             </Button>
           </CardContent>
         </Card>
@@ -199,7 +202,7 @@ export default function VNPayReturnPage() {
         <CardHeader className="pb-4">
           <CardTitle className="flex items-center justify-center gap-2 text-lg text-gray-700">
             <Badge variant={isSuccess ? 'default' : 'destructive'} className="uppercase">
-              {isSuccess ? 'Thành công' : 'Thất bại'}
+              {isSuccess ? 'Success' : 'Failed'}
             </Badge>
             <span className="text-sm text-gray-500">VNPay</span>
           </CardTitle>
@@ -209,7 +212,7 @@ export default function VNPayReturnPage() {
           <>
             <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-green-600 mb-2">
-              Thanh toán thành công!
+              Payment Successful!
             </h2>
             <p className="text-gray-600 mb-6">
               {result?.message}
@@ -218,7 +221,7 @@ export default function VNPayReturnPage() {
             <div className="bg-gray-50 rounded-lg p-4 mb-6 text-left space-y-3">
               {result?.txnRef && (
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-gray-500">Mã giao dịch</p>
+                  <p className="text-xs uppercase tracking-wide text-gray-500">Transaction ID</p>
                   <p className="text-base font-semibold text-gray-800 break-all">
                     {result.txnRef}
                   </p>
@@ -226,7 +229,7 @@ export default function VNPayReturnPage() {
               )}
               {result?.amount && (
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-gray-500">Số tiền</p>
+                  <p className="text-xs uppercase tracking-wide text-gray-500">Amount</p>
                   <p className="text-lg font-semibold text-gray-900">
                     {result.amount.toLocaleString('vi-VN')} ₫
                   </p>
@@ -234,7 +237,7 @@ export default function VNPayReturnPage() {
               )}
               {result?.orderInfo && (
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-gray-500">Nội dung</p>
+                  <p className="text-xs uppercase tracking-wide text-gray-500">Order Info</p>
                   <p className="text-base font-semibold text-gray-800">
                     {result.orderInfo}
                   </p>
@@ -256,7 +259,7 @@ export default function VNPayReturnPage() {
                 }}
                 className="w-full bg-green-600 hover:bg-green-700"
               >
-                Xem vé của tôi
+                View My Tickets
               </Button>
               <Button
                 variant="secondary"
@@ -266,7 +269,7 @@ export default function VNPayReturnPage() {
                 }}
                 className="w-full"
               >
-                Quay về trang chủ
+                Back to Home
               </Button>
             </div>
           </>
@@ -274,15 +277,15 @@ export default function VNPayReturnPage() {
           <>
             <XCircle className="w-16 h-16 text-red-600 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-red-600 mb-2">
-              Thanh toán thất bại
+              Payment Failed
             </h2>
             <p className="text-gray-600 mb-6">
-              {result?.message || 'Giao dịch không thành công'}
+              {result?.message || 'Transaction was not successful'}
             </p>
 
             {result?.txnRef && (
               <div className="bg-gray-50 rounded-lg p-4 mb-6 text-left">
-                <p className="text-xs uppercase tracking-wide text-gray-500">Mã giao dịch</p>
+                <p className="text-xs uppercase tracking-wide text-gray-500">Transaction ID</p>
                 <p className="text-base font-semibold text-gray-800 break-all">
                   {result.txnRef}
                 </p>
@@ -303,7 +306,7 @@ export default function VNPayReturnPage() {
                 }}
                 className="w-full bg-orange-600 hover:bg-orange-700 text-white"
               >
-                Thử lại
+                Try Again
               </Button>
               <Button
                 variant="secondary"
@@ -314,7 +317,7 @@ export default function VNPayReturnPage() {
                 }}
                 className="w-full"
               >
-                Quay về trang chủ
+                Back to Home
               </Button>
             </div>
           </>

@@ -26,4 +26,19 @@ public interface RevenueReportRepository extends JpaRepository<RevenueReport, St
             @Param("reportType") ReportType reportType,
             @Param("fromDate") LocalDate fromDate,
             @Param("toDate") LocalDate toDate);
+
+    // Find existing report by unique key for upsert logic
+    @Query(
+            """
+		SELECT r FROM RevenueReport r
+		WHERE r.cinemaId = :cinemaId
+		AND r.reportType = :reportType
+		AND r.startDate = :startDate
+		AND r.endDate = :endDate
+	""")
+    List<RevenueReport> findByCinemaIdAndReportTypeAndStartDateAndEndDate(
+            @Param("cinemaId") String cinemaId,
+            @Param("reportType") ReportType reportType,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
 }

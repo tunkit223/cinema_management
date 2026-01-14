@@ -20,4 +20,9 @@ public interface BookingService {
      * Confirm booking after successful payment
      */
     void confirmBookingPayment(String bookingId);
+
+    /**
+     * Refund booking and update status to REFUNDED
+     */
+    void refundBooking(String bookingId);
 }

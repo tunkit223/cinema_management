@@ -36,6 +36,7 @@ public class EmailTemplateFactory {
                     case NOTIFICATION_EMAIL -> "email/notification-email";
                     case TICKET_ISSUE -> "email/ticket-issue";
                     case WELCOME_CUSTOMER -> "email/welcome-customer";
+                    case REFUND_NOTIFICATION -> "email/refund-notification";
                 };
         return templateEngine.process(templateName, context);
     }
