@@ -16,6 +16,9 @@ import {
   Wrench,
   MessageSquare,
   Image,
+  Bell,
+  FileText,
+  History,
 } from "lucide-react";
 import { ROUTES } from "@/constants/routes";
 import { PERMISSIONS } from "@/constants/permissions";
@@ -79,6 +82,35 @@ export const MENU_ITEMS: MenuItem[] = [
     icon: UserCog,
     path: ROUTES.STAFF,
     requiredPermissions: [PERMISSIONS.STAFF_READ],
+  },
+  {
+    id: "notifications",
+    label: "Notifications",
+    icon: Bell,
+    requiredPermissions: [PERMISSIONS.STAFF_READ],
+    children: [
+      {
+        id: "notifications-list",
+        label: "Notifications",
+        icon: Bell,
+        path: ROUTES.NOTIFICATIONS_LIST,
+        requiredPermissions: [PERMISSIONS.STAFF_READ],
+      },
+      {
+        id: "notifications-templates",
+        label: "Templates",
+        icon: FileText,
+        path: ROUTES.NOTIFICATIONS_TEMPLATES,
+        requiredPermissions: [PERMISSIONS.STAFF_READ],
+      },
+      {
+        id: "notifications-logs",
+        label: "Logs",
+        icon: History,
+        path: ROUTES.NOTIFICATIONS_LOGS,
+        requiredPermissions: [PERMISSIONS.STAFF_READ],
+      },
+    ],
   },
   {
     id: "work",

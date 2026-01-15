@@ -1,12 +1,15 @@
 import { useState } from "react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ArrowLeft, Plus, Trash2, Edit } from "lucide-react";
 import {
   deleteEquipment,
   type Equipment,
   type EquipmentCategory,
 } from "@/services/equipmentService";
+import { useNotificationStore } from "@/stores";
+import { useConfirmDialog } from "@/hooks/useConfirmDialog";
 import EquipmentModal from "./EquipmentModal";
 
 interface Room {
@@ -35,6 +38,8 @@ export default function EquipmentListDetail({
 }: EquipmentListDetailProps) {
   const [showModal, setShowModal] = useState(false);
   const [editingEquipment, setEditingEquipment] = useState<Equipment | null>(null);
+  const { confirmDialog, showConfirmDialog, closeConfirmDialog } = useConfirmDialog();
+  const addNotification = useNotificationStore((state) => state.addNotification);
 
   const handleCreate = () => {
     setEditingEquipment(null);
@@ -46,17 +51,32 @@ export default function EquipmentListDetail({
     setShowModal(true);
   };
 
-  const handleDelete = async (equipmentId: string) => {
-    if (!window.confirm("Are you sure you want to delete this equipment?")) {
-      return;
-    }
-
-    try {
-      await deleteEquipment(equipmentId);
-      await onEquipmentUpdated();
-    } catch (err: any) {
-      console.error("Error deleting equipment:", err);
-    }
+  const handleDelete = (eq: Equipment) => {
+    showConfirmDialog({
+      title: "Delete Equipment",
+      description: `Are you sure you want to delete "${eq.name}"? This action cannot be undone.`,
+      variant: "destructive",
+      confirmText: "Delete",
+      onConfirm: async () => {
+        try {
+          await deleteEquipment(eq.id);
+          addNotification({
+            type: "success",
+            title: "Success",
+            message: "Equipment deleted successfully.",
+          });
+          await onEquipmentUpdated();
+          closeConfirmDialog();
+        } catch (err: any) {
+          addNotification({
+            type: "error",
+            title: "Error",
+            message: err.response?.data?.message || "Failed to delete equipment.",
+          });
+          closeConfirmDialog();
+        }
+      },
+    });
   };
 
   const getCategoryName = (categoryId: string) => {
@@ -164,7 +184,7 @@ export default function EquipmentListDetail({
                             Edit
                           </Button>
                           <Button
-                            onClick={() => handleDelete(eq.id)}
+                            onClick={() => handleDelete(eq)}
                             variant="destructive"
                             size="sm"
                             className="gap-2"
@@ -192,6 +212,16 @@ export default function EquipmentListDetail({
           onSave={onEquipmentUpdated}
         />
       )}
+
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={closeConfirmDialog}
+        onConfirm={confirmDialog.onConfirm}
+        title={confirmDialog.title}
+        description={confirmDialog.description}
+        confirmText={confirmDialog.confirmText}
+        variant={confirmDialog.variant}
+      />
     </div>
   );
 }

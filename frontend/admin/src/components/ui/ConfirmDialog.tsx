@@ -32,20 +32,26 @@ export function ConfirmDialog({
     onConfirm();
   };
 
+  const handleClose = () => {
+    if (loading) return;
+    onClose();
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={onClose}
+        onClick={handleClose}
       />
 
       {/* Dialog */}
       <div className="relative bg-background border border-border rounded-lg shadow-lg w-full max-w-md mx-4 p-6 animate-in fade-in-0 zoom-in-95">
         {/* Close Button */}
         <button
-          onClick={onClose}
-          className="absolute right-4 top-4 rounded-sm opacity-70 hover:opacity-100 transition-opacity"
+          onClick={handleClose}
+          disabled={loading}
+          className="absolute right-4 top-4 rounded-sm opacity-70 hover:opacity-100 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed"
         >
           <X className="h-4 w-4" />
         </button>
@@ -71,9 +77,9 @@ export function ConfirmDialog({
           {/* Actions */}
           <div className="flex gap-3 pt-2">
             <Button
-              onClick={onClose}
+              onClick={handleClose}
               variant="outline"
-              className="flex-1"
+              className="flex-1 cursor-pointer"
               disabled={loading}
             >
               {cancelText}
@@ -81,10 +87,10 @@ export function ConfirmDialog({
             <Button
               onClick={handleConfirm}
               variant={variant === "destructive" ? "destructive" : "default"}
-              className="flex-1"
+              className="flex-1 cursor-pointer"
               disabled={loading}
             >
-              {loading ? "Processing..." : confirmText}
+              {loading ? "Deleting..." : confirmText}
             </Button>
           </div>
         </div>

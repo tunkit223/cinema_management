@@ -24,6 +24,9 @@ public interface BookingService {
 
     void refundBooking(String bookingId);
 
+    /**
+     * Get list of bookings with filters and pagination
+     */
     BookingListResponse getBookings(
             BookingStatus status,
             String customerSearch,

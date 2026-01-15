@@ -166,8 +166,15 @@ public enum ErrorCode {
     DOCUMENT_ALREADY_PROCESSING(5009, "Document is already being processed", HttpStatus.BAD_REQUEST),
 
     // CHATBOT DOCUMENT;
-    PRIORITY_INVALID(6001, "Priority must have greater than 0", HttpStatus.BAD_REQUEST);
-    ;
+    PRIORITY_INVALID(6001, "Priority must have greater than 0", HttpStatus.BAD_REQUEST),
+
+    // NOTIFICATION
+    TEMPLATE_NOT_FOUND(7001, "Notification template not found", HttpStatus.NOT_FOUND),
+    TEMPLATE_ALREADY_EXISTS(7002, "Notification template already exists", HttpStatus.BAD_REQUEST),
+    CHANNEL_NOT_FOUND(7003, "Notification channel not found", HttpStatus.NOT_FOUND),
+    PREFERENCE_NOT_FOUND(7004, "Notification preference not found", HttpStatus.NOT_FOUND),
+    PREFERENCE_ALREADY_EXISTS(7005, "Notification preference already exists", HttpStatus.BAD_REQUEST),
+    NOTIFICATION_NOT_FOUND(7006, "Notification not found", HttpStatus.NOT_FOUND);
 
     private int code;
     private String message;
