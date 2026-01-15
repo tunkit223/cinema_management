@@ -19,4 +19,11 @@ public class ScreeningSeatResponse {
     BigDecimal price;
     String bookingId;
     String status;
+    
+    // Transfer information (if ticket is for transfer)
+    Boolean isForTransfer;
+    String transferTicketId;
+    String sellerName;
+    String sellerEmail;
+    String sellerPhone;
 }

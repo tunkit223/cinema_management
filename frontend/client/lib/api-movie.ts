@@ -230,7 +230,13 @@ export function mapScreeningSeatToSeat(seat: any, index: number) {
     isAvailable,
     isSelected: false,
     type,
-    price
+    price,
+    // Transfer information
+    isForTransfer: seat.isForTransfer || false,
+    transferTicketId: seat.transferTicketId,
+    sellerName: seat.sellerName,
+    sellerEmail: seat.sellerEmail,
+    sellerPhone: seat.sellerPhone,
   }
 }
 
